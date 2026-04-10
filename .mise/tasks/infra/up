@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#MISE description="Start infrastructure services"
+
+docker compose up -d --force-recreate --remove-orphans
+
+echo ""
+echo "🚀 --- INFRASTRUCTURE DASHBOARD ---"
+echo "📊 OpenObserve:   http://localhost:3105 (admin@example.com / password123)"
+echo "📈 OTel gRPC:     localhost:3117"
+echo "----------------------------------"

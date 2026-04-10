@@ -1,0 +1,173 @@
+[tools]
+node = "25"
+go = "1.26"
+golangci-lint = "2.11.4"
+dotenv-linter = "4.0.0"
+air = "1.64.5"
+overmind = "2.5.1"
+docker-cli = "29.3.1"
+tmux = "3.6a"
+"go:github.com/icholy/gomajor" = "0.15.0"
+actionlint = "1.7.12"
+shellcheck = "0.11.0"
+jq = "1.8.1"
+vale = "3.14.1"
+
+# ==========================================
+# 💻 DEVELOPMENT
+# ==========================================
+
+[tasks."dev"]
+description = "Start development environment with hot reload for backend and frontend"
+run = "overmind s"
+
+[tasks."be:dev"]
+description = "Start backend in development mode with hot reload"
+dir="backend"
+run = "exec air"
+
+[tasks."be:run"]
+description = "Runs the backend command"
+dir="backend"
+run = "go run ."
+
+[tasks."fe:dev"]
+description = "Start frontend in development mode with hot reload"
+dir="frontend"
+run = "npm run dev"
+
+# ==========================================
+# 🐳 INFRASTRUCTURE
+# ==========================================
+
+[tasks."infra:down"]
+description = "Stop infrastructure services"
+run = "docker compose down"
+
+[tasks."infra:restart"]
+description = "Restart infrastructure services"
+run = """
+  mise run infra:down
+  mise run infra:up
+"""
+
+# ==========================================
+# 🧪 TESTING
+# ==========================================
+
+[tasks."test"]
+description = "Run all tests with coverage"
+run = "mise run be:test ::: fe:test"
+
+[tasks."be:test"]
+description = "Run backend tests with coverage"
+dir = "backend"
+depends = ["be:setup"]
+run = """
+  go test -v -coverprofile=coverage.out ./... 
+  go tool cover -html=coverage.out -o coverage.html
+"""
+
+[tasks."be:test:cov"]
+description = "Show the backend test coverage report in the browser"
+run = "open backend/coverage.html"
+
+[tasks."fe:test"]
+description = "Run frontend tests with coverage"
+dir = "frontend"
+run = 'NODE_OPTIONS="--no-webstorage" npm run test run -- --coverage'
+
+[tasks."fe:test:cov"]
+description = "Show the frontend test coverage report in the browser"
+run = "open frontend/coverage/index.html"
+
+
+# ==========================================
+# 🔍 LINTING 
+# ==========================================
+
+[tasks.lint]
+description = "Lint the whole project (pass --fix to auto-fix)"
+usage = """
+flag "--fix" help="Automatically fix linting issues"
+"""
+run = """
+  : "🚦 Orchestration (Auto-Fix: ${usage_fix:-false})"
+  if [ "$usage_fix" = "true" ]; then
+    mise run be:lint --fix ::: fe:lint --fix ::: actions:lint ::: sh:lint ::: repo:lint --fix
+  else
+    mise run be:lint ::: fe:lint ::: actions:lint ::: sh:lint ::: repo:lint
+  fi
+"""
+
+[tasks."actions:lint"]
+description = "Lint GitHub Actions workflows"
+dir = ".github/workflows"
+run = "actionlint"
+
+[tasks."sh:lint"]
+description = "Lint shell scripts using shellcheck"
+run = """
+  : "🐚 Shellcheck (Bash Scripts)"
+  find .mise/tasks -type f -exec shellcheck {} +
+"""
+
+# ==========================================
+# 📦 DEPENDENCIES
+# ==========================================
+
+[tasks."deps:install"]
+description = "Install all dependencies (Backend & Frontend)"
+run = "mise run be:deps:install ::: fe:deps:install"
+
+[tasks."be:deps:install"]
+description = "Install backend dependencies"
+dir = "backend"
+run = """
+  : "🚀 Install Backend Deps"
+  go mod download
+"""
+
+[tasks."fe:deps:install"]
+description = "Install frontend dependencies"
+dir = "frontend"
+run = """
+  : "🎨 Install Frontend Deps"
+  npm ci
+"""
+
+# --- UPDATE TASKS ---
+
+[tasks."deps:update"]
+description = "Update all dependencies across the project"
+run = """
+  mise run be:deps:update
+  mise run fe:deps:update
+  mise run actions:deps:update
+"""
+
+[tasks."be:deps:update"]
+description = "Update backend dependencies"
+dir = "backend"
+run = """
+  : "🚀 Update Backend Deps"
+  go get -u -t ./...
+  go mod tidy
+  gomajor list
+"""
+
+[tasks."fe:deps:update"]
+description = "Update frontend dependencies (Interactive)"
+dir = "frontend"
+run = """
+  : "🎨 Update Frontend Deps"
+  npx npm-check-updates --interactive --format group
+  npm install
+"""
+
+[tasks."actions:deps:update"]
+description = "Update GitHub Actions versions"
+run = """
+  : "🐙 Update GitHub Actions"
+  npx actions-up
+"""

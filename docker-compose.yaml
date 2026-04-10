@@ -1,0 +1,26 @@
+services:
+  # Monitoring & logging backend
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    environment:
+      - ZO_ROOT_USER_EMAIL=admin@example.com
+      - ZO_ROOT_USER_PASSWORD=password123
+    ports:
+      - "3105:5080" # Web UI
+    volumes:
+      - o2_data:/data
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    volumes:
+      - ./infra/otel-config.yaml:/etc/otel/config.yaml
+      - ./backend/logs:/etc/app/logs:ro
+    command: ["--config=/etc/otel/config.yaml"]
+    ports:
+      - "3117:4317" # OTLP gRPC
+      - "3118:4318" # OTLP HTTP
+    depends_on:
+      - openobserve
+
+volumes:
+  o2_data:

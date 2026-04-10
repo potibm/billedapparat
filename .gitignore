@@ -1,0 +1,13 @@
+bin/
+.zed/
+.vscode/
+dist/
+.DS_Store 
+backend/data/
+backend/cmd/assets/
+backend/.env
+backend/.env.backup.*
+backend/config.yaml
+backend/coverage.*
+backend/tmp
+*.log

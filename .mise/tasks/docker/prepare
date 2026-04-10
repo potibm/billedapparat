@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#MISE description="Setup Docker buildx builder (Internal)"
+#MISE hide=true
+
+set -e 
+
+if ! docker buildx inspect billedapparat-builder >/dev/null 2>&1; then
+    echo "🔧 Creating buildx builder 'billedapparat-builder'..."
+    docker buildx create --name billedapparat-builder --use --bootstrap
+else
+    echo "✅ Using existing buildx builder 'billedapparat-builder'"
+    docker buildx use billedapparat-builder
+    docker buildx inspect --bootstrap > /dev/null
+fi
