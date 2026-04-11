@@ -6,8 +6,7 @@
     "skipLibCheck": true,
     "paths": {
       "@core/*": ["./src/core/*"],
-      "@admin/*": ["./src/apps/admin/*"],
-      "@pos/*": ["./src/apps/pos/*"]
+      "@splash/*": ["./src/apps/splash/*"]
     },
 
     /* Bundler mode */
