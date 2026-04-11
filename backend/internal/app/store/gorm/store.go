@@ -13,6 +13,7 @@ import (
 
 const (
 	defaultDirectory = "data/db"
+	defaultDirMode   = 0o755
 )
 
 type Store struct {
@@ -29,16 +30,18 @@ func NewSqliteStore(filename string) (*Store, error) {
 	}
 
 	dbPath := filepath.Join(defaultDirectory, filename+".db")
-	if err := os.MkdirAll(defaultDirectory, 0755); err != nil {
+	if err := os.MkdirAll(defaultDirectory, defaultDirMode); err != nil {
 		return nil, fmt.Errorf("failed to create database directory: %w", err)
 	}
 
 	dsn := fmt.Sprintf("%s?_busy_timeout=5000", dbPath)
+
 	return newStore(dsn)
 }
 
 func NewSqliteInMemoryStore() (*Store, error) {
 	dsn := "file::memory:?cache=shared"
+
 	return newStore(dsn)
 }
 
@@ -47,6 +50,7 @@ func (s *Store) Close() error {
 	if err != nil {
 		return fmt.Errorf("failed to get underlying database connection: %w", err)
 	}
+
 	return sqlDB.Close()
 }
 
@@ -58,8 +62,15 @@ func newStore(dsn string) (*Store, error) {
 
 	sqlDB, err := db.DB()
 	if err == nil {
-		sqlDB.Exec("PRAGMA journal_mode = WAL;")
-		sqlDB.Exec("PRAGMA foreign_keys = ON;")
+		_, err = sqlDB.Exec("PRAGMA journal_mode = WAL;")
+		if err != nil {
+			return nil, fmt.Errorf("failed to set journal mode: %w", err)
+		}
+
+		_, err = sqlDB.Exec("PRAGMA foreign_keys = ON;")
+		if err != nil {
+			return nil, fmt.Errorf("failed to set foreign keys: %w", err)
+		}
 	}
 
 	if err := db.AutoMigrate(allModels...); err != nil {

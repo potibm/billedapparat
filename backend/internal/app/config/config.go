@@ -18,13 +18,11 @@ const (
 	DefaultDBFilename = "billedapparat"
 )
 
-var (
-	DefaultDateOptions = DateFormatOptionsConfig{
-		"weekday": "long",
-		"hour":    "2-digit",
-		"minute":  "2-digit",
-	}
-)
+var DefaultDateOptions = DateFormatOptionsConfig{
+	"weekday": "long",
+	"hour":    "2-digit",
+	"minute":  "2-digit",
+}
 
 func InitViper() {
 	viper.AutomaticEnv()

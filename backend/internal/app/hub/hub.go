@@ -20,6 +20,11 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
+const (
+	defaultShutdownTimeout   = 5 * time.Second
+	defaultReadHeaderTimeout = 3 * time.Second
+)
+
 type Config struct {
 	Port        int
 	Store       gorm.Store
@@ -34,13 +39,43 @@ type Server struct {
 	cfg         config.AppConfig
 }
 
-func NewServer(config Config) (*Server, error) {
+func NewServer(cfg Config) (*Server, error) {
 	return &Server{
-		port:        config.Port,
-		store:       config.Store,
-		staticFiles: config.StaticFiles,
-		cfg:         config.Cfg,
+		port:        cfg.Port,
+		store:       cfg.Store,
+		staticFiles: cfg.StaticFiles,
+		cfg:         cfg.Cfg,
 	}, nil
+}
+
+func (s *Server) Run(ctx context.Context) error {
+	router, err := s.setupRouter()
+	if err != nil {
+		return fmt.Errorf("setup router: %w", err)
+	}
+
+	srv := &http.Server{
+		Addr:              ":" + strconv.Itoa(s.port),
+		ReadHeaderTimeout: defaultReadHeaderTimeout,
+		Handler:           router,
+	}
+
+	// Start server in Goroutine
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("listen", "error", err)
+		}
+	}()
+
+	slog.Info("Hub server is up", "port", s.port)
+
+	<-ctx.Done()
+	slog.Info("Shutting down server gracefully...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), defaultShutdownTimeout)
+	defer cancel()
+
+	return srv.Shutdown(shutdownCtx)
 }
 
 func (s *Server) setupRouter() (*gin.Engine, error) {
@@ -99,33 +134,4 @@ func (s *Server) createCorsMiddleware() gin.HandlerFunc {
 	corsConfig.AddExposeHeaders("X-Total-Count", "Content-Disposition")
 
 	return cors.New(corsConfig)
-}
-
-func (s *Server) Run(ctx context.Context) error {
-	router, err := s.setupRouter()
-	if err != nil {
-		return fmt.Errorf("setup router: %w", err)
-	}
-
-	srv := &http.Server{
-		Addr:    ":" + strconv.Itoa(s.port),
-		Handler: router,
-	}
-
-	// Server in einer Goroutine starten
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("listen", "error", err)
-		}
-	}()
-
-	slog.Info("Hub server is up", "port", s.port)
-
-	<-ctx.Done()
-	slog.Info("Shutting down server gracefully...")
-
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	return srv.Shutdown(shutdownCtx)
 }

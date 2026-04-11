@@ -46,6 +46,7 @@ func NewServeCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("database error: %w", err)
 			}
+
 			defer func() {
 				if err := dbStore.Close(); err != nil {
 					slog.Error("failed to close database", "error", err)

@@ -10,7 +10,6 @@ import (
 var (
 	validDbFilename = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 	validLocale     = regexp.MustCompile(`^[a-zA-Z]{2}-[A-Z]{2}$`)
-	validCurrency   = regexp.MustCompile(`^[A-Z]{3}$`)
 )
 
 func (c *Config) Validate() error {

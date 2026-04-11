@@ -11,7 +11,8 @@ import (
 )
 
 type dbSlide struct {
-	gorm.Model
+	gormModel
+
 	Source     string `gorm:"uniqueIndex:idx_ext"`
 	ExternalID string `gorm:"uniqueIndex:idx_ext"`
 }
@@ -30,16 +31,16 @@ func (r *slideRepository) Save(ctx context.Context, slide *domain.Slide) error {
 	err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(dbObj).Error
-
 	if err == nil {
-		slide.ID = int64(dbObj.ID)
+		slide.ID = dbObj.ID
 	}
+
 	return err
 }
 
 func (s *dbSlide) toDomain() *domain.Slide {
 	return &domain.Slide{
-		ID:     int64(s.ID),
+		ID:     s.ID,
 		Source: s.Source,
 	}
 }
@@ -57,6 +58,7 @@ func (r *slideRepository) Delete(ctx context.Context, id uint) error {
 
 func (r *slideRepository) GetActive(ctx context.Context) ([]domain.Slide, error) {
 	var dbSlides []dbSlide
+
 	err := r.db.WithContext(ctx).Find(&dbSlides).Error
 	if err != nil {
 		return nil, err
