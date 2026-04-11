@@ -70,12 +70,6 @@ linters:
       - (^|/)third_party(/|$)
       - (^|/)builtin(/|$)
     rules:
-      - path: tests/e2e/init_test_sumup.go
-        linters:
-          - mnd
-      - path: internal/app/utils/seed.go
-        linters:
-          - mnd
       - path: _test\.go$
         linters:
           - gosec
