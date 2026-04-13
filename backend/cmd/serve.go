@@ -122,8 +122,8 @@ func NewServeCmd() *cobra.Command {
 			*/
 			server, err := hub.NewServer(hub.Config{
 				Port:        port,
-				Store:       *dbStore,
 				StaticFiles: staticFiles,
+				SlideRepo:   dbStore.NewSlideRepository(),
 			})
 			if err != nil {
 				return fmt.Errorf("failed to initialize server: %w", err)

@@ -1,73 +1,98 @@
 package gorm
 
 import (
-	"context"
+	"log/slog"
+	"time"
 
 	"github.com/potibm/billedapparat/internal/app/domain"
-	"github.com/potibm/billedapparat/internal/app/repository"
-
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type dbSlide struct {
-	gormModel
+	GormModel
 
-	Source     string `gorm:"uniqueIndex:idx_ext"`
-	ExternalID string `gorm:"uniqueIndex:idx_ext"`
+	// status and type
+	Type   string `gorm:"index"` // sponsor, social, news
+	Status string `gorm:"index"` // active, pending, hidden
+
+	Source     *string `gorm:"uniqueIndex:idx_ext"`
+	ExternalID *string `gorm:"uniqueIndex:idx_ext"`
+
+	AuthorDisplayName string
+	AuthorHandle      string
+	AuthorAvatarURL   string
+
+	// Content
+	ContentText      string
+	MediaURLOriginal string
+	MediaURLLocal    string
+
+	// Metadata
+	OriginCreatedAt time.Time
 }
 
-type slideRepository struct {
-	db *gorm.DB
-}
-
-func NewSlideRepository(db *gorm.DB) repository.SlideRepository {
-	return &slideRepository{db: db}
-}
-
-func (r *slideRepository) Save(ctx context.Context, slide *domain.Slide) error {
-	dbObj := fromDomain(slide)
-
-	err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).Create(dbObj).Error
-	if err == nil {
-		slide.ID = dbObj.ID
-	}
-
-	return err
-}
-
-func (s *dbSlide) toDomain() *domain.Slide {
-	return &domain.Slide{
-		ID:     s.ID,
-		Source: s.Source,
-	}
+func (dbSlide) TableName() string {
+	return "slides"
 }
 
 func fromDomain(s *domain.Slide) *dbSlide {
-	return &dbSlide{
-		Source:     s.Source,
-		ExternalID: s.ExternalID,
-	}
-}
+	db := &dbSlide{
+		GormModel: GormModel{ID: s.ID},
 
-func (r *slideRepository) Delete(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&dbSlide{}, id).Error
-}
-
-func (r *slideRepository) GetActive(ctx context.Context) ([]domain.Slide, error) {
-	var dbSlides []dbSlide
-
-	err := r.db.WithContext(ctx).Find(&dbSlides).Error
-	if err != nil {
-		return nil, err
+		Type:              string(s.Content.Type),
+		Status:            s.Status,
+		AuthorDisplayName: s.Author.DisplayName,
+		AuthorHandle:      s.Author.Username,
+		AuthorAvatarURL:   s.Author.AvatarURL,
+		ContentText:       s.Content.Text,
+		MediaURLOriginal:  s.MediaURLOriginal,
+		OriginCreatedAt:   s.OriginCreatedAt,
 	}
 
+	if s.Source != "" {
+		db.Source = &s.Source
+	}
+
+	if s.ExternalID != "" {
+		db.ExternalID = &s.ExternalID
+	}
+
+	return db
+}
+
+func (s *dbSlide) toDomain() *domain.Slide {
+	ds := &domain.Slide{
+		ID:     s.ID,
+		Status: s.Status,
+		Author: domain.Author{
+			DisplayName: s.AuthorDisplayName,
+			Username:    s.AuthorHandle,
+			AvatarURL:   s.AuthorAvatarURL,
+		},
+		Content: domain.Content{
+			Type: domain.SlideType(s.Type),
+			Text: s.ContentText,
+		},
+		MediaURLOriginal: s.MediaURLOriginal,
+		OriginCreatedAt:  s.OriginCreatedAt,
+	}
+
+	if s.Source != nil {
+		ds.Source = *s.Source
+	}
+
+	if s.ExternalID != nil {
+		ds.ExternalID = *s.ExternalID
+	}
+
+	return ds
+}
+
+func toDomainSlice(dbSlides []dbSlide) []domain.Slide {
 	slides := make([]domain.Slide, len(dbSlides))
-	for i, dbSlide := range dbSlides {
-		slides[i] = *dbSlide.toDomain()
+	for i, s := range dbSlides {
+		slog.Info("Converting dbSlide to domain.Slide in slice", "id", s.ID, "type", s.Type, "status", s.Status)
+		slides[i] = *s.toDomain()
 	}
 
-	return slides, nil
+	return slides
 }

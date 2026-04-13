@@ -1,9 +1,9 @@
-import { Splash } from "@splash/pages/Splash";
+import { Router } from "./router/Router";
 
 function App() {
   return (
     <div className="App">
-      <Splash />
+      <Router />
     </div>
   );
 }

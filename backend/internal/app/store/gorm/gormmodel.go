@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type gormModel struct {
+type GormModel struct {
 	ID        int64          `json:"id"        gorm:"primarykey"`
 	CreatedAt time.Time      `json:"createdAt"`
 	UpdatedAt time.Time      `json:"updatedAt"`
