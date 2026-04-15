@@ -19,7 +19,7 @@ export default defineConfig({
     port: frontendPort,
     strictPort: true,
     proxy: {
-      "/api": {
+      "^/(api|media|style)": {
         target: backendTarget,
         changeOrigin: true,
         ws: true,

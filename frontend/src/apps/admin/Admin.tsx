@@ -1,10 +1,9 @@
 import { Admin, Resource } from "react-admin";
-import jsonServerProvider from "ra-data-json-server";
 import slides from "./resources/slides";
+import sponsors from "./resources/sponsors";
 import { MyTheme, MyDarkTheme } from "./theme/MyTheme";
 import { MyLayout } from "./theme/MyLayout";
-
-const dataProvider = jsonServerProvider("/api/admin");
+import { dataProvider } from "./providers/dataProvider";
 
 export const AdminApp = () => (
   <Admin
@@ -15,6 +14,7 @@ export const AdminApp = () => (
     layout={MyLayout}
     title="Billedapparat Admin"
   >
+    <Resource name="sponsors" {...sponsors} />
     <Resource name="slides" {...slides} />
   </Admin>
 );

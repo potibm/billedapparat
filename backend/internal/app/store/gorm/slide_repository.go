@@ -64,7 +64,7 @@ func (r *slideRepository) AdminList(ctx context.Context, p repository.AdminListP
 	query := r.db.WithContext(ctx).Model(&dbSlide{})
 
 	if p.Type != "" {
-		query = query.Where("content_type = ?", p.Type)
+		query = query.Where("type = ?", p.Type)
 	}
 
 	if err := query.Count(&total).Error; err != nil {
