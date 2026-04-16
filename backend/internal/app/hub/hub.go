@@ -105,13 +105,12 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	r.Use(static.Serve("/", folder))
 
 	admin := r.Group("/api/admin")
-	{
-		admin.GET("/slides", s.adminListSlides)
-		admin.POST("/slides", s.adminCreateSlide)
-		admin.GET("/slides/:id", s.adminGetSlide)
-		admin.PUT("/slides/:id", s.adminUpdateSlide)
-		admin.DELETE("/slides/:id", s.adminDeleteSlide)
-	}
+
+	admin.GET("/slides", s.adminListSlides)
+	admin.POST("/slides", s.adminCreateSlide)
+	admin.GET("/slides/:id", s.adminGetSlide)
+	admin.PUT("/slides/:id", s.adminUpdateSlide)
+	admin.DELETE("/slides/:id", s.adminDeleteSlide)
 
 	r.NoRoute(func(c *gin.Context) {
 		if !strings.HasPrefix(c.Request.RequestURI, "/api") && !strings.Contains(c.Request.RequestURI, ".") {
