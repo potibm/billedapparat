@@ -1,96 +1,124 @@
 // src/apps/admin/dataProvider.ts
 import jsonServerProvider from "ra-data-json-server";
+import { CreateParams, DataProvider, UpdateParams } from "react-admin";
 
 const baseProvider = jsonServerProvider("/api/admin");
 
-export const dataProvider = {
+const BASE_RESOURCE = "slides";
+
+const slideResourceMap: Record<string, string> = {
+  sponsors: "sponsor",
+  news: "news",
+  timetable: "timetable",
+  social: "social",
+};
+
+interface SlideFormData {
+  status?: string;
+  content?: {
+    type?: string;
+    text?: string;
+  };
+  author?: {
+    display_name?: string;
+  };
+  display_options?: {
+    priority?: number | string;
+  };
+  image_upload?: {
+    rawFile?: File;
+  };
+  [key: string]: unknown;
+}
+
+const getActualResource = (resource: string): string => {
+  return slideResourceMap[resource] ? BASE_RESOURCE : resource;
+};
+
+export const dataProvider: DataProvider = {
   ...baseProvider,
 
-  // 1. LISTE: /sponsors -> /slides?type=sponsor
   getList: (resource, params) => {
-    if (resource === "sponsors") {
-      // Wir leiten die Anfrage an 'slides' um und schmuggeln den Filter rein
-      return baseProvider.getList("slides", {
+    const slideType = slideResourceMap[resource];
+    if (slideType) {
+      return baseProvider.getList(BASE_RESOURCE, {
         ...params,
-        filter: { ...params.filter, type: "sponsor" },
+        filter: { ...params.filter, type: slideType },
       });
     }
     return baseProvider.getList(resource, params);
   },
 
-  // 2. EINZEL-EINTRAG (für den Edit-View)
   getOne: (resource, params) => {
-    if (resource === "sponsors") {
-      return baseProvider.getOne("slides", params);
-    }
-    return baseProvider.getOne(resource, params);
+    return baseProvider.getOne(getActualResource(resource), params);
   },
 
-  // 3. LÖSCHEN
   delete: (resource, params) => {
-    if (resource === "sponsors") {
-      return baseProvider.delete("slides", params);
-    }
-    return baseProvider.delete(resource, params);
+    return baseProvider.delete(getActualResource(resource), params);
   },
 
   deleteMany: (resource, params) => {
-    if (resource === "sponsors") {
-      return baseProvider.deleteMany("slides", params);
-    }
-    return baseProvider.deleteMany(resource, params);
+    return baseProvider.deleteMany(getActualResource(resource), params);
   },
 
-  // Wir biegen sowohl create als auch update um
-  create: (resource: string, params: any) => {
-    if (resource !== "slides" && resource !== "sponsors")
-      return baseProvider.create(resource, params);
-    return handleFileUpload(resource, params, "POST");
+  create: (resource, params) => {
+    if (getActualResource(resource) === BASE_RESOURCE) {
+      return handleFileUpload(resource, params, "POST");
+    }
+    return baseProvider.create(resource, params);
   },
-  update: (resource: string, params: any) => {
-    if (resource !== "slides" && resource !== "sponsors")
-      return baseProvider.update(resource, params);
-    return handleFileUpload(resource, params, "PUT");
+
+  update: (resource, params) => {
+    if (getActualResource(resource) === BASE_RESOURCE) {
+      return handleFileUpload(resource, params, "PUT");
+    }
+    return baseProvider.update(resource, params);
   },
 };
 
-// Hilfsfunktion für den Multipart-Upload
 const handleFileUpload = (
   resource: string,
-  params: any,
+  params: UpdateParams | CreateParams,
   method: "POST" | "PUT",
 ) => {
-  // Falls kein Bild da ist, machen wir normales JSON
-  if (!params.data.image_upload || !params.data.image_upload.rawFile) {
-    if (method === "POST") return baseProvider.create(resource, params);
-    return baseProvider.update(resource, params);
+  const mappedType = slideResourceMap[resource];
+  const actualResource = getActualResource(resource);
+
+  const data = params.data as SlideFormData;
+  const slideType = mappedType || data.content?.type || "slide";
+
+  if (!data.image_upload || !data.image_upload.rawFile) {
+    if (mappedType) {
+      data.content = { ...data.content, type: slideType };
+    }
+
+    const newParams = { ...params, data };
+
+    if (method === "POST") {
+      return baseProvider.create(actualResource, newParams as CreateParams);
+    }
+    return baseProvider.update(actualResource, newParams as UpdateParams);
   }
 
   const formData = new FormData();
 
-  // Wir klopfen die verschachtelten Objekte flach, damit Go sie einfach lesen kann
-  formData.append("status", params.data.status || "active");
-  formData.append(
-    "content.type",
-    params.data.content?.type || (resource === "sponsors" ? "sponsor" : "news"),
-  );
-  formData.append("content.text", params.data.content?.text || "");
-  formData.append(
-    "author.display_name",
-    params.data.author?.display_name || "",
-  );
+  formData.append("status", data.status || "active");
+  formData.append("content.type", slideType);
+  formData.append("content.text", data.content?.text || "");
+  formData.append("author.display_name", data.author?.display_name || "");
   formData.append(
     "display_options.priority",
-    params.data.display_options?.priority?.toString() || "1",
+    data.display_options?.priority?.toString() || "1",
   );
 
-  // Die Datei selbst
-  formData.append("image_upload", params.data.image_upload.rawFile);
+  formData.append("image_upload", data.image_upload.rawFile);
+
+  const id = "id" in params ? params.id : "";
 
   const url =
     method === "PUT"
-      ? `/api/admin/slides/${params.id}` // Wir schicken alles an /slides
-      : `/api/admin/slides`;
+      ? `/api/admin/${BASE_RESOURCE}/${id}`
+      : `/api/admin/${BASE_RESOURCE}`;
 
   return fetch(url, {
     method: method,

@@ -1,33 +1,17 @@
+import { ImageEditPreviewField } from "@admin/components/fields/ImageEditPreviewField";
+import { ImageUploadInput } from "@admin/components/fields/ImageUploadInput";
+import { PriorityInput } from "@admin/components/fields/PriorityInput";
+import { StatusSelectInput } from "@admin/components/fields/StatusSelectInput";
 import {
   Edit,
   SimpleForm,
   TextInput,
-  ImageInput,
-  ImageField,
-  SelectInput,
   required,
-  useRecordContext,
-  NumberInput,
+  BooleanInput,
 } from "react-admin";
 
-// Eine kleine Hilfskomponente, um das aktuelle Logo schön anzuzeigen
-const CurrentLogoField = () => {
-  const record = useRecordContext();
-  if (!record || !record.media_url_original) return null;
-  return (
-    <div className="mb-4">
-      <p className="text-gray-400 text-xs mb-1">Current Logo</p>
-      <img
-        src={record.media_url_original}
-        alt="Current Logo"
-        className="max-w-[200px] max-h-[100px] ml-1.5 object-contain bg-gray-100 p-2 rounded"
-      />
-    </div>
-  );
-};
-
 export const SponsorEdit = () => (
-  <Edit title="Sponsor bearbeiten">
+  <Edit title="Edit Sponsor Screens">
     <SimpleForm>
       <TextInput
         source="content.text"
@@ -36,33 +20,18 @@ export const SponsorEdit = () => (
         fullWidth
       />
 
-      <CurrentLogoField />
+      <ImageEditPreviewField />
 
-      <ImageInput
-        source="image_upload"
-        label="Upload new sponsor slide (overwrite existing)"
-        placeholder={<p>Drag and drop a new image here</p>}
-      >
-        <ImageField source="src" title="title" />
-      </ImageInput>
+      <ImageUploadInput label="Change Slide" />
 
-      <NumberInput
-        source="display_options.priority"
-        label="Priority"
-        defaultValue={1}
-        min={1}
-        max={10}
-        step={1}
-        helperText="Higher number = higher visibility (e.g., 10 for main sponsors, 1 for standard)"
+      <PriorityInput />
+
+      <BooleanInput
+        source="content.allowSocialOverlay"
+        label="Allow social media overlay"
       />
 
-      <SelectInput
-        source="status"
-        choices={[
-          { id: "active", name: "Active" },
-          { id: "hidden", name: "Hidden" },
-        ]}
-      />
+      <StatusSelectInput />
     </SimpleForm>
   </Edit>
 );

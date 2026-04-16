@@ -1,52 +1,37 @@
+import { ImageUploadInput } from "@admin/components/fields/ImageUploadInput";
+import { PriorityInput } from "@admin/components/fields/PriorityInput";
+import { StatusSelectInput } from "@admin/components/fields/StatusSelectInput";
 import {
   Create,
   SimpleForm,
   TextInput,
-  ImageInput,
-  ImageField,
-  SelectInput,
   required,
-  NumberInput,
+  BooleanInput,
 } from "react-admin";
 
 export const SponsorCreate = () => (
-  <Create title="Neuen Sponsor hinzufügen">
+  <Create title="Add Sponsor Screen">
     <SimpleForm
       defaultValues={{ content: { type: "sponsor" }, status: "active" }}
     >
       <TextInput
         source="content.text"
-        label="Name des Sponsors"
+        label="Name of the Sponsor"
         validate={[required()]}
         fullWidth
       />
 
-      {/* Das Drag & Drop Feld */}
-      <ImageInput
-        source="image_upload"
-        label="Logo hochladen"
-        placeholder={<p>Logo hierher ziehen oder klicken</p>}
-      >
-        <ImageField source="src" title="title" />
-      </ImageInput>
+      <ImageUploadInput label="Upload Slide" />
 
-      <NumberInput
-        source="display_options.priority"
-        label="Priorität"
-        defaultValue={1}
-        min={1}
-        max={10}
-        step={1}
-        helperText="Höhere Zahl = höhere Sichtbarkeit (z.B. 10 für Hauptsponsoren, 0 für Standard)"
+      <PriorityInput />
+
+      <BooleanInput
+        source="content.allowSocialOverlay"
+        label="Allow social media overlay"
+        defaultValue={true}
       />
 
-      <SelectInput
-        source="status"
-        choices={[
-          { id: "active", name: "Aktiv" },
-          { id: "hidden", name: "Ausgeblendet" },
-        ]}
-      />
+      <StatusSelectInput />
     </SimpleForm>
   </Create>
 );

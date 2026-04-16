@@ -60,6 +60,8 @@ func (s *Server) Run(ctx context.Context) error {
 		Handler:           router,
 	}
 
+	s.StartMediaGarbageCollector()
+
 	// Start server in Goroutine
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

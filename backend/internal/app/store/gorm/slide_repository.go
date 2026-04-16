@@ -94,3 +94,14 @@ func (r *slideRepository) GetByID(ctx context.Context, id int64) (*domain.Slide,
 
 	return dbModel.toDomain(), nil
 }
+
+func (r *slideRepository) GetAllMediaURLs(ctx context.Context) ([]string, error) {
+	var urls []string
+
+	err := r.db.WithContext(ctx).
+		Model(&domain.Slide{}).
+		Where("media_url_original != ?", "").
+		Pluck("media_url_original", &urls).Error
+
+	return urls, err
+}

@@ -1,3 +1,5 @@
+github.com/HugoSmits86/nativewebp v1.2.1 h1:dJbfulw6WRf6rTcth6TwgEVwlBeP3vdZIJUIoySmeHQ=
+github.com/HugoSmits86/nativewebp v1.2.1/go.mod h1:YNQuWenlVmSUUASVNhTDwf4d7FwYQGbGhklC8p72Vr8=
 github.com/bytedance/gopkg v0.1.4 h1:oZnQwnX82KAIWb7033bEwtxvTqXcYMxDBaQxo5JJHWM=
 github.com/bytedance/gopkg v0.1.4/go.mod h1:v1zWfPm21Fb+OsyXN2VAHdL6TBb2L88anLQgdyje6R4=
 github.com/bytedance/sonic v1.15.0 h1:/PXeWFaR5ElNcVE84U0dOHjiMHQOwNIx3K4ymzh/uSE=

@@ -26,6 +26,11 @@ type dbSlide struct {
 	MediaURLOriginal string
 	MediaURLLocal    string
 
+	// Display options
+	AllowSocialOverlay bool
+	Priority           int
+	IsUrgent           bool
+
 	// Metadata
 	OriginCreatedAt time.Time
 }
@@ -38,14 +43,17 @@ func fromDomain(s *domain.Slide) *dbSlide {
 	db := &dbSlide{
 		GormModel: GormModel{ID: s.ID},
 
-		Type:              string(s.Content.Type),
-		Status:            s.Status,
-		AuthorDisplayName: s.Author.DisplayName,
-		AuthorHandle:      s.Author.Username,
-		AuthorAvatarURL:   s.Author.AvatarURL,
-		ContentText:       s.Content.Text,
-		MediaURLOriginal:  s.MediaURLOriginal,
-		OriginCreatedAt:   s.OriginCreatedAt,
+		Type:               string(s.Content.Type),
+		Status:             s.Status,
+		AuthorDisplayName:  s.Author.DisplayName,
+		AuthorHandle:       s.Author.Username,
+		AuthorAvatarURL:    s.Author.AvatarURL,
+		ContentText:        s.Content.Text,
+		MediaURLOriginal:   s.MediaURLOriginal,
+		OriginCreatedAt:    s.OriginCreatedAt,
+		AllowSocialOverlay: s.DisplayOptions.AllowSocialOverlay,
+		IsUrgent:           s.DisplayOptions.IsUrgent,
+		Priority:           s.DisplayOptions.Priority,
 	}
 
 	if s.Source != "" {
@@ -72,6 +80,12 @@ func (s *dbSlide) toDomain() *domain.Slide {
 			Type: domain.SlideType(s.Type),
 			Text: s.ContentText,
 		},
+		DisplayOptions: domain.DisplayOptions{
+			AllowSocialOverlay: s.AllowSocialOverlay,
+			IsUrgent:           s.IsUrgent,
+			Priority:           s.Priority,
+		},
+
 		MediaURLOriginal: s.MediaURLOriginal,
 		OriginCreatedAt:  s.OriginCreatedAt,
 	}
