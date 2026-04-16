@@ -74,6 +74,8 @@ func (s *Server) adminCreateSlide(c *gin.Context) {
 		return
 	}
 
+	s.streamer.Broadcast("CREATE", slide)
+
 	c.JSON(http.StatusCreated, slide)
 }
 
@@ -100,6 +102,8 @@ func (s *Server) adminUpdateSlide(c *gin.Context) {
 		return
 	}
 
+	s.streamer.Broadcast("UPDATE", slide)
+
 	c.JSON(http.StatusOK, slide)
 }
 
@@ -116,6 +120,8 @@ func (s *Server) adminDeleteSlide(c *gin.Context) {
 
 		return
 	}
+
+	s.streamer.Broadcast("DELETE", id)
 
 	c.JSON(http.StatusOK, gin.H{"id": id})
 }

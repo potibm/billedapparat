@@ -37,6 +37,7 @@ type Server struct {
 	staticFiles embed.FS
 	slideRepo   repository.SlideRepository
 	cfg         config.AppConfig
+	streamer    *Streamer
 }
 
 func NewServer(cfg Config) (*Server, error) {
@@ -45,6 +46,7 @@ func NewServer(cfg Config) (*Server, error) {
 		staticFiles: cfg.StaticFiles,
 		slideRepo:   cfg.SlideRepo,
 		cfg:         cfg.Cfg,
+		streamer:    NewStreamer(),
 	}, nil
 }
 
@@ -104,8 +106,10 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 
 	r.Use(static.Serve("/", folder))
 
-	admin := r.Group("/api/admin")
+	api := r.Group("/api")
+	api.GET("/stream", s.streamSlides)
 
+	admin := r.Group("/api/admin")
 	admin.GET("/slides", s.adminListSlides)
 	admin.POST("/slides", s.adminCreateSlide)
 	admin.GET("/slides/:id", s.adminGetSlide)
