@@ -1,0 +1,138 @@
+name: Docker Release Build
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
+
+permissions:
+  actions: read
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Extract metadata (tags + labels + annotations)
+        id: meta
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          bake-target: billedapparat
+          tags: |
+            type=ref,event=tag,prefix=,suffix=
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+
+      - name: Log in to registry
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate build date
+        id: builddate
+        run: echo "value=$(date --iso-8601=seconds)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image
+        id: bake
+        uses: docker/bake-action@82490499d2e5613fcead7e128237ef0b0ea210f7 # v7.0.0
+        with:
+          files: |
+            ./docker-bake.hcl
+            cwd://${{ steps.meta.outputs.bake-file-tags }}
+            cwd://${{ steps.meta.outputs.bake-file-labels }}
+            cwd://${{ steps.meta.outputs.bake-file-annotations }}
+          push: true
+          targets: billedapparat
+          set: |
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
+            billedapparat.args.VERSION=${{ steps.meta.outputs.version }}
+            billedapparat.args.BUILD_DATE=${{ steps.builddate.outputs.value }}            
+            billedapparat.labels.org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            billedapparat.labels.org.opencontainers.image.created=${{ steps.builddate.outputs.value }}
+            billedapparat.labels.org.opencontainers.image.description=A POS system for demoparties
+            billedapparat.labels.org.opencontainers.image.title=Billedapparat
+            billedapparat.labels.org.opencontainers.image.licenses=MIT
+            billedapparat.annotations=index,manifest:org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            billedapparat.annotations=index,manifest:org.opencontainers.image.created=${{ steps.builddate.outputs.value }}
+
+      - name: Get digest
+        id: digest
+        run: |
+          IMAGE=${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          OUT=$(docker buildx imagetools inspect "$IMAGE")
+          echo "$OUT"
+          DIGEST=$(echo "$OUT" | grep -E '^Digest:' | awk '{print $2}')
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: Generate SBOM with Anchore
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          output-file: sbom.spdx.json
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          upload-release-assets: false
+
+      - name: Publish SBOM Artifact
+        uses: anchore/sbom-action/publish-sbom@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          sbom-artifact-match: ".*\\.spdx\\.json$"
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
+        with:
+          cosign-release: "v2.5.0"
+
+      - name: Sign image with Cosign
+        run: |
+          cosign sign --yes ${{ env.IMAGE_NAME }}@${{ steps.digest.outputs.digest }}
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+
+      - name: Attest description
+        run: |
+          jq -n --arg version "${{ steps.meta.outputs.version }}" \
+                --arg built_at "${{ steps.builddate.outputs.value }}" \
+                '{
+                  description: "Image built and signed via GitHub Actions",
+                  project: "billedapparat",
+                  version: $version,
+                  built_at: $built_at,
+                  repository: "https://github.com/potibm/billedapparat"
+                }' > description.json
+          cosign attest --yes \
+            --predicate description.json \
+            --type custom \
+            ${{ env.IMAGE_NAME }}@${{ steps.digest.outputs.digest }}
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+
+      - name: Attest SBOM with Cosign
+        run: |
+          cosign attest --yes \
+            --predicate sbom.spdx.json \
+            --type spdx \
+            ${{ env.IMAGE_NAME }}@${{ steps.digest.outputs.digest }}
+        env:
+          COSIGN_EXPERIMENTAL: "1"

@@ -1,0 +1,43 @@
+name: Verify Image Attestations
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Image version tag (e.g. 2.3.1)"
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
+
+permissions:
+  id-token: write # Required for keyless verification
+
+jobs:
+  verify-attestations:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
+        with:
+          cosign-release: "v2.5.0"
+
+      - name: Get image digest
+        id: digest
+        run: |
+          IMAGE=${{ env.IMAGE_NAME }}:${{ github.event.inputs.version }}
+          DIGEST=$(docker buildx imagetools inspect "$IMAGE" | grep -m1 Digest | awk '{print $2}')
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: Verify SBOM attestation
+        run: |
+          cosign verify-attestation \
+            --type spdx \
+            --certificate-identity-regexp "github.com/${{ github.repository }}/.*" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            ${{ env.IMAGE_NAME }}@${{ steps.digest.outputs.digest }}
+        env:
+          COSIGN_EXPERIMENTAL: "1"

@@ -1,0 +1,34 @@
+name: GHCR Cleanup
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch multi-platform package version SHAs
+        id: multi-arch-digests
+        run: |
+          DIGESTS=$(docker manifest inspect ghcr.io/potibm/billedapparat | jq -r '.manifests[].digest' | paste -s -d ' ' -)
+          echo "multi-arch-digests=$DIGESTS" >> "$GITHUB_ENV"
+
+      - name: Run container-retention-policy
+        uses: snok/container-retention-policy@3b0972b2276b171b212f8c4efbca59ebba26eceb # v3.0.1
+        with:
+          image-names: billedapparat
+          account: user
+          cut-off: 60d
+          keep-n-most-recent: 20
+          token: ${{ secrets.GHCR_PAT }}
+          skip-shas: ${{ env.multi-arch-digests }}
+          dry-run: false
