@@ -8,7 +8,10 @@ interface LoggerComponentBadgeStyle {
 export const LOGGER_COMPONENTS: Record<string, LoggerComponentBadgeStyle> = {
   Admin: { emoji: "🔑", color: "blue" },
   Api: { emoji: "📡", color: "purple" },
+  Slides: { emoji: "🖼️", color: "green" },
+  Slideshow: { emoji: "🎬", color: "orange" },
   Core: { emoji: "⚪", color: "black" },
+  Effect: { emoji: "✨", color: "cyan" },
 } as const;
 
 type ComponentKey = keyof typeof LOGGER_COMPONENTS;

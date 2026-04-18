@@ -7,6 +7,7 @@ import {
   RouteObject,
 } from "react-router-dom"; // react-router-dom ist für Webprojekte Standard
 import { AdminApp } from "../apps/admin/Admin";
+import { BeamerApp } from "../apps/beamer/BeamerApp";
 
 export const Router: React.FC = () => {
   const router = useMemo(() => {
@@ -18,6 +19,10 @@ export const Router: React.FC = () => {
       {
         path: "/admin/*",
         element: <AdminApp />,
+      },
+      {
+        path: "/beamer/*",
+        element: <BeamerApp />,
       },
       {
         path: "*",
