@@ -1,6 +1,7 @@
 package media
 
 import (
+	"fmt"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -10,6 +11,8 @@ import (
 	"path/filepath"
 
 	"github.com/HugoSmits86/nativewebp"
+	"github.com/google/uuid"
+	"github.com/potibm/billedapparat/internal/app/config"
 	"golang.org/x/image/draw"
 )
 
@@ -58,4 +61,17 @@ func ResizeAndSave(srcReader io.Reader, destPath string, maxWidth, maxHeight int
 
 func ResizeAndSaveSlide(srcReader io.Reader, destPath string) error {
 	return ResizeAndSave(srcReader, destPath, slideMaxWidth, slideMaxHeight)
+}
+
+func ProcessAndSaveSlide(file io.Reader) (string, error) {
+	filename := fmt.Sprintf("%s.webp", uuid.New().String())
+	localFilePath := filepath.Join(config.MediaDirname, filename)
+
+	if err := ResizeAndSaveSlide(file, localFilePath); err != nil {
+		return "", err
+	}
+
+	publicURL := config.MediaURL + filename
+
+	return publicURL, nil
 }

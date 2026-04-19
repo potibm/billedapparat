@@ -29,14 +29,14 @@ type Config struct {
 	Port        int
 	StaticFiles embed.FS
 	SlideRepo   repository.SlideRepository
-	Cfg         config.AppConfig
+	Cfg         config.Config
 }
 
 type Server struct {
 	port        int
 	staticFiles embed.FS
 	slideRepo   repository.SlideRepository
-	cfg         config.AppConfig
+	cfg         config.Config
 	streamer    *Streamer
 }
 
@@ -83,7 +83,7 @@ func (s *Server) Run(ctx context.Context) error {
 }
 
 func (s *Server) setupRouter() (*gin.Engine, error) {
-	gin.SetMode(s.cfg.GinMode)
+	gin.SetMode(s.cfg.App.GinMode)
 
 	r := gin.New()
 
@@ -116,6 +116,10 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	admin.PUT("/slides/:id", s.adminUpdateSlide)
 	admin.DELETE("/slides/:id", s.adminDeleteSlide)
 
+	internal := r.Group("/api/internal")
+	internal.Use(APIKeyAuthMiddleware(s.cfg.API.AdminAPIKey))
+	internal.POST("/import", s.internalImportDirectory)
+
 	r.NoRoute(func(c *gin.Context) {
 		if !strings.HasPrefix(c.Request.RequestURI, "/api") && !strings.Contains(c.Request.RequestURI, ".") {
 			file, _ := s.staticFiles.ReadFile("assets/index.html")
@@ -131,8 +135,8 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 }
 
 func (s *Server) registerCorsMiddleware(r *gin.Engine) {
-	if len(s.cfg.CorsAllowOrigins) > 0 {
-		slog.Info("CORS middleware enabled", "origins", s.cfg.CorsAllowOrigins)
+	if len(s.cfg.App.CorsAllowOrigins) > 0 {
+		slog.Info("CORS middleware enabled", "origins", s.cfg.App.CorsAllowOrigins)
 		r.Use(s.createCorsMiddleware())
 	} else {
 		slog.Info("CORS middleware disabled (no origins configured)")
@@ -141,10 +145,10 @@ func (s *Server) registerCorsMiddleware(r *gin.Engine) {
 
 func (s *Server) createCorsMiddleware() gin.HandlerFunc {
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = s.cfg.CorsAllowOrigins
+	corsConfig.AllowOrigins = s.cfg.App.CorsAllowOrigins
 	corsConfig.AllowAllOrigins = false
 	corsConfig.AllowCredentials = true
-	corsConfig.AddAllowHeaders("Authorization", "Credentials")
+	corsConfig.AddAllowHeaders("Authorization", "Credentials", "Content-Type", "X-API-Key", "Accept")
 	corsConfig.AddExposeHeaders("X-Total-Count", "Content-Disposition")
 
 	return cors.New(corsConfig)

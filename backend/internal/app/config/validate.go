@@ -26,6 +26,20 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	if err := c.API.Validate(c.App.Environment); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (f *APIConfig) Validate(environment string) error {
+	if f.AdminAPIKey == DefaultAPIAdminKey && environment == "production" {
+		return fmt.Errorf(
+			"admin_api_key is set to the default value in production environment, which is not allowed for security reasons",
+		)
+	}
+
 	return nil
 }
 

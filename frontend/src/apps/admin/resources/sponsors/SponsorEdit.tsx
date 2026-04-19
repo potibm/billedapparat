@@ -27,7 +27,7 @@ export const SponsorEdit = () => (
       <PriorityInput />
 
       <BooleanInput
-        source="content.allowSocialOverlay"
+        source="display_options.allow_social_overlay"
         label="Allow social media overlay"
       />
 

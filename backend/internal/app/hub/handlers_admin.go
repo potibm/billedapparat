@@ -1,14 +1,11 @@
 package hub
 
 import (
-	"fmt"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/potibm/billedapparat/internal/app/domain"
 	"github.com/potibm/billedapparat/internal/app/media"
 	"github.com/potibm/billedapparat/internal/app/repository"
@@ -126,11 +123,10 @@ func (s *Server) adminDeleteSlide(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": id})
 }
 
-// Hilfsfunktion 1: Kümmert sich NUR um das Bild-Resizing und Speichern.
 func (s *Server) processSlideImage(c *gin.Context, fieldName string) (string, error) {
 	fileHeader, err := c.FormFile(fieldName)
 	if err != nil {
-		return "", err // Keine Datei hochgeladen (ist okay!)
+		return "", err
 	}
 
 	file, err := fileHeader.Open()
@@ -139,16 +135,7 @@ func (s *Server) processSlideImage(c *gin.Context, fieldName string) (string, er
 	}
 	defer file.Close()
 
-	filename := fmt.Sprintf("%s.webp", uuid.New().String())
-	localFilePath := filepath.Join("data", "media", filename)
-
-	if err := media.ResizeAndSaveSlide(file, localFilePath); err != nil {
-		return "", err
-	}
-
-	publicURL := "/media/" + filename
-
-	return publicURL, nil
+	return media.ProcessAndSaveSlide(file)
 }
 
 func (s *Server) parseSlidePayload(c *gin.Context) (*domain.Slide, error) {
@@ -157,10 +144,17 @@ func (s *Server) parseSlidePayload(c *gin.Context) (*domain.Slide, error) {
 	contentType := c.GetHeader("Content-Type")
 
 	if strings.Contains(contentType, "multipart/form-data") {
+		priority, err := strconv.Atoi(c.PostForm("display_options.priority"))
+		if err != nil {
+			priority = 1
+		}
+
 		slide.Status = c.PostForm("status")
 		slide.Content.Type = domain.SlideType(c.PostForm("content.type"))
 		slide.Content.Text = c.PostForm("content.text")
-		slide.Author.DisplayName = c.PostForm("author.displayName")
+		slide.Author.DisplayName = c.PostForm("author.displa_nName")
+		slide.DisplayOptions.Priority = priority
+		slide.DisplayOptions.AllowSocialOverlay = c.PostForm("display_options.allow_social_overlay") == "true"
 
 		newPath, err := s.processSlideImage(c, "image_upload")
 		if err == nil && newPath != "" {

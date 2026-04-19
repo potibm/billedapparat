@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -91,6 +92,12 @@ func Execute() error {
 
 	rootCmd.AddCommand(NewConfigCmd())
 
+	importCmd := NewImportCmd()
+	importCmd.AddCommand(
+		NewImportSlidesCmd(),
+	)
+	rootCmd.AddCommand(importCmd)
+
 	return rootCmd.ExecuteContext(ctx)
 }
 
@@ -114,4 +121,15 @@ func loadConfig() error {
 
 func setupLogger(format, level string) {
 	initializer.InitLogger(format, level)
+}
+
+func confirm(question string) bool {
+	fmt.Printf("WARNING: %s\n", question)
+	fmt.Print("Are you sure? [y/N]: ")
+
+	reader := bufio.NewReader(os.Stdin)
+	response, _ := reader.ReadString('\n')
+	response = strings.TrimSpace(strings.ToLower(response))
+
+	return response == "y" || response == "yes"
 }

@@ -1,7 +1,6 @@
 package gorm
 
 import (
-	"log/slog"
 	"time"
 
 	"github.com/potibm/billedapparat/internal/app/domain"
@@ -104,7 +103,6 @@ func (s *dbSlide) toDomain() *domain.Slide {
 func toDomainSlice(dbSlides []dbSlide) []domain.Slide {
 	slides := make([]domain.Slide, len(dbSlides))
 	for i, s := range dbSlides {
-		slog.Info("Converting dbSlide to domain.Slide in slice", "id", s.ID, "type", s.Type, "status", s.Status)
 		slides[i] = *s.toDomain()
 	}
 

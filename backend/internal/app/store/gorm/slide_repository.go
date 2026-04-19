@@ -3,7 +3,6 @@ package gorm
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"github.com/potibm/billedapparat/internal/app/domain"
 	"github.com/potibm/billedapparat/internal/app/repository"
@@ -54,8 +53,6 @@ func (r *slideRepository) GetActive(ctx context.Context) ([]domain.Slide, error)
 }
 
 func (r *slideRepository) AdminList(ctx context.Context, p repository.AdminListParams) ([]domain.Slide, int64, error) {
-	slog.Info("AdminLists called")
-
 	var (
 		dbSlides []dbSlide
 		total    int64

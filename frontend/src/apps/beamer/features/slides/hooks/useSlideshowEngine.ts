@@ -34,6 +34,15 @@ export const useSlideshowEngine = () => {
       0,
     );
     let random = Math.random() * totalWeight;
+    logger.debug(
+      "Picking weighted slide",
+      "totalWeight",
+      totalWeight,
+      "candidates",
+      slides.map((s) => ({ id: s.id, priority: s.display_options?.priority })),
+      "randomValue",
+      random,
+    );
     for (const slide of slides) {
       const weight = Number(slide.display_options?.priority || 1);
       if (random < weight) return slide;
