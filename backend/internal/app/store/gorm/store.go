@@ -11,11 +11,6 @@ import (
 	"github.com/potibm/billedapparat/internal/app/config"
 )
 
-const (
-	defaultDirectory = "data/db"
-	defaultDirMode   = 0o755
-)
-
 type Store struct {
 	db *gorm.DB
 }
@@ -29,8 +24,8 @@ func NewSqliteStore(filename string) (*Store, error) {
 		filename = config.DefaultDBFilename
 	}
 
-	dbPath := filepath.Join(defaultDirectory, filename+".db")
-	if err := os.MkdirAll(defaultDirectory, defaultDirMode); err != nil {
+	dbPath := filepath.Join(config.DataDirname, filename+".db")
+	if err := os.MkdirAll(config.DataDirname, config.DataDirPerm); err != nil {
 		return nil, fmt.Errorf("failed to create database directory: %w", err)
 	}
 
@@ -52,6 +47,18 @@ func (s *Store) Close() error {
 	}
 
 	return sqlDB.Close()
+}
+
+func (s *Store) PurgeAll() error {
+	if err := s.db.Migrator().DropTable(allModels...); err != nil {
+		return fmt.Errorf("failed to drop tables: %w", err)
+	}
+
+	if err := s.db.AutoMigrate(allModels...); err != nil {
+		return fmt.Errorf("failed to recreate tables: %w", err)
+	}
+
+	return nil
 }
 
 func newStore(dsn string) (*Store, error) {

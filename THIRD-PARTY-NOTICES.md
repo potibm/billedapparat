@@ -6,18 +6,20 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 
 | Package                                                                      | License                                                                                                                                                                                         |
 | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| github.com/HugoSmits86/nativewebp                                            | [MIT](https://github.com/HugoSmits86/nativewebp/blob/v1.2.1/LICENSE)                                                                                                                            |
+| github.com/brianvoe/gofakeit/v7                                              | [MIT](https://github.com/brianvoe/gofakeit/blob/v7.14.1/LICENSE.txt)                                                                                                                            |
 | github.com/cenkalti/backoff/v5                                               | [MIT](https://github.com/cenkalti/backoff/blob/v5.0.3/LICENSE)                                                                                                                                  |
 | github.com/cespare/xxhash/v2                                                 | [MIT](https://github.com/cespare/xxhash/blob/v2.3.0/LICENSE.txt)                                                                                                                                |
 | github.com/dustin/go-humanize                                                | [MIT](https://github.com/dustin/go-humanize/blob/v1.0.1/LICENSE)                                                                                                                                |
 | github.com/fsnotify/fsnotify                                                 | [BSD-3-Clause](https://github.com/fsnotify/fsnotify/blob/v1.9.0/LICENSE)                                                                                                                        |
 | github.com/gabriel-vasile/mimetype                                           | [MIT](https://github.com/gabriel-vasile/mimetype/blob/v1.4.13/LICENSE)                                                                                                                          |
-| github.com/getsentry/sentry-go                                               | [MIT](https://github.com/getsentry/sentry-go/blob/v0.45.0/LICENSE)                                                                                                                              |
-| github.com/getsentry/sentry-go/gin                                           | [MIT](https://github.com/getsentry/sentry-go/blob/gin/v0.45.0/gin/LICENSE)                                                                                                                      |
+| github.com/getsentry/sentry-go                                               | [MIT](https://github.com/getsentry/sentry-go/blob/v0.45.1/LICENSE)                                                                                                                              |
+| github.com/getsentry/sentry-go/gin                                           | [MIT](https://github.com/getsentry/sentry-go/blob/gin/v0.45.1/gin/LICENSE)                                                                                                                      |
 | github.com/gin-contrib/cors                                                  | [MIT](https://github.com/gin-contrib/cors/blob/v1.7.7/LICENSE)                                                                                                                                  |
 | github.com/gin-contrib/sse                                                   | [MIT](https://github.com/gin-contrib/sse/blob/v1.1.1/LICENSE)                                                                                                                                   |
 | github.com/gin-contrib/static                                                | [MIT](https://github.com/gin-contrib/static/blob/v1.1.6/LICENSE)                                                                                                                                |
 | github.com/gin-gonic/gin                                                     | [MIT](https://github.com/gin-gonic/gin/blob/v1.12.0/LICENSE)                                                                                                                                    |
-| github.com/glebarez/go-sqlite                                                | [BSD-3-Clause](https://github.com/glebarez/go-sqlite/blob/v1.21.2/LICENSE)                                                                                                                      |
+| github.com/glebarez/go-sqlite                                                | [BSD-3-Clause](https://github.com/glebarez/go-sqlite/blob/v1.22.0/LICENSE)                                                                                                                      |
 | github.com/glebarez/sqlite                                                   | [MIT](https://github.com/glebarez/sqlite/blob/v1.11.0/License)                                                                                                                                  |
 | github.com/go-logr/logr                                                      | [Apache-2.0](https://github.com/go-logr/logr/blob/v1.4.3/LICENSE)                                                                                                                               |
 | github.com/go-logr/stdr                                                      | [Apache-2.0](https://github.com/go-logr/stdr/blob/v1.2.2/LICENSE)                                                                                                                               |
@@ -27,12 +29,13 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | github.com/go-viper/mapstructure/v2                                          | [MIT](https://github.com/go-viper/mapstructure/blob/v2.5.0/LICENSE)                                                                                                                             |
 | github.com/goccy/go-yaml                                                     | [MIT](https://github.com/goccy/go-yaml/blob/v1.19.2/LICENSE)                                                                                                                                    |
 | github.com/google/uuid                                                       | [BSD-3-Clause](https://github.com/google/uuid/blob/v1.6.0/LICENSE)                                                                                                                              |
-| github.com/grpc-ecosystem/grpc-gateway/v2                                    | [BSD-3-Clause](https://github.com/grpc-ecosystem/grpc-gateway/blob/v2.28.0/LICENSE)                                                                                                             |
+| github.com/grpc-ecosystem/grpc-gateway/v2                                    | [BSD-3-Clause](https://github.com/grpc-ecosystem/grpc-gateway/blob/v2.29.0/LICENSE)                                                                                                             |
 | github.com/jinzhu/inflection                                                 | [MIT](https://github.com/jinzhu/inflection/blob/v1.0.0/LICENSE)                                                                                                                                 |
 | github.com/jinzhu/now                                                        | [MIT](https://github.com/jinzhu/now/blob/v1.1.5/License)                                                                                                                                        |
 | github.com/joho/godotenv                                                     | [MIT](https://github.com/joho/godotenv/blob/v1.5.1/LICENCE)                                                                                                                                     |
 | github.com/leodido/go-urn                                                    | [MIT](https://github.com/leodido/go-urn/blob/v1.4.0/LICENSE)                                                                                                                                    |
-| github.com/mattn/go-isatty                                                   | [MIT](https://github.com/mattn/go-isatty/blob/v0.0.20/LICENSE)                                                                                                                                  |
+| github.com/mattn/go-isatty                                                   | [MIT](https://github.com/mattn/go-isatty/blob/v0.0.21/LICENSE)                                                                                                                                  |
+| github.com/ncruces/go-strftime                                               | [MIT](https://github.com/ncruces/go-strftime/blob/v1.0.0/LICENSE)                                                                                                                               |
 | github.com/pelletier/go-toml/v2                                              | [MIT](https://github.com/pelletier/go-toml/blob/v2.3.0/LICENSE)                                                                                                                                 |
 | github.com/quic-go/qpack                                                     | [MIT](https://github.com/quic-go/qpack/blob/v0.6.0/LICENSE.md)                                                                                                                                  |
 | github.com/quic-go/quic-go                                                   | [MIT](https://github.com/quic-go/quic-go/blob/v0.59.0/LICENSE)                                                                                                                                  |
@@ -49,9 +52,9 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | github.com/spf13/viper                                                       | [MIT](https://github.com/spf13/viper/blob/v1.21.0/LICENSE)                                                                                                                                      |
 | github.com/subosito/gotenv                                                   | [MIT](https://github.com/subosito/gotenv/blob/v1.6.0/LICENSE)                                                                                                                                   |
 | github.com/ugorji/go/codec                                                   | [MIT](https://github.com/ugorji/go/blob/codec/v1.3.1/codec/LICENSE)                                                                                                                             |
-| go.mongodb.org/mongo-driver/v2                                               | [Apache-2.0](https://github.com/mongodb/mongo-go-driver/blob/v2.5.0/LICENSE)                                                                                                                    |
+| go.mongodb.org/mongo-driver/v2                                               | [Apache-2.0](https://github.com/mongodb/mongo-go-driver/blob/v2.5.1/LICENSE)                                                                                                                    |
 | go.opentelemetry.io/auto/sdk                                                 | [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go-instrumentation/blob/sdk/v1.2.1/sdk/LICENSE)                                                                                    |
-| go.opentelemetry.io/contrib/bridges/otelslog                                 | [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go-contrib/blob/bridges/otelslog/v0.17.0/bridges/otelslog/LICENSE)                                                                 |
+| go.opentelemetry.io/contrib/bridges/otelslog                                 | [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go-contrib/blob/bridges/otelslog/v0.18.0/bridges/otelslog/LICENSE)                                                                 |
 | go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin | [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/github.com/gin-gonic/gin/otelgin/v0.68.0/instrumentation/github.com/gin-gonic/gin/otelgin/LICENSE) |
 | go.opentelemetry.io/contrib/instrumentation/runtime                          | [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go-contrib/blob/instrumentation/runtime/v0.68.0/instrumentation/runtime/LICENSE)                                                   |
 | go.opentelemetry.io/otel                                                     | [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/v1.43.0/LICENSE)                                                                                                           |
@@ -67,28 +70,29 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | go.opentelemetry.io/otel/trace                                               | [Apache-2.0](https://github.com/open-telemetry/opentelemetry-go/blob/trace/v1.43.0/trace/LICENSE)                                                                                               |
 | go.opentelemetry.io/proto/otlp                                               | [Apache-2.0](https://github.com/open-telemetry/opentelemetry-proto-go/blob/otlp/v1.10.0/otlp/LICENSE)                                                                                           |
 | go.yaml.in/yaml/v3                                                           | [MIT](https://github.com/yaml/go-yaml/blob/v3.0.4/LICENSE)                                                                                                                                      |
-| golang.org/x/crypto                                                          | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.49.0:LICENSE)                                                                                                                      |
-| golang.org/x/net                                                             | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.52.0:LICENSE)                                                                                                                         |
-| golang.org/x/sys                                                             | [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.42.0:LICENSE)                                                                                                                         |
-| golang.org/x/text                                                            | [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.35.0:LICENSE)                                                                                                                        |
-| google.golang.org/genproto/googleapis/api/httpbody                           | [Apache-2.0](https://github.com/googleapis/go-genproto/blob/9d38bb4040a9/googleapis/api/LICENSE)                                                                                                |
-| google.golang.org/genproto/googleapis/rpc                                    | [Apache-2.0](https://github.com/googleapis/go-genproto/blob/9d38bb4040a9/googleapis/rpc/LICENSE)                                                                                                |
+| golang.org/x/crypto                                                          | [BSD-3-Clause](https://cs.opensource.google/go/x/crypto/+/v0.50.0:LICENSE)                                                                                                                      |
+| golang.org/x/image                                                           | [BSD-3-Clause](https://cs.opensource.google/go/x/image/+/v0.39.0:LICENSE)                                                                                                                       |
+| golang.org/x/net                                                             | [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.53.0:LICENSE)                                                                                                                         |
+| golang.org/x/sys                                                             | [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.43.0:LICENSE)                                                                                                                         |
+| golang.org/x/text                                                            | [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.36.0:LICENSE)                                                                                                                        |
+| google.golang.org/genproto/googleapis/api/httpbody                           | [Apache-2.0](https://github.com/googleapis/go-genproto/blob/afd174a4e478/googleapis/api/LICENSE)                                                                                                |
+| google.golang.org/genproto/googleapis/rpc                                    | [Apache-2.0](https://github.com/googleapis/go-genproto/blob/afd174a4e478/googleapis/rpc/LICENSE)                                                                                                |
 | google.golang.org/grpc                                                       | [Apache-2.0](https://github.com/grpc/grpc-go/blob/v1.80.0/LICENSE)                                                                                                                              |
 | google.golang.org/protobuf                                                   | [BSD-3-Clause](https://github.com/protocolbuffers/protobuf-go/blob/v1.36.11/LICENSE)                                                                                                            |
 | gorm.io/gorm                                                                 | [MIT](https://github.com/go-gorm/gorm/blob/v1.31.1/LICENSE)                                                                                                                                     |
-| modernc.org/libc                                                             | [BSD-3-Clause](https://gitlab.com/cznic/libc/blob/v1.22.5/LICENSE-GO)                                                                                                                           |
-| modernc.org/libc/honnef.co/go/netdb                                          | [MIT](https://gitlab.com/cznic/libc/blob/v1.22.5/honnef.co/go/netdb/LICENSE)                                                                                                                    |
+| modernc.org/libc                                                             | [MIT](https://gitlab.com/cznic/libc/blob/v1.72.0/LICENSE-3RD-PARTY.md)                                                                                                                          |
 | modernc.org/mathutil                                                         | [Unknown](Unknown)                                                                                                                                                                              |
-| modernc.org/memory                                                           | [BSD-3-Clause](https://gitlab.com/cznic/memory/blob/v1.5.0/LICENSE-GO)                                                                                                                          |
-| modernc.org/sqlite/lib                                                       | [BSD-3-Clause](https://gitlab.com/cznic/sqlite/blob/v1.23.1/LICENSE)                                                                                                                            |
+| modernc.org/memory                                                           | [BSD-3-Clause](https://gitlab.com/cznic/memory/blob/v1.11.0/LICENSE-GO)                                                                                                                         |
+| modernc.org/sqlite/lib                                                       | [BSD-3-Clause](https://gitlab.com/cznic/sqlite/blob/v1.49.1/LICENSE)                                                                                                                            |
 
 ## Frontend Dependencies (NPM)
 
 | Package                                                   | License                                                                   |
 | --------------------------------------------------------- | ------------------------------------------------------------------------- |
 | @adobe/css-tools@4.4.4                                    | [MIT](https://github.com/adobe/css-tools)                                 |
-| @asamuzakjp/css-color@5.1.9                               | [MIT](https://github.com/asamuzaK/cssColor)                               |
-| @asamuzakjp/dom-selector@7.0.9                            | [MIT](https://github.com/asamuzaK/domSelector)                            |
+| @asamuzakjp/css-color@5.1.11                              | [MIT](https://github.com/asamuzaK/cssColor)                               |
+| @asamuzakjp/dom-selector@7.0.10                           | [MIT](https://github.com/asamuzaK/domSelector)                            |
+| @asamuzakjp/generational-cache@1.0.1                      | [MIT](https://github.com/asamuzaK/generationalCache)                      |
 | @asamuzakjp/nwsapi@2.3.9                                  | [MIT](https://github.com/dperini/nwsapi)                                  |
 | @babel/code-frame@7.29.0                                  | [MIT](https://github.com/babel/babel)                                     |
 | @babel/compat-data@7.29.0                                 | [MIT](https://github.com/babel/babel)                                     |
@@ -118,13 +122,13 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | @bcoe/v8-coverage@1.0.2                                   | [MIT](https://github.com/bcoe/v8-coverage)                                |
 | @bramus/specificity@2.4.2                                 | [MIT](https://github.com/bramus/specificity)                              |
 | @csstools/color-helpers@6.0.2                             | [MIT-0](https://github.com/csstools/postcss-plugins)                      |
-| @csstools/css-calc@3.1.1                                  | [MIT](https://github.com/csstools/postcss-plugins)                        |
-| @csstools/css-color-parser@4.0.2                          | [MIT](https://github.com/csstools/postcss-plugins)                        |
+| @csstools/css-calc@3.2.0                                  | [MIT](https://github.com/csstools/postcss-plugins)                        |
+| @csstools/css-color-parser@4.1.0                          | [MIT](https://github.com/csstools/postcss-plugins)                        |
 | @csstools/css-parser-algorithms@4.0.0                     | [MIT](https://github.com/csstools/postcss-plugins)                        |
-| @csstools/css-syntax-patches-for-csstree@1.1.2            | [MIT-0](https://github.com/csstools/postcss-plugins)                      |
+| @csstools/css-syntax-patches-for-csstree@1.1.3            | [MIT-0](https://github.com/csstools/postcss-plugins)                      |
 | @csstools/css-tokenizer@4.0.0                             | [MIT](https://github.com/csstools/postcss-plugins)                        |
-| @emnapi/core@1.9.2                                        | [MIT](https://github.com/toyobayashi/emnapi)                              |
-| @emnapi/runtime@1.9.2                                     | [MIT](https://github.com/toyobayashi/emnapi)                              |
+| @emnapi/core@1.10.0                                       | [MIT](https://github.com/toyobayashi/emnapi)                              |
+| @emnapi/runtime@1.10.0                                    | [MIT](https://github.com/toyobayashi/emnapi)                              |
 | @emnapi/wasi-threads@1.2.1                                | [MIT](https://github.com/toyobayashi/emnapi)                              |
 | @emotion/babel-plugin@11.13.5                             | [MIT](https://github.com/emotion-js/emotion.git#main)                     |
 | @emotion/cache@11.14.0                                    | [MIT](https://github.com/emotion-js/emotion.git#main)                     |
@@ -179,7 +183,7 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | @mui/system@7.3.10                                        | [MIT](https://github.com/mui/material-ui)                                 |
 | @mui/types@7.4.12                                         | [MIT](https://github.com/mui/material-ui)                                 |
 | @mui/utils@7.3.10                                         | [MIT](https://github.com/mui/material-ui)                                 |
-| @napi-rs/wasm-runtime@1.1.3                               | [MIT](https://github.com/napi-rs/napi-rs)                                 |
+| @napi-rs/wasm-runtime@1.1.4                               | [MIT](https://github.com/napi-rs/napi-rs)                                 |
 | @oxc-parser/binding-darwin-arm64@0.112.0                  | [MIT](https://github.com/oxc-project/oxc)                                 |
 | @oxc-project/types@0.112.0                                | [MIT](https://github.com/oxc-project/oxc)                                 |
 | @oxc-project/types@0.124.0                                | [MIT](https://github.com/oxc-project/oxc)                                 |
@@ -188,20 +192,20 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | @rolldown/binding-darwin-arm64@1.0.0-rc.15                | [MIT](https://github.com/rolldown/rolldown)                               |
 | @rolldown/pluginutils@1.0.0-rc.15                         | [MIT](https://github.com/rolldown/rolldown)                               |
 | @rolldown/pluginutils@1.0.0-rc.7                          | [MIT](https://github.com/rolldown/rolldown)                               |
-| @sentry-internal/browser-utils@10.48.0                    | [MIT](https://github.com/getsentry/sentry-javascript)                     |
-| @sentry-internal/feedback@10.48.0                         | [MIT](https://github.com/getsentry/sentry-javascript)                     |
-| @sentry-internal/replay-canvas@10.48.0                    | [MIT](https://github.com/getsentry/sentry-javascript)                     |
-| @sentry-internal/replay@10.48.0                           | [MIT](https://github.com/getsentry/sentry-javascript)                     |
-| @sentry/browser@10.48.0                                   | [MIT](https://github.com/getsentry/sentry-javascript)                     |
-| @sentry/core@10.48.0                                      | [MIT](https://github.com/getsentry/sentry-javascript)                     |
-| @sentry/react@10.48.0                                     | [MIT](https://github.com/getsentry/sentry-javascript)                     |
+| @sentry-internal/browser-utils@10.49.0                    | [MIT](https://github.com/getsentry/sentry-javascript)                     |
+| @sentry-internal/feedback@10.49.0                         | [MIT](https://github.com/getsentry/sentry-javascript)                     |
+| @sentry-internal/replay-canvas@10.49.0                    | [MIT](https://github.com/getsentry/sentry-javascript)                     |
+| @sentry-internal/replay@10.49.0                           | [MIT](https://github.com/getsentry/sentry-javascript)                     |
+| @sentry/browser@10.49.0                                   | [MIT](https://github.com/getsentry/sentry-javascript)                     |
+| @sentry/core@10.49.0                                      | [MIT](https://github.com/getsentry/sentry-javascript)                     |
+| @sentry/react@10.49.0                                     | [MIT](https://github.com/getsentry/sentry-javascript)                     |
 | @standard-schema/spec@1.1.0                               | [MIT](https://github.com/standard-schema/standard-schema)                 |
 | @tailwindcss/node@4.2.2                                   | [MIT](https://github.com/tailwindlabs/tailwindcss)                        |
 | @tailwindcss/oxide-darwin-arm64@4.2.2                     | [MIT](https://github.com/tailwindlabs/tailwindcss)                        |
 | @tailwindcss/oxide@4.2.2                                  | [MIT](https://github.com/tailwindlabs/tailwindcss)                        |
 | @tailwindcss/vite@4.2.2                                   | [MIT](https://github.com/tailwindlabs/tailwindcss)                        |
-| @tanstack/query-core@5.97.0                               | [MIT](https://github.com/TanStack/query)                                  |
-| @tanstack/react-query@5.97.0                              | [MIT](https://github.com/TanStack/query)                                  |
+| @tanstack/query-core@5.99.0                               | [MIT](https://github.com/TanStack/query)                                  |
+| @tanstack/react-query@5.99.0                              | [MIT](https://github.com/TanStack/query)                                  |
 | @testing-library/dom@10.4.1                               | [MIT](https://github.com/testing-library/dom-testing-library)             |
 | @testing-library/jest-dom@6.9.1                           | [MIT](https://github.com/testing-library/jest-dom)                        |
 | @testing-library/react@16.3.2                             | [MIT](https://github.com/testing-library/react-testing-library)           |
@@ -220,16 +224,16 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | @types/react-transition-group@4.4.12                      | [MIT](https://github.com/DefinitelyTyped/DefinitelyTyped)                 |
 | @types/react@19.2.14                                      | [MIT](https://github.com/DefinitelyTyped/DefinitelyTyped)                 |
 | @types/trusted-types@2.0.7                                | [MIT](https://github.com/DefinitelyTyped/DefinitelyTyped)                 |
-| @typescript-eslint/eslint-plugin@8.58.1                   | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
-| @typescript-eslint/parser@8.58.1                          | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
-| @typescript-eslint/project-service@8.58.1                 | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
-| @typescript-eslint/scope-manager@8.58.1                   | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
-| @typescript-eslint/tsconfig-utils@8.58.1                  | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
-| @typescript-eslint/type-utils@8.58.1                      | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
-| @typescript-eslint/types@8.58.1                           | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
-| @typescript-eslint/typescript-estree@8.58.1               | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
-| @typescript-eslint/utils@8.58.1                           | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
-| @typescript-eslint/visitor-keys@8.58.1                    | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
+| @typescript-eslint/eslint-plugin@8.58.2                   | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
+| @typescript-eslint/parser@8.58.2                          | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
+| @typescript-eslint/project-service@8.58.2                 | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
+| @typescript-eslint/scope-manager@8.58.2                   | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
+| @typescript-eslint/tsconfig-utils@8.58.2                  | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
+| @typescript-eslint/type-utils@8.58.2                      | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
+| @typescript-eslint/types@8.58.2                           | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
+| @typescript-eslint/typescript-estree@8.58.2               | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
+| @typescript-eslint/utils@8.58.2                           | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
+| @typescript-eslint/visitor-keys@8.58.2                    | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
 | @vitejs/plugin-basic-ssl@2.3.0                            | [MIT](https://github.com/vitejs/vite-plugin-basic-ssl)                    |
 | @vitejs/plugin-react@6.0.1                                | [MIT](https://github.com/vitejs/vite-plugin-react)                        |
 | @vitest/coverage-v8@4.1.4                                 | [MIT](https://github.com/vitest-dev/vitest)                               |
@@ -254,7 +258,7 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | autosuggest-highlight@3.3.4                               | [MIT](https://github.com/moroshko/autosuggest-highlight)                  |
 | babel-plugin-macros@3.1.0                                 | [MIT](https://github.com/kentcdodds/babel-plugin-macros)                  |
 | balanced-match@4.0.4                                      | [MIT](https://github.com/juliangruber/balanced-match)                     |
-| baseline-browser-mapping@2.10.17                          | [Apache-2.0](https://github.com/web-platform-dx/baseline-browser-mapping) |
+| baseline-browser-mapping@2.10.19                          | [Apache-2.0](https://github.com/web-platform-dx/baseline-browser-mapping) |
 | bidi-js@1.0.3                                             | [MIT](https://github.com/lojjic/bidi-js)                                  |
 | birecord@0.1.1                                            | [(MIT OR Apache-2.0)](https://github.com/portone-io/birecord)             |
 | brace-expansion@5.0.5                                     | [MIT](https://github.com/juliangruber/brace-expansion)                    |
@@ -263,7 +267,7 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | call-bind@1.0.9                                           | [MIT](https://github.com/ljharb/call-bind)                                |
 | call-bound@1.0.4                                          | [MIT](https://github.com/ljharb/call-bound)                               |
 | callsites@3.1.0                                           | [MIT](https://github.com/sindresorhus/callsites)                          |
-| caniuse-lite@1.0.30001787                                 | [CC-BY-4.0](https://github.com/browserslist/caniuse-lite)                 |
+| caniuse-lite@1.0.30001788                                 | [CC-BY-4.0](https://github.com/browserslist/caniuse-lite)                 |
 | chai@6.2.2                                                | [MIT](https://github.com/chaijs/chai)                                     |
 | chokidar@4.0.3                                            | [MIT](https://github.com/paulmillr/chokidar)                              |
 | clsx@2.1.1                                                | [MIT](https://github.com/lukeed/clsx)                                     |
@@ -295,9 +299,9 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | dom-accessibility-api@0.5.16                              | [MIT](https://github.com/eps1lon/dom-accessibility-api)                   |
 | dom-accessibility-api@0.6.3                               | [MIT](https://github.com/eps1lon/dom-accessibility-api)                   |
 | dom-helpers@5.2.1                                         | [MIT](https://github.com/react-bootstrap/dom-helpers)                     |
-| dompurify@3.3.3                                           | [(MPL-2.0 OR Apache-2.0)](https://github.com/cure53/DOMPurify)            |
+| dompurify@3.4.0                                           | [(MPL-2.0 OR Apache-2.0)](https://github.com/cure53/DOMPurify)            |
 | dunder-proto@1.0.1                                        | [MIT](https://github.com/es-shims/dunder-proto)                           |
-| electron-to-chromium@1.5.334                              | [ISC](https://github.com/Kilian/electron-to-chromium)                     |
+| electron-to-chromium@1.5.340                              | [ISC](https://github.com/Kilian/electron-to-chromium)                     |
 | enhanced-resolve@5.20.1                                   | [MIT](https://github.com/webpack/enhanced-resolve)                        |
 | entities@6.0.1                                            | [BSD-2-Clause](https://github.com/fb55/entities)                          |
 | error-ex@1.3.4                                            | [MIT](https://github.com/qix-/node-error-ex)                              |
@@ -318,7 +322,7 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | eslint-scope@9.1.2                                        | [BSD-2-Clause](https://github.com/eslint/js)                              |
 | eslint-visitor-keys@3.4.3                                 | [Apache-2.0](https://github.com/eslint/eslint-visitor-keys)               |
 | eslint-visitor-keys@5.0.1                                 | [Apache-2.0](https://github.com/eslint/js)                                |
-| eslint@10.2.0                                             | [MIT](https://github.com/eslint/eslint)                                   |
+| eslint@10.2.1                                             | [MIT](https://github.com/eslint/eslint)                                   |
 | espree@11.2.0                                             | [BSD-2-Clause](https://github.com/eslint/js)                              |
 | esprima@4.0.1                                             | [BSD-2-Clause](https://github.com/jquery/esprima)                         |
 | esquery@1.7.0                                             | [BSD-3-Clause](https://github.com/estools/esquery)                        |
@@ -340,6 +344,7 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | flat-cache@4.0.1                                          | [MIT](https://github.com/jaredwray/flat-cache)                            |
 | flatted@3.4.2                                             | [ISC](https://github.com/WebReflection/flatted)                           |
 | flowbite-react@0.12.17                                    | [MIT](https://github.com/themesberg/flowbite-react)                       |
+| framer-motion@12.38.0                                     | [MIT](https://github.com/motiondivision/motion)                           |
 | fsevents@2.3.2                                            | [MIT](https://github.com/fsevents/fsevents)                               |
 | fsevents@2.3.3                                            | [MIT](https://github.com/fsevents/fsevents)                               |
 | function-bind@1.1.2                                       | [MIT](https://github.com/Raynos/function-bind)                            |
@@ -347,7 +352,7 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | get-intrinsic@1.3.0                                       | [MIT](https://github.com/ljharb/get-intrinsic)                            |
 | get-proto@1.0.1                                           | [MIT](https://github.com/ljharb/get-proto)                                |
 | glob-parent@6.0.2                                         | [ISC](https://github.com/gulpjs/glob-parent)                              |
-| globals@17.4.0                                            | [MIT](https://github.com/sindresorhus/globals)                            |
+| globals@17.5.0                                            | [MIT](https://github.com/sindresorhus/globals)                            |
 | gopd@1.2.0                                                | [MIT](https://github.com/ljharb/gopd)                                     |
 | graceful-fs@4.2.11                                        | [ISC](https://github.com/isaacs/node-graceful-fs)                         |
 | has-flag@4.0.0                                            | [MIT](https://github.com/sindresorhus/has-flag)                           |
@@ -395,7 +400,7 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | lodash@4.17.23                                            | [MIT](https://github.com/lodash/lodash)                                   |
 | lodash@4.18.1                                             | [MIT](https://github.com/lodash/lodash)                                   |
 | loose-envify@1.4.0                                        | [MIT](https://github.com/zertosh/loose-envify)                            |
-| lru-cache@11.3.3                                          | [BlueOak-1.0.0](https://github.com/isaacs/node-lru-cache)                 |
+| lru-cache@11.3.5                                          | [BlueOak-1.0.0](https://github.com/isaacs/node-lru-cache)                 |
 | lru-cache@5.1.1                                           | [ISC](https://github.com/isaacs/node-lru-cache)                           |
 | lz-string@1.5.0                                           | [MIT](https://github.com/pieroxy/lz-string)                               |
 | magic-string@0.30.21                                      | [MIT](https://github.com/Rich-Harris/magic-string)                        |
@@ -405,6 +410,8 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | mdn-data@2.27.1                                           | [CC0-1.0](https://github.com/mdn/data)                                    |
 | min-indent@1.0.1                                          | [MIT](https://github.com/thejameskyle/min-indent)                         |
 | minimatch@10.2.5                                          | [BlueOak-1.0.0](https://github.com/isaacs/minimatch)                      |
+| motion-dom@12.38.0                                        | [MIT](https://github.com/motiondivision/motion)                           |
+| motion-utils@12.36.0                                      | [MIT](https://github.com/motiondivision/motion)                           |
 | ms@2.1.3                                                  | [MIT](https://github.com/vercel/ms)                                       |
 | nanoid@3.3.11                                             | [MIT](https://github.com/ai/nanoid)                                       |
 | natural-compare@1.4.0                                     | [MIT](https://github.com/litejs/natural-compare-lite)                     |
@@ -431,9 +438,9 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | picomatch@4.0.4                                           | [MIT](https://github.com/micromatch/picomatch)                            |
 | playwright-core@1.59.1                                    | [Apache-2.0](https://github.com/microsoft/playwright)                     |
 | playwright@1.59.1                                         | [Apache-2.0](https://github.com/microsoft/playwright)                     |
-| postcss@8.5.9                                             | [MIT](https://github.com/postcss/postcss)                                 |
+| postcss@8.5.10                                            | [MIT](https://github.com/postcss/postcss)                                 |
 | prelude-ls@1.2.1                                          | [MIT](https://github.com/gkz/prelude-ls)                                  |
-| prettier@3.8.2                                            | [MIT](https://github.com/prettier/prettier)                               |
+| prettier@3.8.3                                            | [MIT](https://github.com/prettier/prettier)                               |
 | pretty-format@27.5.1                                      | [MIT](https://github.com/facebook/jest)                                   |
 | prop-types@15.8.1                                         | [MIT](https://github.com/facebook/prop-types)                             |
 | punycode@2.3.1                                            | [MIT](https://github.com/mathiasbynens/punycode.js)                       |
@@ -453,8 +460,8 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | react-is@16.13.1                                          | [MIT](https://github.com/facebook/react)                                  |
 | react-is@17.0.2                                           | [MIT](https://github.com/facebook/react)                                  |
 | react-is@19.2.5                                           | [MIT](https://github.com/facebook/react)                                  |
-| react-router-dom@7.14.0                                   | [MIT](https://github.com/remix-run/react-router)                          |
-| react-router@7.14.0                                       | [MIT](https://github.com/remix-run/react-router)                          |
+| react-router-dom@7.14.1                                   | [MIT](https://github.com/remix-run/react-router)                          |
+| react-router@7.14.1                                       | [MIT](https://github.com/remix-run/react-router)                          |
 | react-transition-group@4.4.5                              | [BSD-3-Clause](https://github.com/reactjs/react-transition-group)         |
 | react@19.2.5                                              | [MIT](https://github.com/facebook/react)                                  |
 | readdirp@4.1.2                                            | [MIT](https://github.com/paulmillr/readdirp)                              |
@@ -462,7 +469,7 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | remove-accents@0.4.4                                      | [MIT](https://github.com/tyxla/remove-accents)                            |
 | require-from-string@2.0.2                                 | [MIT](https://github.com/floatdrop/require-from-string)                   |
 | resolve-from@4.0.0                                        | [MIT](https://github.com/sindresorhus/resolve-from)                       |
-| resolve@1.22.11                                           | [MIT](https://github.com/browserify/resolve)                              |
+| resolve@1.22.12                                           | [MIT](https://github.com/browserify/resolve)                              |
 | rolldown@1.0.0-rc.15                                      | [MIT](https://github.com/rolldown/rolldown)                               |
 | saxes@6.0.0                                               | [ISC](https://github.com/lddubeau/saxes)                                  |
 | scheduler@0.27.0                                          | [MIT](https://github.com/facebook/react)                                  |
@@ -477,7 +484,7 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | source-map@0.5.7                                          | [BSD-3-Clause](https://github.com/mozilla/source-map)                     |
 | split-on-first@1.1.0                                      | [MIT](https://github.com/sindresorhus/split-on-first)                     |
 | stackback@0.0.2                                           | [MIT](https://github.com/shtylman/node-stackback)                         |
-| std-env@4.0.0                                             | [MIT](https://github.com/unjs/std-env)                                    |
+| std-env@4.1.0                                             | [MIT](https://github.com/unjs/std-env)                                    |
 | strict-uri-encode@2.0.0                                   | [MIT](https://github.com/kevva/strict-uri-encode)                         |
 | string-ts@2.3.1                                           | [MIT](https://github.com/gustavoguichard/string-ts)                       |
 | strip-indent@3.0.0                                        | [MIT](https://github.com/sindresorhus/strip-indent)                       |
@@ -502,10 +509,10 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | ts-pattern@5.9.0                                          | [MIT](https://github.com/gvergnaud/ts-pattern)                            |
 | tslib@2.8.1                                               | [0BSD](https://github.com/Microsoft/tslib)                                |
 | type-check@0.4.0                                          | [MIT](https://github.com/gkz/type-check)                                  |
-| typescript-eslint@8.58.1                                  | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
-| typescript@6.0.2                                          | [Apache-2.0](https://github.com/microsoft/TypeScript)                     |
+| typescript-eslint@8.58.2                                  | [MIT](https://github.com/typescript-eslint/typescript-eslint)             |
+| typescript@6.0.3                                          | [Apache-2.0](https://github.com/microsoft/TypeScript)                     |
 | undici-types@7.19.2                                       | [MIT](https://github.com/nodejs/undici)                                   |
-| undici@7.24.7                                             | [MIT](https://github.com/nodejs/undici)                                   |
+| undici@7.25.0                                             | [MIT](https://github.com/nodejs/undici)                                   |
 | update-browserslist-db@1.2.3                              | [MIT](https://github.com/browserslist/update-db)                          |
 | uri-js@4.4.1                                              | [BSD-2-Clause](https://github.com/garycourt/uri-js)                       |
 | vite@8.0.8                                                | [MIT](https://github.com/vitejs/vite)                                     |
@@ -526,3 +533,10 @@ This project is licensed under MIT. Below are the licenses of the dependencies u
 | zod-validation-error@3.5.4                                | [MIT](https://github.com/causaly/zod-validation-error)                    |
 | zod@3.25.76                                               | [MIT](https://github.com/colinhacks/zod)                                  |
 | zod@4.3.6                                                 | [MIT](https://github.com/colinhacks/zod)                                  |
+
+## Assets
+
+| Package                                                                     | License                                                               |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Logo Icon "Projector Screen" by [Phosphor Icons](https://phosphoricons.com) | [MIT](https://github.com/phosphor-icons/homepage/blob/master/LICENSE) |
+| Placeholder Images for the test system by [Picsum](https://picsum.photos/)  | multiple licenses                                                     |

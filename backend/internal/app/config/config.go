@@ -16,16 +16,19 @@ const (
 	DefaultJwtSecret               = "very-insecure"
 	DefaultAPIAdminKey             = "also-very-insecure"
 
-	DataDirname     = "./data"
-	DatabaseDirname = DataDirname + "/db"
-	MediaDirname    = DataDirname + "/media"
-	StylesDirname   = DataDirname + "/style"
-	ImportDirname   = DataDirname + "/import"
+	DataDirname      = "./data"
+	DatabaseDirname  = DataDirname + "/db"
+	MediaDirname     = DataDirname + "/media"
+	StylesDirname    = DataDirname + "/style"
+	ImportDirname    = DataDirname + "/import"
+	SeedCacheDirname = DataDirname + "/seed_cache"
 
 	MediaURL  = "/media/"
 	StylesURL = "/style/"
 
 	DefaultDBFilename = "billedapparat"
+
+	DataDirPerm = 0o755
 )
 
 var DefaultDateOptions = DateFormatOptionsConfig{

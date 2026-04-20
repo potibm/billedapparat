@@ -98,6 +98,12 @@ func Execute() error {
 	)
 	rootCmd.AddCommand(importCmd)
 
+	databaseCmd := NewDatabaseCmd()
+	databaseCmd.AddCommand(
+		NewDatabaseResetCmd(),
+	)
+	rootCmd.AddCommand(databaseCmd)
+
 	return rootCmd.ExecuteContext(ctx)
 }
 

@@ -43,8 +43,7 @@ func ResizeAndSave(srcReader io.Reader, destPath string, maxWidth, maxHeight int
 	draw.CatmullRom.Scale(dst, dst.Bounds(), src, bounds, draw.Over, nil)
 
 	// 4. Ensure destination directory exists
-	const mode = 0o755
-	if err := os.MkdirAll(filepath.Dir(destPath), mode); err != nil {
+	if err := os.MkdirAll(filepath.Dir(destPath), config.DataDirPerm); err != nil {
 		return err
 	}
 

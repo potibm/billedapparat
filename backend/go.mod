@@ -6,6 +6,7 @@ toolchain go1.25.1
 
 require (
 	github.com/HugoSmits86/nativewebp v1.2.1
+	github.com/brianvoe/gofakeit/v7 v7.14.1
 	github.com/getsentry/sentry-go v0.45.1
 	github.com/getsentry/sentry-go/gin v0.45.1
 	github.com/gin-contrib/cors v1.7.7
@@ -89,8 +90,8 @@ require (
 	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20260414002931-afd174a4e478 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20260420184626-e10c466a9529 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260420184626-e10c466a9529 // indirect
 	google.golang.org/grpc v1.80.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	modernc.org/libc v1.72.0 // indirect

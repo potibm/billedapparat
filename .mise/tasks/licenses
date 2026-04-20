@@ -28,6 +28,15 @@ $BACKEND_ROWS
 | Package | License |
 | --- | --- |
 $FRONTEND_ROWS
+
+## Assets
+
+| Package | License |
+| --- | --- |
+| Logo Icon "Projector Screen" by [Phosphor Icons](https://phosphoricons.com)  | [MIT](https://github.com/phosphor-icons/homepage/blob/master/LICENSE) |
+| Placeholder Images for the test system by [Picsum](https://picsum.photos/) | multiple licenses |
+
+
 EOF
 
 echo "🔍 Formatting the generated file..."
