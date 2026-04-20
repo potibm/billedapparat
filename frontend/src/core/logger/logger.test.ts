@@ -8,7 +8,7 @@ describe("Logger Utility", () => {
 
   it("should format info logs correctly (matching the format string)", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    const logger = createLogger("Auth");
+    const logger = createLogger("Core");
     const message = "User logged in";
     const meta = { userId: 123 };
 
@@ -16,17 +16,17 @@ describe("Logger Utility", () => {
 
     const firstCallArgs = logSpy.mock.calls[0];
 
-    expect(firstCallArgs[0]).toMatch(/info.*🔐.*Auth/);
+    expect(firstCallArgs[0]).toMatch(/info.*⚪.*Core/);
 
     expect(firstCallArgs[1]).toContain("font-weight: bold"); // Level style
-    expect(firstCallArgs[2]).toContain("background: green"); // Badge style
+    expect(firstCallArgs[2]).toContain("background: black"); // Badge style
 
     expect(firstCallArgs[4]).toEqual(meta);
   });
 
   it("should use console.warn for warnings", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const logger = createLogger("Payment");
+    const logger = createLogger("Core");
 
     logger.warn("Attention");
 
