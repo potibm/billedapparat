@@ -15,36 +15,75 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/potibm/billedapparat/internal/app/config"
-	"github.com/potibm/billedapparat/internal/app/store/gorm"
+	"github.com/potibm/billedapparat/internal/app/repository"
 	sloggin "github.com/samber/slog-gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
+const (
+	defaultShutdownTimeout   = 5 * time.Second
+	defaultReadHeaderTimeout = 3 * time.Second
+)
+
 type Config struct {
 	Port        int
-	Store       gorm.Store
 	StaticFiles embed.FS
-	Cfg         config.AppConfig
+	SlideRepo   repository.SlideRepository
+	Cfg         config.Config
 }
 
 type Server struct {
 	port        int
-	store       gorm.Store
 	staticFiles embed.FS
-	cfg         config.AppConfig
+	slideRepo   repository.SlideRepository
+	cfg         config.Config
+	streamer    *Streamer
 }
 
-func NewServer(config Config) (*Server, error) {
+func NewServer(cfg Config) (*Server, error) {
 	return &Server{
-		port:        config.Port,
-		store:       config.Store,
-		staticFiles: config.StaticFiles,
-		cfg:         config.Cfg,
+		port:        cfg.Port,
+		staticFiles: cfg.StaticFiles,
+		slideRepo:   cfg.SlideRepo,
+		cfg:         cfg.Cfg,
+		streamer:    NewStreamer(),
 	}, nil
 }
 
+func (s *Server) Run(ctx context.Context) error {
+	router, err := s.setupRouter()
+	if err != nil {
+		return fmt.Errorf("setup router: %w", err)
+	}
+
+	srv := &http.Server{
+		Addr:              ":" + strconv.Itoa(s.port),
+		ReadHeaderTimeout: defaultReadHeaderTimeout,
+		Handler:           router,
+	}
+
+	s.StartMediaGarbageCollector()
+
+	// Start server in Goroutine
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("listen", "error", err)
+		}
+	}()
+
+	slog.Info("Hub server is up", "port", s.port)
+
+	<-ctx.Done()
+	slog.Info("Shutting down server gracefully...")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), defaultShutdownTimeout)
+	defer cancel()
+
+	return srv.Shutdown(shutdownCtx)
+}
+
 func (s *Server) setupRouter() (*gin.Engine, error) {
-	gin.SetMode(s.cfg.GinMode)
+	gin.SetMode(s.cfg.App.GinMode)
 
 	r := gin.New()
 
@@ -67,6 +106,20 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 
 	r.Use(static.Serve("/", folder))
 
+	api := r.Group("/api")
+	api.GET("/stream", s.streamSlides)
+
+	admin := r.Group("/api/admin")
+	admin.GET("/slides", s.adminListSlides)
+	admin.POST("/slides", s.adminCreateSlide)
+	admin.GET("/slides/:id", s.adminGetSlide)
+	admin.PUT("/slides/:id", s.adminUpdateSlide)
+	admin.DELETE("/slides/:id", s.adminDeleteSlide)
+
+	internal := r.Group("/api/internal")
+	internal.Use(APIKeyAuthMiddleware(s.cfg.API.AdminAPIKey))
+	internal.POST("/import", s.internalImportDirectory)
+
 	r.NoRoute(func(c *gin.Context) {
 		if !strings.HasPrefix(c.Request.RequestURI, "/api") && !strings.Contains(c.Request.RequestURI, ".") {
 			file, _ := s.staticFiles.ReadFile("assets/index.html")
@@ -82,8 +135,8 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 }
 
 func (s *Server) registerCorsMiddleware(r *gin.Engine) {
-	if len(s.cfg.CorsAllowOrigins) > 0 {
-		slog.Info("CORS middleware enabled", "origins", s.cfg.CorsAllowOrigins)
+	if len(s.cfg.App.CorsAllowOrigins) > 0 {
+		slog.Info("CORS middleware enabled", "origins", s.cfg.App.CorsAllowOrigins)
 		r.Use(s.createCorsMiddleware())
 	} else {
 		slog.Info("CORS middleware disabled (no origins configured)")
@@ -92,40 +145,11 @@ func (s *Server) registerCorsMiddleware(r *gin.Engine) {
 
 func (s *Server) createCorsMiddleware() gin.HandlerFunc {
 	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = s.cfg.CorsAllowOrigins
+	corsConfig.AllowOrigins = s.cfg.App.CorsAllowOrigins
 	corsConfig.AllowAllOrigins = false
 	corsConfig.AllowCredentials = true
-	corsConfig.AddAllowHeaders("Authorization", "Credentials")
+	corsConfig.AddAllowHeaders("Authorization", "Credentials", "Content-Type", "X-API-Key", "Accept")
 	corsConfig.AddExposeHeaders("X-Total-Count", "Content-Disposition")
 
 	return cors.New(corsConfig)
-}
-
-func (s *Server) Run(ctx context.Context) error {
-	router, err := s.setupRouter()
-	if err != nil {
-		return fmt.Errorf("setup router: %w", err)
-	}
-
-	srv := &http.Server{
-		Addr:    ":" + strconv.Itoa(s.port),
-		Handler: router,
-	}
-
-	// Server in einer Goroutine starten
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("listen", "error", err)
-		}
-	}()
-
-	slog.Info("Hub server is up", "port", s.port)
-
-	<-ctx.Done()
-	slog.Info("Shutting down server gracefully...")
-
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	return srv.Shutdown(shutdownCtx)
 }

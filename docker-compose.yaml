@@ -18,7 +18,7 @@ services:
     command: ["--config=/etc/otel/config.yaml"]
     ports:
       - "3117:4317" # OTLP gRPC
-      - "3118:4318" # OTLP HTTP
+      - "4318:4318" # OTLP HTTP
     depends_on:
       - openobserve
 

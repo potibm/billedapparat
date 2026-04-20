@@ -1,5 +1,6 @@
 import React, { ReactNode } from "react";
 import { Card } from "flowbite-react";
+import Logo from "@core/logo/Logo";
 
 interface BaseCardProps {
   children: ReactNode;
@@ -10,12 +11,8 @@ const BaseCard: React.FC<BaseCardProps> = ({ children, title = null }) => {
   return (
     <div className="flex justify-center items-center h-screen">
       <Card className="max-w-sm bg-white/15 border-color-[#00F5FF]/90 backdrop-blur-sm">
-        <h5 className="text-2xl font-bold tracking-tight text-[#00F5FF]">
-          <img
-            src="/web-app-manifest-192x192.png"
-            alt="Billedapparat"
-            className="align-text-top h-7 inline"
-          />{" "}
+        <h5 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-white">
+          <Logo className="h-7 w-7 text-[#00F5FF]" />
           Billedapparat
         </h5>
 

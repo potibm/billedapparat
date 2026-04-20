@@ -19,7 +19,7 @@ export default defineConfig({
     port: frontendPort,
     strictPort: true,
     proxy: {
-      "/api": {
+      "^/(api|media|style)": {
         target: backendTarget,
         changeOrigin: true,
         ws: true,
@@ -57,6 +57,7 @@ export default defineConfig({
     alias: {
       "@core": path.resolve(__dirname, "./src/core"),
       "@splash": path.resolve(__dirname, "./src/apps/splash"),
+      "@admin": path.resolve(__dirname, "./src/apps/admin"),
     },
   },
 });

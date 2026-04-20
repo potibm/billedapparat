@@ -11,10 +11,6 @@ import (
 	"github.com/potibm/billedapparat/internal/app/config"
 )
 
-const (
-	defaultDirectory = "data/db"
-)
-
 type Store struct {
 	db *gorm.DB
 }
@@ -28,17 +24,19 @@ func NewSqliteStore(filename string) (*Store, error) {
 		filename = config.DefaultDBFilename
 	}
 
-	dbPath := filepath.Join(defaultDirectory, filename+".db")
-	if err := os.MkdirAll(defaultDirectory, 0755); err != nil {
+	dbPath := filepath.Join(config.DataDirname, filename+".db")
+	if err := os.MkdirAll(config.DataDirname, config.DataDirPerm); err != nil {
 		return nil, fmt.Errorf("failed to create database directory: %w", err)
 	}
 
 	dsn := fmt.Sprintf("%s?_busy_timeout=5000", dbPath)
+
 	return newStore(dsn)
 }
 
 func NewSqliteInMemoryStore() (*Store, error) {
 	dsn := "file::memory:?cache=shared"
+
 	return newStore(dsn)
 }
 
@@ -47,7 +45,20 @@ func (s *Store) Close() error {
 	if err != nil {
 		return fmt.Errorf("failed to get underlying database connection: %w", err)
 	}
+
 	return sqlDB.Close()
+}
+
+func (s *Store) PurgeAll() error {
+	if err := s.db.Migrator().DropTable(allModels...); err != nil {
+		return fmt.Errorf("failed to drop tables: %w", err)
+	}
+
+	if err := s.db.AutoMigrate(allModels...); err != nil {
+		return fmt.Errorf("failed to recreate tables: %w", err)
+	}
+
+	return nil
 }
 
 func newStore(dsn string) (*Store, error) {
@@ -58,8 +69,15 @@ func newStore(dsn string) (*Store, error) {
 
 	sqlDB, err := db.DB()
 	if err == nil {
-		sqlDB.Exec("PRAGMA journal_mode = WAL;")
-		sqlDB.Exec("PRAGMA foreign_keys = ON;")
+		_, err = sqlDB.Exec("PRAGMA journal_mode = WAL;")
+		if err != nil {
+			return nil, fmt.Errorf("failed to set journal mode: %w", err)
+		}
+
+		_, err = sqlDB.Exec("PRAGMA foreign_keys = ON;")
+		if err != nil {
+			return nil, fmt.Errorf("failed to set foreign keys: %w", err)
+		}
 	}
 
 	if err := db.AutoMigrate(allModels...); err != nil {

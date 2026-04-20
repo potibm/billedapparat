@@ -37,8 +37,13 @@ type DateFormatConfig struct {
 
 type CorsAllowOriginsConfig []string
 
+type APIConfig struct {
+	AdminAPIKey string `mapstructure:"admin_api_key" validate:"required"`
+}
+
 type Config struct {
 	App    AppConfig    `mapstructure:"app"`
 	Format FormatConfig `mapstructure:"format"`
 	Sentry SentryConfig `mapstructure:"sentry"`
+	API    APIConfig    `mapstructure:"api"`
 }

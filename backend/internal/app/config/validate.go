@@ -10,7 +10,6 @@ import (
 var (
 	validDbFilename = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 	validLocale     = regexp.MustCompile(`^[a-zA-Z]{2}-[A-Z]{2}$`)
-	validCurrency   = regexp.MustCompile(`^[A-Z]{3}$`)
 )
 
 func (c *Config) Validate() error {
@@ -25,6 +24,20 @@ func (c *Config) Validate() error {
 
 	if err := c.Format.Validate(); err != nil {
 		return err
+	}
+
+	if err := c.API.Validate(c.App.Environment); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (f *APIConfig) Validate(environment string) error {
+	if f.AdminAPIKey == DefaultAPIAdminKey && environment == "production" {
+		return fmt.Errorf(
+			"admin_api_key is set to the default value in production environment, which is not allowed for security reasons",
+		)
 	}
 
 	return nil

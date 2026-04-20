@@ -14,17 +14,28 @@ const (
 	DefaultReplaySessionSampleRate = 0.1
 	DefaultReplayErrorSampleRate   = 0.1
 	DefaultJwtSecret               = "very-insecure"
+	DefaultAPIAdminKey             = "also-very-insecure"
+
+	DataDirname      = "./data"
+	DatabaseDirname  = DataDirname + "/db"
+	MediaDirname     = DataDirname + "/media"
+	StylesDirname    = DataDirname + "/style"
+	ImportDirname    = DataDirname + "/import"
+	SeedCacheDirname = DataDirname + "/seed_cache"
+
+	MediaURL  = "/media/"
+	StylesURL = "/style/"
 
 	DefaultDBFilename = "billedapparat"
+
+	DataDirPerm = 0o755
 )
 
-var (
-	DefaultDateOptions = DateFormatOptionsConfig{
-		"weekday": "long",
-		"hour":    "2-digit",
-		"minute":  "2-digit",
-	}
-)
+var DefaultDateOptions = DateFormatOptionsConfig{
+	"weekday": "long",
+	"hour":    "2-digit",
+	"minute":  "2-digit",
+}
 
 func InitViper() {
 	viper.AutomaticEnv()
@@ -36,6 +47,7 @@ func InitViper() {
 	viper.SetDefault("app.db_filename", DefaultDBFilename)
 	viper.SetDefault("app.frontend_url", "")
 	viper.SetDefault("app.cors_allow_origins", []string{})
+	viper.SetDefault("api.admin_api_key", DefaultAPIAdminKey)
 
 	viper.SetDefault("format.date.locale", "da-DK")
 	viper.SetDefault("format.date.options", DefaultDateOptions)
