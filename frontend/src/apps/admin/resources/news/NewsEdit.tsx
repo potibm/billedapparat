@@ -1,14 +1,6 @@
-import { ImageEditPreviewField } from "@admin/components/fields/ImageEditPreviewField";
-import { ImageUploadInput } from "@admin/components/fields/ImageUploadInput";
 import { PriorityInput } from "@admin/components/fields/PriorityInput";
 import { StatusSelectInput } from "@admin/components/fields/StatusSelectInput";
-import {
-  Edit,
-  SimpleForm,
-  TextInput,
-  required,
-  BooleanInput,
-} from "react-admin";
+import { Edit, SimpleForm, TextInput, required } from "react-admin";
 
 export const NewsEdit = () => (
   <Edit title="Edit News Screens">

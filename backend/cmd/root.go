@@ -4,8 +4,11 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"log"
+	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -138,4 +141,36 @@ func confirm(question string) bool {
 	response = strings.TrimSpace(strings.ToLower(response))
 
 	return response == "y" || response == "yes"
+}
+
+func ensureAppInfrastructure() error {
+	subDirs := []string{
+		config.DatabaseDirname,
+		config.MediaDirname,
+		config.StylesDirname,
+		config.ImportDirname,
+		config.SeedCacheDirname,
+	}
+
+	for _, dir := range subDirs {
+		if err := os.MkdirAll(dir, config.DataDirPerm); err != nil {
+			return fmt.Errorf("error creating the directory %s: %w", dir, err)
+		}
+	}
+
+	const fileMode = 0o600
+
+	cssPath := filepath.Join(config.StylesDirname, "custom.css")
+	if _, err := os.Stat(cssPath); os.IsNotExist(err) {
+		initialCSS := []byte(
+			"/* Custom style for the frontend */\n/* Override Tailwind classes or CSS variables here  */\n",
+		)
+		if err := os.WriteFile(cssPath, initialCSS, fileMode); err != nil {
+			log.Printf("Warning: Could not create custom.css: %v", err)
+		} else {
+			slog.Debug("custom.css successfully created")
+		}
+	}
+
+	return nil
 }

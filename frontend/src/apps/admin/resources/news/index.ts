@@ -1,7 +1,7 @@
 import { NewsCreate } from "./NewsCreate";
 import { NewsList } from "./NewsList";
 import { NewsEdit } from "./NewsEdit";
-import ArticleIcon from '@mui/icons-material/Article';
+import ArticleIcon from "@mui/icons-material/Article";
 
 export default {
   list: NewsList,

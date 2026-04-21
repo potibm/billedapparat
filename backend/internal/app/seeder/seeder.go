@@ -1,12 +1,11 @@
+//nolint:mnd // we want to keep the numbers in the seeder for better control over the generated data
 package seeder
 
 import (
 	"context"
 	"log/slog"
-	"os"
 
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/potibm/billedapparat/internal/app/config"
 	"github.com/potibm/billedapparat/internal/app/domain"
 	"github.com/potibm/billedapparat/internal/app/repository"
 )
@@ -35,10 +34,6 @@ func (s *Seeder) Run() error {
 	slog.Info("Starting DB Purge & Seed...")
 
 	ctx := context.Background()
-
-	if err := os.MkdirAll(config.MediaDirname, config.DataDirPerm); err != nil {
-		return err
-	}
 
 	_ = gofakeit.Seed(0)
 
@@ -92,20 +87,18 @@ func (s *Seeder) buildSponsorSlide(id int64) (domain.Slide, error) {
 
 	title := gofakeit.Company()
 
-
 	return domain.Slide{
 		ID: id,
 		Content: domain.Content{
 			Title: title,
-			Type: domain.TypeSponsor,
+			Type:  domain.TypeSponsor,
 		},
 		MediaURLOriginal: imageURL,
 		Status:           "active",
 		DisplayOptions: domain.DisplayOptions{
 			AllowSocialOverlay: false,
-			//nolint:mnd // mnd: sponsor slides between 3 and 10, randomized to create some variation in the seed data
-			Priority: gofakeit.Number(3, 10),
-			IsUrgent: false,
+			Priority:           gofakeit.Number(3, 10),
+			IsUrgent:           false,
 		},
 	}, nil
 }
@@ -122,7 +115,7 @@ func (s *Seeder) buildSceneFriendSlide(id int64) (domain.Slide, error) {
 		ID: id,
 		Content: domain.Content{
 			Title: title,
-			Type: domain.TypeSponsor,
+			Type:  domain.TypeSponsor,
 		},
 		MediaURLOriginal: imageURL,
 		Status:           "active",
@@ -135,10 +128,9 @@ func (s *Seeder) buildSceneFriendSlide(id int64) (domain.Slide, error) {
 }
 
 func (s *Seeder) buildNewsSlide(id int64) (domain.Slide, error) {
-
 	text := gofakeit.Paragraph(1)
 
-	// second level heading 
+	// second level heading
 	if gofakeit.Bool() {
 		text += "\n\n"
 		text += "## " + gofakeit.Sentence(5) + "\n\n" + gofakeit.Paragraph(1)
@@ -148,7 +140,7 @@ func (s *Seeder) buildNewsSlide(id int64) (domain.Slide, error) {
 	if gofakeit.Bool() {
 		text += "\n\n"
 		text += "- " + gofakeit.Sentence(5) + "\n"
-		text += "- " + gofakeit.Sentence(5) + "\n" 
+		text += "- " + gofakeit.Sentence(5) + "\n"
 		text += "- " + gofakeit.Sentence(5)
 	}
 

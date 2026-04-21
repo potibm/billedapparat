@@ -1,5 +1,4 @@
 import { StatusChipField } from "@admin/components/fields/StatusChipField";
-import { ImageListPreviewField } from "@admin/components/fields/ImageListPreviewField";
 import {
   List,
   Datagrid,

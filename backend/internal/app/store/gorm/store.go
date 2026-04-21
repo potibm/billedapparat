@@ -2,7 +2,6 @@ package gorm
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/glebarez/sqlite"
@@ -25,9 +24,6 @@ func NewSqliteStore(filename string) (*Store, error) {
 	}
 
 	dbPath := filepath.Join(config.DatabaseDirname, filename+".db")
-	if err := os.MkdirAll(config.DataDirname, config.DataDirPerm); err != nil {
-		return nil, fmt.Errorf("failed to create database directory: %w", err)
-	}
 
 	dsn := fmt.Sprintf("%s?_busy_timeout=5000", dbPath)
 

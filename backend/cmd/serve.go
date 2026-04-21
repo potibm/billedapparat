@@ -28,6 +28,9 @@ func NewServeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "serve",
 		Short: "Runs the HTTP server for the Billedapparat application",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return ensureAppInfrastructure()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// 1. Context
 			ctx := cmd.Context()

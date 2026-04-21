@@ -8,7 +8,7 @@ const PLAYLIST_PATTERN = [
   "sponsor",
   "sponsor",
   "news",
-/*  "timetable",
+  /*  "timetable",
  "sponsor",
   "social",
   "social",*/

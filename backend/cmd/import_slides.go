@@ -19,6 +19,9 @@ func NewImportSlidesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "slides",
 		Short: "Import slides from a directory",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return ensureAppInfrastructure()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			slog.Info("Importing slides from directory", "directory", importDirectory)
 
