@@ -25,7 +25,7 @@ RUN go mod download
 COPY backend .
 COPY --from=frontend-build /app/frontend/build ./cmd/assets
 
-ARG VERSION
+ARG VERSION=dev
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags "-X github.com/potibm/billedapparat/cmd.Version=${VERSION}" -o billedapparat .
 
 # ==========================================

@@ -98,8 +98,8 @@ func (s *Server) processImportedFile(ctx context.Context, filePath string) (*dom
 	newSlide := &domain.Slide{
 		Status: "active",
 		Content: domain.Content{
-			Type: "sponsor",
-			Text: baseName,
+			Type:  "sponsor",
+			Title: baseName,
 		},
 		MediaURLOriginal: publicURL,
 		DisplayOptions: domain.DisplayOptions{

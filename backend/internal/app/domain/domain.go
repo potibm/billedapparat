@@ -33,7 +33,8 @@ type Author struct {
 }
 
 type Content struct {
-	Text      string    `json:"text"`
+	Title     string    `json:"title"`
+	Body      string    `json:"body"`
 	Language  string    `json:"language"`
 	Type      SlideType `json:"type"`
 	LocalPath string    `json:"local_path"`

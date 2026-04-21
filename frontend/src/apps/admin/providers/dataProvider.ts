@@ -17,7 +17,8 @@ interface SlideFormData {
   status?: string;
   content?: {
     type?: string;
-    text?: string;
+    title?: string;
+    body?: string;
   };
   author?: {
     display_name?: string;
@@ -104,7 +105,8 @@ const handleFileUpload = (
 
   formData.append("status", data.status || "active");
   formData.append("content.type", slideType);
-  formData.append("content.text", data.content?.text || "");
+  formData.append("content.title", data.content?.title || "");
+  formData.append("content.body", data.content?.body || "");
   formData.append("author.display_name", data.author?.display_name || "");
   formData.append(
     "display_options.priority",

@@ -1,4 +1,4 @@
-import { SelectInput } from "react-admin";
+import { required, SelectInput } from "react-admin";
 
 export const StatusSelectInput = () => (
   <SelectInput
@@ -8,5 +8,6 @@ export const StatusSelectInput = () => (
       { id: "active", name: "Active" },
       { id: "hidden", name: "Hidden" },
     ]}
+    validate={required()}
   />
 );

@@ -20,6 +20,9 @@ func NewDatabaseResetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "reset",
 		Short: "Reset database and media files",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			return ensureAppInfrastructure()
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !resetForce && !confirmReset(Cfg.App.DbFilename) {
 				slog.Info("Reset aborted by user")
@@ -66,7 +69,7 @@ func confirmReset(dbName string) bool {
 func performDatabaseReset(dbName string) error {
 	slog.Info("Performing database reset...")
 
-	dbStore, err := store.NewSqliteStore(Cfg.App.DbFilename)
+	dbStore, err := store.NewSqliteStore(dbName)
 	if err != nil {
 		return fmt.Errorf("database error: %w", err)
 	}

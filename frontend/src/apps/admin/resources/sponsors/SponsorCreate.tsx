@@ -15,7 +15,7 @@ export const SponsorCreate = () => (
       defaultValues={{ content: { type: "sponsor" }, status: "active" }}
     >
       <TextInput
-        source="content.text"
+        source="content.title"
         label="Name of the Sponsor"
         validate={[required()]}
         fullWidth

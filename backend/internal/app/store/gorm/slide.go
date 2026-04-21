@@ -21,7 +21,8 @@ type dbSlide struct {
 	AuthorAvatarURL   string
 
 	// Content
-	ContentText      string
+	ContentTitle     string
+	ContentBody      string
 	MediaURLOriginal string
 	MediaURLLocal    string
 
@@ -47,7 +48,8 @@ func fromDomain(s *domain.Slide) *dbSlide {
 		AuthorDisplayName:  s.Author.DisplayName,
 		AuthorHandle:       s.Author.Username,
 		AuthorAvatarURL:    s.Author.AvatarURL,
-		ContentText:        s.Content.Text,
+		ContentTitle:       s.Content.Title,
+		ContentBody:        s.Content.Body,
 		MediaURLOriginal:   s.MediaURLOriginal,
 		OriginCreatedAt:    s.OriginCreatedAt,
 		AllowSocialOverlay: s.DisplayOptions.AllowSocialOverlay,
@@ -76,8 +78,9 @@ func (s *dbSlide) toDomain() *domain.Slide {
 			AvatarURL:   s.AuthorAvatarURL,
 		},
 		Content: domain.Content{
-			Type: domain.SlideType(s.Type),
-			Text: s.ContentText,
+			Type:  domain.SlideType(s.Type),
+			Title: s.ContentTitle,
+			Body:  s.ContentBody,
 		},
 		DisplayOptions: domain.DisplayOptions{
 			AllowSocialOverlay: s.AllowSocialOverlay,
