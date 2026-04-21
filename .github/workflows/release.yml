@@ -70,7 +70,7 @@ jobs:
             billedapparat.args.BUILD_DATE=${{ steps.builddate.outputs.value }}            
             billedapparat.labels.org.opencontainers.image.version=${{ steps.meta.outputs.version }}
             billedapparat.labels.org.opencontainers.image.created=${{ steps.builddate.outputs.value }}
-            billedapparat.labels.org.opencontainers.image.description=A POS system for demoparties
+            billedapparat.labels.org.opencontainers.image.description=A party information system for the bigscreen at demoparties.
             billedapparat.labels.org.opencontainers.image.title=Billedapparat
             billedapparat.labels.org.opencontainers.image.licenses=MIT
             billedapparat.annotations=index,manifest:org.opencontainers.image.version=${{ steps.meta.outputs.version }}
