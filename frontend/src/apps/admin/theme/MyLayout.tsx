@@ -22,7 +22,6 @@ export const MyAppBar = (props: AppBarProps) => (
       <Typography
         variant="h6"
         color="inherit"
-        id="react-admin-title"
         sx={{
           fontWeight: 100,
           letterSpacing: ".1rem",
@@ -30,7 +29,7 @@ export const MyAppBar = (props: AppBarProps) => (
           marginRight: "10em",
         }}
       >
-        Billedapparat&nbsp;
+        Billedapparat
       </Typography>
       <TitlePortal />
     </Box>

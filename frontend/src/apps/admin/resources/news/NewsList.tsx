@@ -9,12 +9,10 @@ import {
   NumberField,
 } from "react-admin";
 
-export const SponsorList = () => (
-  <List title="Sponsor Screens">
+export const NewsList = () => (
+  <List title="News Screens">
     <Datagrid rowClick="edit" bulkActionButtons={false}>
-      <ImageListPreviewField source="media_url_original" label="Logo" />
-
-      <TextField source="content.title" label="Name" />
+      <TextField source="content.title" label="Title" />
 
       <NumberField source="display_options.priority" label="Priority" />
 
@@ -26,4 +24,4 @@ export const SponsorList = () => (
   </List>
 );
 
-export default SponsorList;
+export default NewsList;

@@ -151,8 +151,9 @@ func (s *Server) parseSlidePayload(c *gin.Context) (*domain.Slide, error) {
 
 		slide.Status = c.PostForm("status")
 		slide.Content.Type = domain.SlideType(c.PostForm("content.type"))
-		slide.Content.Text = c.PostForm("content.text")
-		slide.Author.DisplayName = c.PostForm("author.displa_nName")
+		slide.Content.Title = c.PostForm("content.title")
+		slide.Content.Body = c.PostForm("content.body")
+		slide.Author.DisplayName = c.PostForm("author.display_name")
 		slide.DisplayOptions.Priority = priority
 		slide.DisplayOptions.AllowSocialOverlay = c.PostForm("display_options.allow_social_overlay") == "true"
 

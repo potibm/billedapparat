@@ -14,7 +14,7 @@ export const SponsorEdit = () => (
   <Edit title="Edit Sponsor Screens">
     <SimpleForm>
       <TextInput
-        source="content.text"
+        source="content.title"
         label="Name"
         validate={[required()]}
         fullWidth

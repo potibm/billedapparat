@@ -1,39 +1,36 @@
+import { ImageEditPreviewField } from "@admin/components/fields/ImageEditPreviewField";
 import { ImageUploadInput } from "@admin/components/fields/ImageUploadInput";
 import { PriorityInput } from "@admin/components/fields/PriorityInput";
 import { StatusSelectInput } from "@admin/components/fields/StatusSelectInput";
 import {
-  Create,
+  Edit,
   SimpleForm,
   TextInput,
   required,
   BooleanInput,
 } from "react-admin";
 
-export const SponsorCreate = () => (
-  <Create title="Add Sponsor Screen">
-    <SimpleForm
-      defaultValues={{ content: { type: "sponsor" }, status: "active" }}
-    >
+export const NewsEdit = () => (
+  <Edit title="Edit News Screens">
+    <SimpleForm>
       <TextInput
         source="content.title"
-        label="Name of the Sponsor"
+        label="Title"
         validate={[required()]}
         fullWidth
       />
 
-      <ImageUploadInput label="Upload Slide" />
+      <TextInput
+        source="content.body"
+        label="Body"
+        validate={[required()]}
+        fullWidth
+        multiline
+      />
 
       <PriorityInput />
 
-      <BooleanInput
-        source="display_options.allow_social_overlay"
-        label="Allow social media overlay"
-        defaultValue={true}
-      />
-
       <StatusSelectInput />
     </SimpleForm>
-  </Create>
+  </Edit>
 );
-
-export default SponsorCreate;

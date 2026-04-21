@@ -9,31 +9,31 @@ import {
   BooleanInput,
 } from "react-admin";
 
-export const SponsorCreate = () => (
-  <Create title="Add Sponsor Screen">
+export const NewsCreate = () => (
+  <Create title="Add News Screen">
     <SimpleForm
-      defaultValues={{ content: { type: "sponsor" }, status: "active" }}
+      defaultValues={{ content: { type: "news" }, status: "active" }}
     >
       <TextInput
         source="content.title"
-        label="Name of the Sponsor"
+        label="Title"
         validate={[required()]}
         fullWidth
       />
 
-      <ImageUploadInput label="Upload Slide" />
+      <TextInput
+        source="content.body"
+        label="Text"
+        validate={[required()]}
+        fullWidth
+        multiline
+      />
 
       <PriorityInput />
-
-      <BooleanInput
-        source="display_options.allow_social_overlay"
-        label="Allow social media overlay"
-        defaultValue={true}
-      />
 
       <StatusSelectInput />
     </SimpleForm>
   </Create>
 );
 
-export default SponsorCreate;
+export default NewsCreate;

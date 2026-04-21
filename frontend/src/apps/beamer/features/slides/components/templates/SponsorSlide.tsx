@@ -6,13 +6,13 @@ export const SponsorSlide = ({ slide }: { slide: Slide }) => {
       {slide.media_url_original ? (
         <img
           src={slide.media_url_original}
-          alt={slide.content.text || "Sponsor"}
-          title={slide.content.text || "Sponsor"}
+          alt={slide.content.title || "Sponsor"}
+          title={slide.content.title || "Sponsor"}
           className="w-full h-full object-contain"
         />
       ) : (
         <h2 className="text-5xl font-light text-gray-500 tracking-widest uppercase">
-          {slide.content.text}
+          Sponsor: {slide.content.title}
         </h2>
       )}
     </div>

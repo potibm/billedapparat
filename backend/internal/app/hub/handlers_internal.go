@@ -99,7 +99,7 @@ func (s *Server) processImportedFile(ctx context.Context, filePath string) (*dom
 		Status: "active",
 		Content: domain.Content{
 			Type: "sponsor",
-			Text: baseName,
+			Title: baseName,
 		},
 		MediaURLOriginal: publicURL,
 		DisplayOptions: domain.DisplayOptions{

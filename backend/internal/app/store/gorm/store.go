@@ -24,7 +24,7 @@ func NewSqliteStore(filename string) (*Store, error) {
 		filename = config.DefaultDBFilename
 	}
 
-	dbPath := filepath.Join(config.DataDirname, filename+".db")
+	dbPath := filepath.Join(config.DatabaseDirname, filename+".db")
 	if err := os.MkdirAll(config.DataDirname, config.DataDirPerm); err != nil {
 		return nil, fmt.Errorf("failed to create database directory: %w", err)
 	}

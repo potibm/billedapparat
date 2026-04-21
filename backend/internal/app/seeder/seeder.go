@@ -14,6 +14,7 @@ import (
 const (
 	numberOfSponsorSlides     = 10
 	numberOfSceneFriendSlides = 25
+	numberOfNewsSlides        = 10
 )
 
 type Seeder struct {
@@ -46,6 +47,10 @@ func (s *Seeder) Run() error {
 	}
 
 	if err := s.generateAndSave(ctx, numberOfSceneFriendSlides, s.buildSceneFriendSlide); err != nil {
+		return err
+	}
+
+	if err := s.generateAndSave(ctx, numberOfNewsSlides, s.buildNewsSlide); err != nil {
 		return err
 	}
 
@@ -85,10 +90,13 @@ func (s *Seeder) buildSponsorSlide(id int64) (domain.Slide, error) {
 		return domain.Slide{}, err
 	}
 
+	title := gofakeit.Company()
+
+
 	return domain.Slide{
 		ID: id,
 		Content: domain.Content{
-			Text: gofakeit.Company(),
+			Title: title,
 			Type: domain.TypeSponsor,
 		},
 		MediaURLOriginal: imageURL,
@@ -108,14 +116,51 @@ func (s *Seeder) buildSceneFriendSlide(id int64) (domain.Slide, error) {
 		return domain.Slide{}, err
 	}
 
+	title := gofakeit.Gamertag()
+
 	return domain.Slide{
 		ID: id,
 		Content: domain.Content{
-			Text: gofakeit.Gamertag(),
+			Title: title,
 			Type: domain.TypeSponsor,
 		},
 		MediaURLOriginal: imageURL,
 		Status:           "active",
+		DisplayOptions: domain.DisplayOptions{
+			AllowSocialOverlay: true,
+			Priority:           1,
+			IsUrgent:           false,
+		},
+	}, nil
+}
+
+func (s *Seeder) buildNewsSlide(id int64) (domain.Slide, error) {
+
+	text := gofakeit.Paragraph(1)
+
+	// second level heading 
+	if gofakeit.Bool() {
+		text += "\n\n"
+		text += "## " + gofakeit.Sentence(5) + "\n\n" + gofakeit.Paragraph(1)
+	}
+
+	// some bullet points
+	if gofakeit.Bool() {
+		text += "\n\n"
+		text += "- " + gofakeit.Sentence(5) + "\n"
+		text += "- " + gofakeit.Sentence(5) + "\n" 
+		text += "- " + gofakeit.Sentence(5)
+	}
+
+	return domain.Slide{
+		ID: id,
+		Content: domain.Content{
+			Title: gofakeit.Sentence(5),
+			Body:  text,
+			Type:  domain.TypeNews,
+		},
+		Status:           "active",
+		MediaURLOriginal: "",
 		DisplayOptions: domain.DisplayOptions{
 			AllowSocialOverlay: true,
 			Priority:           1,

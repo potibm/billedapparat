@@ -6,7 +6,8 @@ export const slideSchema = z.object({
   content: z
     .object({
       type: z.string().default("slide"),
-      text: z.string().optional(),
+      title: z.string().optional(),
+      body: z.string().optional(),
     })
     .default({ type: "slide" }),
   media_url_original: z.string().optional(),

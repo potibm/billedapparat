@@ -66,7 +66,7 @@ func confirmReset(dbName string) bool {
 func performDatabaseReset(dbName string) error {
 	slog.Info("Performing database reset...")
 
-	dbStore, err := store.NewSqliteStore(Cfg.App.DbFilename)
+	dbStore, err := store.NewSqliteStore(dbName)
 	if err != nil {
 		return fmt.Errorf("database error: %w", err)
 	}

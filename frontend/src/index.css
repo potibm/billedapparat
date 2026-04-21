@@ -6,3 +6,23 @@
 body {
   @apply bg-black text-gray-600;
 }
+
+.ba-slide-news {
+  @apply text-gray-200 p-8 max-w-4xl mx-auto;
+}
+
+.ba-slide-news h1 {
+  @apply text-white text-5xl font-bold mb-4;
+}
+
+.ba-slide-news h2 {
+  @apply text-3xl font-bold mb-4;
+}
+
+.ba-slide-news p {
+  @apply text-lg leading-relaxed mb-4;
+}
+
+.ba-slide-news li {
+  @apply text-lg leading-relaxed list-disc list-inside;
+}
