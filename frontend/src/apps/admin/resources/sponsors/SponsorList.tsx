@@ -8,11 +8,18 @@ import {
   DeleteButton,
   NumberField,
 } from "react-admin";
+import { DefaultFilters } from "@admin/components/filters/DefaultFilters";
 
 export const SponsorList = () => (
-  <List title="Sponsor Screens">
+  <List title="Sponsor Screens" filters={DefaultFilters}>
     <Datagrid rowClick="edit" bulkActionButtons={false}>
-      <ImageListPreviewField source="media_url_original" label="Logo" />
+      <NumberField source="id" label="ID" />
+
+      <ImageListPreviewField
+        source="content.media.local_url"
+        label="Logo"
+        sortable={false}
+      />
 
       <TextField source="content.title" label="Name" />
 

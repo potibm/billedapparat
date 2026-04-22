@@ -7,10 +7,13 @@ import {
   DeleteButton,
   NumberField,
 } from "react-admin";
+import { DefaultFilters } from "@admin/components/filters/DefaultFilters";
 
 export const NewsList = () => (
-  <List title="News Screens">
+  <List title="News Screens" filters={DefaultFilters}>
     <Datagrid rowClick="edit" bulkActionButtons={false}>
+      <NumberField source="id" label="ID" />
+
       <TextField source="content.title" label="Title" />
 
       <NumberField source="display_options.priority" label="Priority" />

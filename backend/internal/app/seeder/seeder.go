@@ -92,9 +92,12 @@ func (s *Seeder) buildSponsorSlide(id int64) (domain.Slide, error) {
 		Content: domain.Content{
 			Title: title,
 			Type:  domain.TypeSponsor,
+			Media: &domain.Media{
+				LocalURL: imageURL,
+				MimeType: "image/webp",
+			},
 		},
-		MediaURLOriginal: imageURL,
-		Status:           "active",
+		Status: "active",
 		DisplayOptions: domain.DisplayOptions{
 			AllowSocialOverlay: false,
 			Priority:           gofakeit.Number(3, 10),
@@ -116,9 +119,12 @@ func (s *Seeder) buildSceneFriendSlide(id int64) (domain.Slide, error) {
 		Content: domain.Content{
 			Title: title,
 			Type:  domain.TypeSponsor,
+			Media: &domain.Media{
+				LocalURL: imageURL,
+				MimeType: "image/webp",
+			},
 		},
-		MediaURLOriginal: imageURL,
-		Status:           "active",
+		Status: "active",
 		DisplayOptions: domain.DisplayOptions{
 			AllowSocialOverlay: true,
 			Priority:           1,
@@ -150,9 +156,9 @@ func (s *Seeder) buildNewsSlide(id int64) (domain.Slide, error) {
 			Title: gofakeit.Sentence(5),
 			Body:  text,
 			Type:  domain.TypeNews,
+			Media: nil,
 		},
-		Status:           "active",
-		MediaURLOriginal: "",
+		Status: "active",
 		DisplayOptions: domain.DisplayOptions{
 			AllowSocialOverlay: true,
 			Priority:           1,

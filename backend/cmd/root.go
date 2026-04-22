@@ -93,7 +93,11 @@ func Execute() error {
 
 	rootCmd.AddCommand(NewServeCmd())
 
-	rootCmd.AddCommand(NewConfigCmd())
+	configCmd := NewConfigCmd()
+	configCmd.AddCommand(
+		NewConfigExportCmd(),
+	)
+	rootCmd.AddCommand(configCmd)
 
 	importCmd := NewImportCmd()
 	importCmd.AddCommand(

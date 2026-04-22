@@ -34,18 +34,42 @@ export const useSlideManager = () => {
     const handleInit = (e: MessageEvent) => {
       const parsed = z.array(slideSchema).safeParse(JSON.parse(e.data));
       logger.debug("Received INIT event", "count", parsed.data?.length);
+      if (parsed.error) {
+        logger.warn(
+          "Failed to parse INIT event",
+          "error",
+          parsed.error,
+          "rawData",
+          e.data,
+        );
+      }
       if (parsed.success) initSlides(parsed.data);
     };
 
     const handleCreate = (e: MessageEvent) => {
       const parsed = slideSchema.safeParse(JSON.parse(e.data));
       logger.debug("Received CREATE event", "id", parsed.data?.id);
+      if (parsed.error) {
+        logger.warn(
+          "Failed to parse CREATE event",
+          "error",
+          parsed.error,
+          "rawData",
+          e.data,
+        );
+      }
       if (parsed.success) upsertSlide(parsed.data);
     };
 
     const handleUpdate = (e: MessageEvent) => {
       const parsed = slideSchema.safeParse(JSON.parse(e.data));
-      logger.debug("Received UPDATE event", "id", parsed.data?.id);
+      logger.debug(
+        "Received UPDATE event",
+        "id",
+        parsed.data?.id,
+        "rawData",
+        e.data,
+      );
       if (parsed.success) upsertSlide(parsed.data);
     };
 

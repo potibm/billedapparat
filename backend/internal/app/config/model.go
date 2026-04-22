@@ -41,9 +41,15 @@ type APIConfig struct {
 	AdminAPIKey string `mapstructure:"admin_api_key" validate:"required"`
 }
 
+type CollectorConfig struct {
+	Enabled bool   `mapstructure:"enabled"`
+	APIKey  string `mapstructure:"api_key" validate:"required_if=Enabled true"`
+}
+
 type Config struct {
-	App    AppConfig    `mapstructure:"app"`
-	Format FormatConfig `mapstructure:"format"`
-	Sentry SentryConfig `mapstructure:"sentry"`
-	API    APIConfig    `mapstructure:"api"`
+	App        AppConfig                  `mapstructure:"app"`
+	Format     FormatConfig               `mapstructure:"format"`
+	Sentry     SentryConfig               `mapstructure:"sentry"`
+	API        APIConfig                  `mapstructure:"api"`
+	Collectors map[string]CollectorConfig `mapstructure:"collectors" validate:"dive"`
 }

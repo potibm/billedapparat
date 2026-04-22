@@ -1,10 +1,18 @@
 import { PriorityInput } from "@admin/components/fields/PriorityInput";
 import { StatusSelectInput } from "@admin/components/fields/StatusSelectInput";
-import { Edit, SimpleForm, TextInput, required } from "react-admin";
+import {
+  Edit,
+  NumberInput,
+  SimpleForm,
+  TextInput,
+  required,
+} from "react-admin";
 
 export const NewsEdit = () => (
   <Edit title="Edit News Screens">
     <SimpleForm>
+      <NumberInput source="id" label="ID" disabled />
+
       <TextInput
         source="content.title"
         label="Title"

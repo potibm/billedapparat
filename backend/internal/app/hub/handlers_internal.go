@@ -100,8 +100,12 @@ func (s *Server) processImportedFile(ctx context.Context, filePath string) (*dom
 		Content: domain.Content{
 			Type:  "sponsor",
 			Title: baseName,
+			Media: &domain.Media{
+				OriginalURL: "file://" + filePath,
+				LocalURL:    publicURL,
+				MimeType:    "image/webp",
+			},
 		},
-		MediaURLOriginal: publicURL,
 		DisplayOptions: domain.DisplayOptions{
 			AllowSocialOverlay: true,
 			Priority:           1,

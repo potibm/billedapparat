@@ -52,7 +52,11 @@ func (r *slideRepository) GetActive(ctx context.Context) ([]domain.Slide, error)
 	return slides, nil
 }
 
-func (r *slideRepository) AdminList(ctx context.Context, p repository.AdminListParams) ([]domain.Slide, int64, error) {
+func (r *slideRepository) AdminList(
+	ctx context.Context,
+	p repository.AdminListParams,
+	filters repository.AdminListFilters,
+) ([]domain.Slide, int64, error) {
 	var (
 		dbSlides []dbSlide
 		total    int64
@@ -68,7 +72,31 @@ func (r *slideRepository) AdminList(ctx context.Context, p repository.AdminListP
 		return nil, 0, err
 	}
 
+	switch p.Sort {
+	case "content.title":
+		p.Sort = "content_title"
+	case "display_options.priority":
+		p.Sort = "priority"
+	}
+
 	orderClause := fmt.Sprintf("%s %s", p.Sort, p.Order)
+
+	if filters.Query != nil {
+		likeQuery := fmt.Sprintf("%%%s%%", *filters.Query)
+		query = query.Where("content_title LIKE ? OR content_body LIKE ?", likeQuery, likeQuery)
+	}
+
+	if filters.Status != nil {
+		query = query.Where("status = ?", *filters.Status)
+	}
+
+	if filters.Priority != nil {
+		query = query.Where("priority = ?", *filters.Priority)
+	}
+
+	if filters.ID != nil {
+		query = query.Where("id = ?", *filters.ID)
+	}
 
 	err := query.Order(orderClause).
 		Limit(p.Limit).

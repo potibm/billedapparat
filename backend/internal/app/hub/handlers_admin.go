@@ -26,7 +26,42 @@ func (s *Server) adminListSlides(c *gin.Context) {
 		Type:   slideType,
 	}
 
-	slides, total, err := s.slideRepo.AdminList(c.Request.Context(), params)
+	filters := repository.AdminListFilters{
+		Query:    nil,
+		Status:   nil,
+		Priority: nil,
+		ID:       nil,
+	}
+	if c.Query("q") != "" {
+		query := c.Query("q")
+		filters.Query = &query
+	}
+
+	if c.Query("status_active") == "true" {
+		status := "active"
+		filters.Status = &status
+	} else if c.Query("status_inactive") == "true" {
+		status := "inactive"
+		filters.Status = &status
+	}
+
+	if priorityStr := c.Query("display_options.priority"); priorityStr != "" {
+		priority64, err := strconv.ParseInt(priorityStr, 10, 32)
+
+		if err == nil && priority64 >= 1 && priority64 <= 10 {
+			priority32 := int32(priority64)
+			filters.Priority = &priority32
+		}
+	}
+
+	if c.Query("id") != "" {
+		id, err := strconv.ParseInt(c.Query("id"), 10, 64)
+		if err == nil {
+			filters.ID = &id
+		}
+	}
+
+	slides, total, err := s.slideRepo.AdminList(c.Request.Context(), params, filters)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 
@@ -159,7 +194,8 @@ func (s *Server) parseSlidePayload(c *gin.Context) (*domain.Slide, error) {
 
 		newPath, err := s.processSlideImage(c, "image_upload")
 		if err == nil && newPath != "" {
-			slide.MediaURLOriginal = newPath
+			slide.Content.Media.LocalURL = newPath
+			slide.Content.Media.MimeType = "image/webp"
 		}
 
 		return &slide, nil

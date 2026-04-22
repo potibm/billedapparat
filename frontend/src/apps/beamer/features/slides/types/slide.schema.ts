@@ -8,15 +8,18 @@ export const slideSchema = z.object({
       type: z.string().default("slide"),
       title: z.string().optional(),
       body: z.string().optional(),
+      media: z
+        .object({
+          local_url: z.string().optional(),
+          mime_type: z.string(),
+        })
+        .optional(),
     })
     .default({ type: "slide" }),
-  media_url_original: z.string().optional(),
-  display_options: z
-    .object({
-      priority: z.number(),
-      is_urgent: z.boolean(),
-    })
-    .optional(),
+  display_options: z.object({
+    priority: z.number(),
+    is_urgent: z.boolean(),
+  }),
 });
 
 export type Slide = z.infer<typeof slideSchema>;
