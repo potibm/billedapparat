@@ -33,11 +33,16 @@ type Config struct {
 }
 
 type Server struct {
-	port        int
-	staticFiles embed.FS
-	slideRepo   repository.SlideRepository
-	cfg         config.Config
-	streamer    *Streamer
+	port           int
+	staticFiles    embed.FS
+	slideRepo      repository.SlideRepository
+	cfg            config.Config
+	streamer       *Streamer
+	mediaProcessor MediaProcessor
+}
+
+type MediaProcessor interface {
+	ProcessSlideImage(c *gin.Context, formField string) (string, error)
 }
 
 func NewServer(cfg Config) (*Server, error) {

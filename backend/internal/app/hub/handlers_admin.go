@@ -1,13 +1,13 @@
 package hub
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/potibm/billedapparat/internal/app/domain"
-	"github.com/potibm/billedapparat/internal/app/media"
 	"github.com/potibm/billedapparat/internal/app/repository"
 )
 
@@ -93,17 +93,31 @@ func (s *Server) adminGetSlide(c *gin.Context) {
 }
 
 func (s *Server) adminCreateSlide(c *gin.Context) {
+	slog.Debug("Admin Create Slide: Received request to create a new slide")
+
 	slide, err := s.parseSlidePayload(c)
 	if err != nil {
+		slog.Debug("Admin Create Slide: Error parsing slide payload", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload: " + err.Error()})
 
 		return
+	} else {
+		slog.Info(
+			"Admin Create Slide: Successfully parsed slide payload",
+			"title",
+			slide.Content.Title,
+			"type",
+			slide.Content.Type,
+		)
 	}
 
 	if err := s.slideRepo.Save(c.Request.Context(), slide); err != nil {
+		slog.Error("Admin Create Slide: Failed to create slide", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create slide"})
 
 		return
+	} else {
+		slog.Info("Admin Create Slide: Successfully created slide", "id", slide.ID)
 	}
 
 	s.streamer.Broadcast("CREATE", slide)
@@ -158,21 +172,6 @@ func (s *Server) adminDeleteSlide(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"id": id})
 }
 
-func (s *Server) processSlideImage(c *gin.Context, fieldName string) (string, error) {
-	fileHeader, err := c.FormFile(fieldName)
-	if err != nil {
-		return "", err
-	}
-
-	file, err := fileHeader.Open()
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	return media.ProcessAndSaveSlide(file)
-}
-
 func (s *Server) parseSlidePayload(c *gin.Context) (*domain.Slide, error) {
 	var slide domain.Slide
 
@@ -192,10 +191,12 @@ func (s *Server) parseSlidePayload(c *gin.Context) (*domain.Slide, error) {
 		slide.DisplayOptions.Priority = priority
 		slide.DisplayOptions.AllowSocialOverlay = c.PostForm("display_options.allow_social_overlay") == "true"
 
-		newPath, err := s.processSlideImage(c, "image_upload")
+		newPath, err := s.mediaProcessor.ProcessSlideImage(c, "image_upload")
 		if err == nil && newPath != "" {
-			slide.Content.Media.LocalURL = newPath
-			slide.Content.Media.MimeType = "image/webp"
+			slide.Content.Media = &domain.Media{
+				LocalURL: newPath,
+				MimeType: "image/webp",
+			}
 		}
 
 		return &slide, nil
