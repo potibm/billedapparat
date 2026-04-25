@@ -130,3 +130,40 @@ func (r *slideRepository) GetAllMediaURLs(ctx context.Context) ([]string, error)
 
 	return urls, err
 }
+
+func (r *slideRepository) SlideExists(source, externalID string, subID *int) (bool, error) {
+	var count int64
+	query := r.db.Model(&dbSlide{}).Where("source = ? AND external_id = ?", source, externalID)
+
+	if subID != nil {
+		query = query.Where("external_sub_id = ?", *subID)
+	} else {
+		query = query.Where("external_sub_id IS NULL")
+	}
+
+	err := query.Count(&count).Error
+	return count > 0, err
+}
+
+func (r *slideRepository) FindLocalURLByOriginalURL(ctx context.Context, originalURL string) (string, bool) {
+    var localURL string
+
+    query := `
+        SELECT content_media_url_local AS local_url 
+        FROM slides 
+        WHERE content_media_url_original = ? AND content_media_url_local != ''
+        UNION ALL
+        SELECT author_avatar_url_local AS local_url 
+        FROM slides 
+        WHERE author_avatar_url_original = ? AND author_avatar_url_local != ''
+        LIMIT 1
+    `
+
+    err := r.db.WithContext(ctx).Raw(query, originalURL, originalURL).Scan(&localURL).Error
+
+    if err != nil || localURL == "" {
+        return "", false // Cache Miss
+    }
+
+    return localURL, true // Cache Hit!
+}

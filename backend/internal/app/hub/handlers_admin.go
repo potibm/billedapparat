@@ -183,7 +183,7 @@ func (s *Server) parseSlidePayload(c *gin.Context) (*domain.Slide, error) {
 			priority = 1
 		}
 
-		slide.Status = c.PostForm("status")
+		slide.Status = domain.SlideStatus(c.PostForm("status"))
 		slide.Content.Type = domain.SlideType(c.PostForm("content.type"))
 		slide.Content.Title = c.PostForm("content.title")
 		slide.Content.Body = c.PostForm("content.body")

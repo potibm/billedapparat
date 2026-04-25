@@ -39,6 +39,7 @@ type Server struct {
 	cfg            config.Config
 	streamer       *Streamer
 	mediaProcessor MediaProcessor
+	mediaDownloader *MediaDownloader
 }
 
 type MediaProcessor interface {
@@ -52,6 +53,7 @@ func NewServer(cfg Config) (*Server, error) {
 		slideRepo:   cfg.SlideRepo,
 		cfg:         cfg.Cfg,
 		streamer:    NewStreamer(),
+		mediaDownloader: NewMediaDownloader(cfg.SlideRepo),
 	}, nil
 }
 

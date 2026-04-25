@@ -20,13 +20,13 @@ type dbSlide struct {
 	AuthorDisplayName       string
 	AuthorHandle            string
 	AuthorAvatarURLLocal    string
-	AuthorAvatarURLOriginal string
+	AuthorAvatarURLOriginal string `gorm:"index"`
 	AuthorAvatarMimeType    string
 
 	// Content
 	ContentTitle            string
 	ContentBody             string
-	ContentMediaURLOriginal string
+	ContentMediaURLOriginal string `gorm:"index"`
 	ContentMediaURLLocal    string
 	ContentMediaMimeType    string
 
@@ -49,7 +49,7 @@ func fromDomain(s *domain.Slide) *dbSlide {
 
 		Type:               string(s.Content.Type),
 		ExternalSubID:      s.ExternalSubID,
-		Status:             s.Status,
+		Status:             string(s.Status),
 		AuthorDisplayName:  s.Author.DisplayName,
 		AuthorHandle:       s.Author.Username,
 		ContentTitle:       s.Content.Title,
@@ -84,13 +84,10 @@ func fromDomain(s *domain.Slide) *dbSlide {
 }
 
 func (s *dbSlide) toDomain() *domain.Slide {
+
 	ds := &domain.Slide{
 		ID:     s.ID,
-		Status: s.Status,
-		Author: domain.Author{
-			DisplayName: s.AuthorDisplayName,
-			Username:    s.AuthorHandle,
-		},
+		Status: domain.SlideStatus(s.Status),
 		Content: domain.Content{
 			Type:  domain.SlideType(s.Type),
 			Title: s.ContentTitle,
@@ -101,7 +98,6 @@ func (s *dbSlide) toDomain() *domain.Slide {
 			IsUrgent:           s.IsUrgent,
 			Priority:           s.Priority,
 		},
-
 		OriginCreatedAt: s.OriginCreatedAt,
 	}
 
@@ -111,6 +107,12 @@ func (s *dbSlide) toDomain() *domain.Slide {
 
 	if s.ExternalID != nil {
 		ds.ExternalID = *s.ExternalID
+	}
+
+
+	ds.Author = &domain.Author{
+		DisplayName: s.AuthorDisplayName,
+		Username:    s.AuthorHandle,
 	}
 
 	if s.AuthorAvatarURLLocal != "" || s.AuthorAvatarURLOriginal != "" {

@@ -3,12 +3,17 @@ package domain
 import "time"
 
 type SlideType string
+type SlideStatus string
 
 const (
 	TypeSocial    SlideType = "social"
 	TypeSponsor   SlideType = "sponsor"
 	TypeNews      SlideType = "news"
 	TypeTimetable SlideType = "timetable"
+
+	StatusActive   SlideStatus = "active"
+	StatusPending  SlideStatus = "pending"
+	StatusInactive SlideStatus = "inactive"
 )
 
 type Media struct {
@@ -22,10 +27,10 @@ type Slide struct {
 	Source          string         `json:"source"`
 	ExternalID      string         `json:"external_id"`
 	ExternalSubID   *int           `json:"external_sub_id,omitempty"`
-	Author          Author         `json:"author"`
+	Author          *Author         `json:"author"`
 	Content         Content        `json:"content"`
 	DisplayOptions  DisplayOptions `json:"display_options"`
-	Status          string         `json:"status"`
+	Status          SlideStatus    `json:"status"`
 	OriginCreatedAt time.Time      `json:"origin_created_at"`
 	CreatedAt       time.Time      `json:"created_at"`
 }

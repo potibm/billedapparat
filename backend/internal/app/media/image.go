@@ -16,9 +16,16 @@ import (
 	"golang.org/x/image/draw"
 )
 
+type ImageType string
+
 const (
 	slideMaxWidth  = 1920
 	slideMaxHeight = 1080
+	avatarMaxWidth  = 256
+    avatarMaxHeight = 256
+
+	TypeAvatar ImageType = "avatar"
+	TypeSlide  ImageType = "slide"
 )
 
 func ResizeAndSave(srcReader io.Reader, destPath string, maxWidth, maxHeight int) error {
@@ -58,19 +65,37 @@ func ResizeAndSave(srcReader io.Reader, destPath string, maxWidth, maxHeight int
 	return nativewebp.Encode(out, dst, nil)
 }
 
-func ResizeAndSaveSlide(srcReader io.Reader, destPath string) error {
-	return ResizeAndSave(srcReader, destPath, slideMaxWidth, slideMaxHeight)
-}
-
 func ProcessAndSaveSlide(file io.Reader) (string, error) {
-	filename := fmt.Sprintf("%s.webp", uuid.New().String())
+	filename := fmt.Sprintf("slide_%s.webp", uuid.New().String())
 	localFilePath := filepath.Join(config.MediaDirname, filename)
 
-	if err := ResizeAndSaveSlide(file, localFilePath); err != nil {
+	if err := ResizeAndSave(file, localFilePath, slideMaxWidth, slideMaxHeight); err != nil {
 		return "", err
 	}
 
 	publicURL := config.MediaURL + filename
 
 	return publicURL, nil
+}
+
+func ProcessAndSaveAvatar(file io.Reader) (string, error) {
+    filename := fmt.Sprintf("avatar_%s.webp", uuid.New().String())
+    localFilePath := filepath.Join(config.MediaDirname, filename) 
+
+    if err := ResizeAndSave(file, localFilePath, avatarMaxWidth, avatarMaxHeight); err != nil {
+        return "", err
+    }
+
+    return config.MediaURL + "avatars/" + filename, nil
+}
+
+func ProcessAndSave(file *os.File, imageType ImageType) (string, error) {
+	switch imageType {
+	case TypeSlide:
+		return ProcessAndSaveSlide(file)
+	case TypeAvatar:
+		return ProcessAndSaveAvatar(file)
+	default:
+		return "", fmt.Errorf("unsupported image type: %s", imageType)
+	}
 }
