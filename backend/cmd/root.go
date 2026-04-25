@@ -96,6 +96,7 @@ func Execute() error {
 	configCmd := NewConfigCmd()
 	configCmd.AddCommand(
 		NewConfigExportCmd(),
+		NewConfigCreateCmd(),
 	)
 	rootCmd.AddCommand(configCmd)
 
