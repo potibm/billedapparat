@@ -13,11 +13,13 @@ type SSEMessage struct {
 type Streamer struct {
 	clients map[chan SSEMessage]bool
 	mu      sync.RWMutex
+	logger  *slog.Logger
 }
 
-func NewStreamer() *Streamer {
+func NewStreamer(logger *slog.Logger) *Streamer {
 	return &Streamer{
 		clients: make(map[chan SSEMessage]bool),
+		logger:  logger,
 	}
 }
 
@@ -34,7 +36,7 @@ func (s *Streamer) Broadcast(event string, payload interface{}) {
 		select {
 		case ch <- msg:
 		default:
-			slog.Warn("[SSE] Client channel full, dropping message")
+			s.logger.Warn("Client channel full, dropping message")
 		}
 	}
 }
@@ -47,7 +49,7 @@ func (s *Streamer) addClient() chan SSEMessage {
 
 	ch := make(chan SSEMessage, clientChanBufferSize)
 	s.clients[ch] = true
-	slog.Info("[SSE] Client connected", "active_clients", len(s.clients))
+	s.logger.Info("Client connected", "active_clients", len(s.clients))
 
 	return ch
 }
@@ -59,6 +61,6 @@ func (s *Streamer) removeClient(ch chan SSEMessage) {
 	if _, ok := s.clients[ch]; ok {
 		delete(s.clients, ch)
 		close(ch)
-		slog.Info("[SSE] Client disconnected", "active_clients", len(s.clients))
+		s.logger.Info("Client disconnected", "active_clients", len(s.clients))
 	}
 }

@@ -1,15 +1,17 @@
 package hub
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/potibm/billedapparat/internal/app/domain"
 )
 
-
 func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 	var req IngestRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
 		return
 	}
 
@@ -21,12 +23,13 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 
 	var createdSlideIDs []int64
 
-	var mediaPosList = make([]int, len(req.MediaURLs))
+	mediaPosList := make([]int, len(req.MediaURLs))
 	for i := range req.MediaURLs {
 		mediaPosList[i] = i
 	}
+
 	if len(req.MediaURLs) == 0 {
-		mediaPosList = []int{-1} 
+		mediaPosList = []int{-1}
 	}
 
 	for _, mediaPos := range mediaPosList {
@@ -34,10 +37,10 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 
 		exists, _ := s.slideRepo.SlideExists(slide.Source, slide.ExternalID, slide.ExternalSubID)
 		if exists {
-			continue 
+			continue
 		}
 
-		slide.Status = initialStatus;
+		slide.Status = initialStatus
 
 		if err := s.slideRepo.Save(ctx, &slide); err == nil {
 			createdSlideIDs = append(createdSlideIDs, slide.ID)
@@ -45,7 +48,8 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 	}
 
 	if len(createdSlideIDs) == 0 {
-		ctx.JSON(200, gin.H{"status": "skipped", "reason": "all duplicates"})
+		ctx.JSON(http.StatusOK, gin.H{"status": "skipped", "reason": "all duplicates"})
+
 		return
 	}
 
@@ -53,5 +57,5 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 		go s.mediaDownloader.ProcessSlideMedia(id)
 	}
 
-	ctx.JSON(201, gin.H{"status": "ingested", "processed_slides": len(createdSlideIDs)})
+	ctx.JSON(http.StatusCreated, gin.H{"status": "ingested", "processed_slides": len(createdSlideIDs)})
 }

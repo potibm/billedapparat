@@ -21,26 +21,25 @@ type SocialIngestPayload struct {
 }
 */
 
-
 type IngestRequestMediaURL struct {
-	ExternalURL string `json:"external_url"       binding:"required"`
-	ContentType string `json:"content_type"       binding:"required"`
+	ExternalURL string `json:"external_url" binding:"required"`
+	ContentType string `json:"content_type" binding:"required"`
 }
 
 type IngestRequestAuthor struct {
-	ExternalID        string `json:"external_id"       binding:"required"`
-	DisplayName       string `json:"display_name"      binding:"required"`
+	ExternalID        string `json:"external_id"          binding:"required"`
+	DisplayName       string `json:"display_name"         binding:"required"`
 	AvatarExternalURL string `json:"avatar_url,omitempty"`
 }
 
 type IngestRequest struct {
-	Source          string                  `json:"source"            binding:"required"`
-	ExternalID      string                  `json:"external_id"       binding:"required"`
-	Author          *IngestRequestAuthor    `json:"author,omitempty"            `
-	Body            string                  `json:"body,omitempty"              `
+	Source          string                  `json:"source"               binding:"required"`
+	ExternalID      string                  `json:"external_id"          binding:"required"`
+	Author          *IngestRequestAuthor    `json:"author,omitempty"`
+	Body            string                  `json:"body,omitempty"`
 	MediaURLs       []IngestRequestMediaURL `json:"media_urls,omitempty"`
-	Language        string                  `json:"language,omitempty"          binding:"required"`
-	OriginCreatedAt time.Time               `json:"origin_created_at" binding:"required"`
+	Language        string                  `json:"language,omitempty"   binding:"required"`
+	OriginCreatedAt time.Time               `json:"origin_created_at"    binding:"required"`
 }
 
 func (m IngestRequestMediaURL) toDomain() domain.Media {
@@ -55,7 +54,7 @@ func (a IngestRequestAuthor) toDomain() domain.Author {
 	if a.AvatarExternalURL != "" {
 		avatar = &domain.Media{
 			OriginalURL: a.AvatarExternalURL,
-			MimeType:   "image/jpeg",
+			MimeType:    "image/jpeg",
 		}
 	}
 
@@ -90,9 +89,9 @@ func (i IngestRequest) toDomain(mediaPos int) domain.Slide {
 		Source:          i.Source,
 		ExternalID:      i.ExternalID,
 		ExternalSubID:   externalSubID,
-		Content: content,
-		Author: author,
-		Status: domain.StatusPending,
+		Content:         content,
+		Author:          author,
+		Status:          domain.StatusPending,
 		OriginCreatedAt: i.OriginCreatedAt,
 		CreatedAt:       time.Now(),
 	}
@@ -101,6 +100,6 @@ func (i IngestRequest) toDomain(mediaPos int) domain.Slide {
 		slide.Content.Media = new(domain.Media)
 		*slide.Content.Media = i.MediaURLs[mediaPos].toDomain()
 	}
-	
+
 	return slide
 }

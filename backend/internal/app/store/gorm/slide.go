@@ -84,7 +84,6 @@ func fromDomain(s *domain.Slide) *dbSlide {
 }
 
 func (s *dbSlide) toDomain() *domain.Slide {
-
 	ds := &domain.Slide{
 		ID:     s.ID,
 		Status: domain.SlideStatus(s.Status),
@@ -108,7 +107,6 @@ func (s *dbSlide) toDomain() *domain.Slide {
 	if s.ExternalID != nil {
 		ds.ExternalID = *s.ExternalID
 	}
-
 
 	ds.Author = &domain.Author{
 		DisplayName: s.AuthorDisplayName,

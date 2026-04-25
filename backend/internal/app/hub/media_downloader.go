@@ -12,20 +12,17 @@ import (
 	"github.com/potibm/billedapparat/internal/app/repository"
 )
 
-
-type MediaDownloader struct { 
-	slideRepo repository.SlideRepository 
- }
-
- func NewMediaDownloader(slideRepo repository.SlideRepository) *MediaDownloader {
-	return &MediaDownloader{
-		slideRepo: slideRepo,
-	}
+type MediaDownloader struct {
+	slideRepo repository.SlideRepository
+	logger    *slog.Logger
 }
 
- const (
-	logPrefix = "[MediaDownloader] "
- )
+func NewMediaDownloader(slideRepo repository.SlideRepository, logger *slog.Logger) *MediaDownloader {
+	return &MediaDownloader{
+		slideRepo: slideRepo,
+		logger:    logger,
+	}
+}
 
 func (m *MediaDownloader) ProcessSlideMedia(slideID int64) {
 	ctx := context.Background()
@@ -33,7 +30,8 @@ func (m *MediaDownloader) ProcessSlideMedia(slideID int64) {
 	// 1. Load slide from DB
 	slide, err := m.slideRepo.GetByID(ctx, slideID)
 	if err != nil {
-		slog.Error(logPrefix + "Error while fetching slide", "slideID", slideID)
+		m.logger.Error("Unable to fetch slide from db", "slide_id", slideID)
+
 		return
 	}
 
@@ -43,7 +41,8 @@ func (m *MediaDownloader) ProcessSlideMedia(slideID int64) {
 	if slide.Author != nil && slide.Author.Avatar != nil && slide.Author.Avatar.LocalURL == "" {
 		localURL, err := m.resolveAndDownload(ctx, slide.Author.Avatar.OriginalURL, media.TypeAvatar)
 		if err != nil {
-			slog.Error(logPrefix + "Error while downloading avatar for slide", "slideID", slideID, "error", err)
+			m.logger.Error("Unable to download avatar for slide", "slide_id", slideID, "error", err)
+
 			hasErrors = true
 		} else {
 			slide.Author.Avatar.LocalURL = localURL
@@ -55,7 +54,8 @@ func (m *MediaDownloader) ProcessSlideMedia(slideID int64) {
 	if slide.Content.Media != nil && slide.Content.Media.LocalURL == "" {
 		localURL, err := m.resolveAndDownload(ctx, slide.Content.Media.OriginalURL, media.TypeSlide)
 		if err != nil {
-			slog.Error(logPrefix + "Error while downloading media for slide", "slideID", slideID, "error", err)
+			m.logger.Error("Unable to download media for slide", "slide_id", slideID, "error", err)
+
 			hasErrors = true
 		} else {
 			slide.Content.Media.LocalURL = localURL
@@ -70,13 +70,17 @@ func (m *MediaDownloader) ProcessSlideMedia(slideID int64) {
 
 	// 5. Persist
 	if err := m.slideRepo.Save(ctx, slide); err != nil {
-		slog.Error(logPrefix + "Error while saving", "slideID", slideID, "error", err)
+		m.logger.Error("Unable to save", "slide_id", slideID, "error", err)
 	} else {
-		slog.Info(logPrefix + "Successfully processed slide", "slideID", slideID, "hasErrors", hasErrors)
+		m.logger.Info("Successfully processed slide", "slide_id", slideID, "has_errors", hasErrors)
 	}
 }
 
-func (m *MediaDownloader) resolveAndDownload(ctx context.Context, originalURL string, imageType media.ImageType) (string, error) {
+func (m *MediaDownloader) resolveAndDownload(
+	ctx context.Context,
+	originalURL string,
+	imageType media.ImageType,
+) (string, error) {
 	if originalURL == "" {
 		return "", fmt.Errorf("original_url is empty")
 	}
@@ -84,18 +88,22 @@ func (m *MediaDownloader) resolveAndDownload(ctx context.Context, originalURL st
 	// 1. Duplicate check
 	existingLocalURL, found := m.slideRepo.FindLocalURLByOriginalURL(ctx, originalURL)
 	if found && existingLocalURL != "" {
-		slog.Debug("Cache Hit: skipping download", "originalURL", originalURL)
+		m.logger.Debug("Cache Hit: skipping download", "original_url", originalURL)
+
 		return existingLocalURL, nil
 	}
 
 	// 2. when not found -> download, convert and save
-	slog.Debug("Cache Miss: Download", "originalURL", originalURL)
+	m.logger.Debug("Cache Miss: Download", "original_url", originalURL)
+
 	return m.downloadAndConvert(originalURL, imageType)
 }
 
 func (m *MediaDownloader) downloadAndConvert(originalURL string, imageType media.ImageType) (string, error) {
+	const defaultTimeout = 15 * time.Second
+
 	client := &http.Client{
-		Timeout: 15 * time.Second,
+		Timeout: defaultTimeout,
 	}
 
 	resp, err := client.Get(originalURL)
@@ -108,7 +116,7 @@ func (m *MediaDownloader) downloadAndConvert(originalURL string, imageType media
 		return "", fmt.Errorf("bad status: %s", resp.Status)
 	}
 
-	publicURL, err := media.ProcessAndSaveSlide(resp.Body)
+	publicURL, err := media.ProcessAndSave(resp.Body, imageType)
 	if err != nil {
 		return "", fmt.Errorf("media conversion failed: %w", err)
 	}

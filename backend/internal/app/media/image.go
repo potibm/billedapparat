@@ -19,10 +19,10 @@ import (
 type ImageType string
 
 const (
-	slideMaxWidth  = 1920
-	slideMaxHeight = 1080
+	slideMaxWidth   = 1920
+	slideMaxHeight  = 1080
 	avatarMaxWidth  = 256
-    avatarMaxHeight = 256
+	avatarMaxHeight = 256
 
 	TypeAvatar ImageType = "avatar"
 	TypeSlide  ImageType = "slide"
@@ -79,17 +79,17 @@ func ProcessAndSaveSlide(file io.Reader) (string, error) {
 }
 
 func ProcessAndSaveAvatar(file io.Reader) (string, error) {
-    filename := fmt.Sprintf("avatar_%s.webp", uuid.New().String())
-    localFilePath := filepath.Join(config.MediaDirname, filename) 
+	filename := fmt.Sprintf("avatar_%s.webp", uuid.New().String())
+	localFilePath := filepath.Join(config.MediaDirname, filename)
 
-    if err := ResizeAndSave(file, localFilePath, avatarMaxWidth, avatarMaxHeight); err != nil {
-        return "", err
-    }
+	if err := ResizeAndSave(file, localFilePath, avatarMaxWidth, avatarMaxHeight); err != nil {
+		return "", err
+	}
 
-    return config.MediaURL + "avatars/" + filename, nil
+	return config.MediaURL + "avatars/" + filename, nil
 }
 
-func ProcessAndSave(file *os.File, imageType ImageType) (string, error) {
+func ProcessAndSave(file io.Reader, imageType ImageType) (string, error) {
 	switch imageType {
 	case TypeSlide:
 		return ProcessAndSaveSlide(file)

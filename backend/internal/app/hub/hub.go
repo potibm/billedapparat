@@ -33,13 +33,14 @@ type Config struct {
 }
 
 type Server struct {
-	port           int
-	staticFiles    embed.FS
-	slideRepo      repository.SlideRepository
-	cfg            config.Config
-	streamer       *Streamer
-	mediaProcessor MediaProcessor
+	port            int
+	staticFiles     embed.FS
+	slideRepo       repository.SlideRepository
+	cfg             config.Config
+	streamer        *Streamer
+	mediaProcessor  MediaProcessor
 	mediaDownloader *MediaDownloader
+	logger          *slog.Logger
 }
 
 type MediaProcessor interface {
@@ -47,13 +48,16 @@ type MediaProcessor interface {
 }
 
 func NewServer(cfg Config) (*Server, error) {
+	logger := slog.Default()
+
 	return &Server{
-		port:        cfg.Port,
-		staticFiles: cfg.StaticFiles,
-		slideRepo:   cfg.SlideRepo,
-		cfg:         cfg.Cfg,
-		streamer:    NewStreamer(),
-		mediaDownloader: NewMediaDownloader(cfg.SlideRepo),
+		port:            cfg.Port,
+		staticFiles:     cfg.StaticFiles,
+		slideRepo:       cfg.SlideRepo,
+		cfg:             cfg.Cfg,
+		streamer:        NewStreamer(logger.With("component", "Streamer")),
+		mediaDownloader: NewMediaDownloader(cfg.SlideRepo, logger.With("component", "MediaDownloader")),
+		logger:          logger.With("component", "HubServer"),
 	}, nil
 }
 
@@ -78,7 +82,7 @@ func (s *Server) Run(ctx context.Context) error {
 		}
 	}()
 
-	slog.Info("Hub server is up", "port", s.port)
+	slog.Info("Server is up", "port", s.port)
 
 	<-ctx.Done()
 	slog.Info("Shutting down server gracefully...")

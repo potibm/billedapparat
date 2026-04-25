@@ -2,8 +2,10 @@ package domain
 
 import "time"
 
-type SlideType string
-type SlideStatus string
+type (
+	SlideType   string
+	SlideStatus string
+)
 
 const (
 	TypeSocial    SlideType = "social"
@@ -27,7 +29,7 @@ type Slide struct {
 	Source          string         `json:"source"`
 	ExternalID      string         `json:"external_id"`
 	ExternalSubID   *int           `json:"external_sub_id,omitempty"`
-	Author          *Author         `json:"author"`
+	Author          *Author        `json:"author"`
 	Content         Content        `json:"content"`
 	DisplayOptions  DisplayOptions `json:"display_options"`
 	Status          SlideStatus    `json:"status"`
