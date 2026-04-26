@@ -49,14 +49,15 @@ type MediaProcessor interface {
 
 func NewServer(cfg Config) (*Server, error) {
 	logger := slog.Default()
+	streamer := NewStreamer(logger.With("component", "Streamer"))
 
 	return &Server{
 		port:            cfg.Port,
 		staticFiles:     cfg.StaticFiles,
 		slideRepo:       cfg.SlideRepo,
 		cfg:             cfg.Cfg,
-		streamer:        NewStreamer(logger.With("component", "Streamer")),
-		mediaDownloader: NewMediaDownloader(cfg.SlideRepo, logger.With("component", "MediaDownloader")),
+		streamer:        streamer,
+		mediaDownloader: NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader")),
 		logger:          logger.With("component", "HubServer"),
 	}, nil
 }
@@ -130,6 +131,10 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	internal := r.Group("/api/internal")
 	internal.Use(APIKeyAuthMiddleware(s.cfg.API.AdminAPIKey))
 	internal.POST("/import", s.internalImportDirectory)
+
+	collectors := r.Group("/api/collectors")
+	collectors.Use(CollectorAuthMiddleware(s.cfg.Collectors))
+	collectors.POST("/ingest", s.collectorIngestSlide)
 
 	r.NoRoute(func(c *gin.Context) {
 		if !strings.HasPrefix(c.Request.RequestURI, "/api") && !strings.Contains(c.Request.RequestURI, ".") {

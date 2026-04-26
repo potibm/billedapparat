@@ -14,12 +14,18 @@ import (
 
 type MediaDownloader struct {
 	slideRepo repository.SlideRepository
+	streamer  *Streamer
 	logger    *slog.Logger
 }
 
-func NewMediaDownloader(slideRepo repository.SlideRepository, logger *slog.Logger) *MediaDownloader {
+func NewMediaDownloader(
+	slideRepo repository.SlideRepository,
+	streamer *Streamer,
+	logger *slog.Logger,
+) *MediaDownloader {
 	return &MediaDownloader{
 		slideRepo: slideRepo,
+		streamer:  streamer,
 		logger:    logger,
 	}
 }
@@ -72,6 +78,7 @@ func (m *MediaDownloader) ProcessSlideMedia(slideID int64) {
 	if err := m.slideRepo.Save(ctx, slide); err != nil {
 		m.logger.Error("Unable to save", "slide_id", slideID, "error", err)
 	} else {
+		m.streamer.Broadcast(EventUpdate, slide)
 		m.logger.Info("Successfully processed slide", "slide_id", slideID, "has_errors", hasErrors)
 	}
 }

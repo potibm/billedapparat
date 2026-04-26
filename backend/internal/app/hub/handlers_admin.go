@@ -120,7 +120,7 @@ func (s *Server) adminCreateSlide(c *gin.Context) {
 		slog.Info("Admin Create Slide: Successfully created slide", "id", slide.ID)
 	}
 
-	s.streamer.Broadcast("CREATE", slide)
+	s.streamer.Broadcast(EventCreate, slide)
 
 	c.JSON(http.StatusCreated, slide)
 }
@@ -148,7 +148,7 @@ func (s *Server) adminUpdateSlide(c *gin.Context) {
 		return
 	}
 
-	s.streamer.Broadcast("UPDATE", slide)
+	s.streamer.Broadcast(EventUpdate, slide)
 
 	c.JSON(http.StatusOK, slide)
 }
@@ -167,7 +167,7 @@ func (s *Server) adminDeleteSlide(c *gin.Context) {
 		return
 	}
 
-	s.streamer.Broadcast("DELETE", id)
+	s.streamer.Broadcast(EventDelete, id)
 
 	c.JSON(http.StatusOK, gin.H{"id": id})
 }

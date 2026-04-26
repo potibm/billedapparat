@@ -5,6 +5,14 @@ import (
 	"sync"
 )
 
+type StreamEvent string
+
+const (
+	EventCreate StreamEvent = "CREATE"
+	EventUpdate StreamEvent = "UPDATE"
+	EventDelete StreamEvent = "DELETE"
+)
+
 type SSEMessage struct {
 	Event   string      `json:"event"`
 	Payload interface{} `json:"payload"`
@@ -23,12 +31,12 @@ func NewStreamer(logger *slog.Logger) *Streamer {
 	}
 }
 
-func (s *Streamer) Broadcast(event string, payload interface{}) {
+func (s *Streamer) Broadcast(event StreamEvent, payload interface{}) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	msg := SSEMessage{
-		Event:   event,
+		Event:   string(event),
 		Payload: payload,
 	}
 
