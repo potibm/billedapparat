@@ -18,7 +18,7 @@ type dbSlide struct {
 	ExternalSubID *int    `gorm:"uniqueIndex:idx_ext"`
 
 	AuthorDisplayName       string
-	AuthorHandle            string
+	AuthorExternalID        string
 	AuthorAvatarURLLocal    string
 	AuthorAvatarURLOriginal string `gorm:"index"`
 	AuthorAvatarMimeType    string
@@ -60,7 +60,7 @@ func fromDomain(s *domain.Slide) *dbSlide {
 
 	if s.Author != nil {
 		db.AuthorDisplayName = s.Author.DisplayName
-		db.AuthorHandle = s.Author.Username
+		db.AuthorExternalID = s.Author.ExternalID
 
 		if s.Author.Avatar != nil {
 			db.AuthorAvatarURLLocal = s.Author.Avatar.LocalURL
@@ -95,6 +95,7 @@ func (s *dbSlide) toDomain() *domain.Slide {
 			Title: s.ContentTitle,
 			Body:  s.ContentBody,
 		},
+		Author: nil,
 		DisplayOptions: domain.DisplayOptions{
 			AllowSocialOverlay: s.AllowSocialOverlay,
 			IsUrgent:           s.IsUrgent,
@@ -111,10 +112,9 @@ func (s *dbSlide) toDomain() *domain.Slide {
 		ds.ExternalID = *s.ExternalID
 	}
 
-	if s.AuthorDisplayName != "" || s.AuthorHandle != "" {
+	if s.AuthorDisplayName != "" {
 		ds.Author = &domain.Author{
 			DisplayName: s.AuthorDisplayName,
-			Username:    s.AuthorHandle,
 		}
 
 		if s.AuthorAvatarURLLocal != "" || s.AuthorAvatarURLOriginal != "" {

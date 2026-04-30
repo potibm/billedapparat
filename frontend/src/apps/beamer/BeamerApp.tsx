@@ -13,7 +13,8 @@ const SLIDE_DURATION = 10000;
 const effectLogger = createLogger("Effect");
 
 export const BeamerApp = () => {
-  const { currentSlide, next, previous, isUrgent } = useSlideshowEngine();
+  const { currentSlide, next, previous, togglePause, isUrgent } =
+    useSlideshowEngine();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const activeAnimation = useMemo(() => {
@@ -36,10 +37,11 @@ export const BeamerApp = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") next();
       if (e.key === "ArrowLeft") previous();
+      if (e.key === " " || e.key === "Spacebar") togglePause();
     };
     globalThis.addEventListener("keydown", handleKeyDown);
     return () => globalThis.removeEventListener("keydown", handleKeyDown);
-  }, [next, previous]);
+  }, [next, previous, togglePause]);
 
   useEffect(() => {
     if (isUrgent) return;

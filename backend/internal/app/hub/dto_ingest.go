@@ -32,6 +32,8 @@ func mapAuthorToDomain(a contracts.IngestRequestAuthor) domain.Author {
 }
 
 func mapIngestToDomain(i contracts.IngestRequest, mediaPos int) domain.Slide {
+	const maxLengthTitle = 30
+
 	hasMedia := len(i.MediaURLs) > 0
 
 	slideType := domain.TypeSocialText
@@ -47,7 +49,7 @@ func mapIngestToDomain(i contracts.IngestRequest, mediaPos int) domain.Slide {
 
 	content := domain.Content{
 		Type:     domain.SlideType(slideType),
-		Title:    smartTruncate(i.Body, 30),
+		Title:    smartTruncate(i.Body, maxLengthTitle),
 		Body:     i.Body,
 		Language: i.Language,
 	}

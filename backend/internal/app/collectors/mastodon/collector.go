@@ -47,8 +47,10 @@ func (c *Collector) Run(ctx context.Context) error {
 
 		err := c.connectAndRead(ctx, streamURL)
 		if err != nil {
+			const reconnectDuration = 5 * time.Second
+
 			c.logger.Warn("Stream disconnected, reconnecting in 5s...", "error", err)
-			time.Sleep(5 * time.Second)
+			time.Sleep(reconnectDuration)
 		}
 	}
 }
@@ -87,15 +89,16 @@ func (c *Collector) connectAndRead(ctx context.Context, streamURL string) error 
 
 		line = strings.TrimSpace(line)
 
-		if strings.HasPrefix(line, "event:") {
+		switch {
+		case strings.HasPrefix(line, "event:"):
 			currentEvent = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
-		} else if strings.HasPrefix(line, "data:") {
+		case strings.HasPrefix(line, "data:"):
 			payload := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
 
 			if currentEvent != "" && payload != "" {
 				c.handleEvent(currentEvent, payload)
 			}
-		} else if line == "" {
+		case line == "":
 			currentEvent = ""
 		}
 	}

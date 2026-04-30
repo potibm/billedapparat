@@ -24,6 +24,7 @@ export const useSlideshowEngine = () => {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [history, setHistory] = useState<number[]>([]);
   const [historyPointer, setHistoryPointer] = useState(-1);
+  const [isPaused, setIsPaused] = useState(false);
 
   const urgentSlides = getUrgent();
   const hasUrgent = urgentSlides.length > 0;
@@ -53,6 +54,8 @@ export const useSlideshowEngine = () => {
   }, []);
 
   const next = useCallback(() => {
+    if (isPaused) return;
+
     if (historyPointer < history.length - 1) {
       setHistoryPointer((prev) => prev + 1);
       return;
@@ -125,6 +128,7 @@ export const useSlideshowEngine = () => {
     pickWeightedSlide,
     urgentSlides,
     allSlides.length,
+    isPaused,
   ]);
 
   const previous = useCallback(() => {
@@ -132,6 +136,10 @@ export const useSlideshowEngine = () => {
       setHistoryPointer((prev) => prev - 1);
     }
   }, [historyPointer]);
+
+  const togglePause = useCallback(() => {
+    setIsPaused((prev) => !prev);
+  }, []);
 
   const currentSlide = useMemo(() => {
     const id = history[historyPointer];
@@ -157,6 +165,8 @@ export const useSlideshowEngine = () => {
     currentSlide,
     next,
     previous,
+    isPaused,
+    togglePause,
     isUrgent: currentSlide?.content.type === "urgent",
   };
 };

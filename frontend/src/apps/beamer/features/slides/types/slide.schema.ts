@@ -3,6 +3,7 @@ import { z } from "zod";
 export const slideSchema = z.object({
   id: z.number(),
   status: z.string().default("active"),
+  origin_created_at: z.iso.datetime().nullish(),
   content: z
     .object({
       type: z.string().default("slide"),
@@ -18,9 +19,8 @@ export const slideSchema = z.object({
     .default({ type: "slide" }),
   author: z
     .object({
-      username: z.string().optional(),
-      displayname: z.string().optional(),
-      media: z
+      display_name: z.string(),
+      avatar: z
         .object({
           local_url: z.string().optional(),
           mime_type: z.string(),

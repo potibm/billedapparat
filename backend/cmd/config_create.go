@@ -31,7 +31,7 @@ func NewConfigCreateCmd() *cobra.Command {
 			})
 
 			collectors := map[string]any{
-				"mastodon": mastodon.DefaultConfig(generateSecureToken(32)),
+				"mastodon": mastodon.DefaultConfig(generateSecureToken(defaultAPIKeyLength)),
 			}
 			viper.Set("collectors", collectors)
 

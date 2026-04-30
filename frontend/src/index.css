@@ -7,6 +7,8 @@ body {
   @apply bg-black text-gray-600;
 }
 
+/** NEWS **/
+
 .ba-slide-news {
   @apply text-gray-200 p-8 max-w-4xl mx-auto;
 }
@@ -25,4 +27,21 @@ body {
 
 .ba-slide-news li {
   @apply text-lg leading-relaxed list-disc list-inside;
+}
+
+/** SOCIAL **/
+
+.ba-slide-social {
+}
+
+.social-slide__author-info {
+  /*@apply text-left*/
+}
+
+.social-slide__author-name {
+  @apply inline-block mr-5 text-2xl;
+}
+
+.social-slide__created-at {
+  @apply inline-block text-2xl;
 }
