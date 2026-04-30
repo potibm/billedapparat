@@ -1,55 +1,21 @@
 package hub
 
 import (
+	"strings"
 	"time"
 
+	"github.com/potibm/billedapparat/internal/app/contracts"
 	"github.com/potibm/billedapparat/internal/app/domain"
 )
 
-/*
-import "time"
-
-type SocialIngestPayload struct {
-	Platform     string    `json:"platform"      binding:"required"` // z.B. "mastodon", "discord"
-	ExternalID   string    `json:"external_id"   binding:"required"`
-	AuthorName   string    `json:"author_name"   binding:"required"`
-	AuthorHandle string    `json:"author_handle" binding:"required"`
-	AvatarURL    string    `json:"avatar_url"`
-	TextContent  string    `json:"text_content"`
-	MediaURL     string    `json:"media_url"`
-	PostedAt     time.Time `json:"posted_at"     binding:"required"`
-}
-*/
-
-type IngestRequestMediaURL struct {
-	ExternalURL string `json:"external_url" binding:"required"`
-	ContentType string `json:"content_type" binding:"required"`
-}
-
-type IngestRequestAuthor struct {
-	ExternalID        string `json:"external_id"          binding:"required"`
-	DisplayName       string `json:"display_name"         binding:"required"`
-	AvatarExternalURL string `json:"avatar_url,omitempty"`
-}
-
-type IngestRequest struct {
-	Source          string                  `json:"source"               binding:"required"`
-	ExternalID      string                  `json:"external_id"          binding:"required"`
-	Author          *IngestRequestAuthor    `json:"author,omitempty"`
-	Body            string                  `json:"body,omitempty"`
-	MediaURLs       []IngestRequestMediaURL `json:"media_urls,omitempty"`
-	Language        string                  `json:"language,omitempty"   binding:"required"`
-	OriginCreatedAt time.Time               `json:"origin_created_at"    binding:"required"`
-}
-
-func (m IngestRequestMediaURL) toDomain() domain.Media {
+func mapMediaURLToDomain(m contracts.IngestRequestMediaURL) domain.Media {
 	return domain.Media{
 		OriginalURL: m.ExternalURL,
 		MimeType:    m.ContentType,
 	}
 }
 
-func (a IngestRequestAuthor) toDomain() domain.Author {
+func mapAuthorToDomain(a contracts.IngestRequestAuthor) domain.Author {
 	avatar := (*domain.Media)(nil)
 	if a.AvatarExternalURL != "" {
 		avatar = &domain.Media{
@@ -65,16 +31,23 @@ func (a IngestRequestAuthor) toDomain() domain.Author {
 	}
 }
 
-func (i IngestRequest) toDomain(mediaPos int) domain.Slide {
+func mapIngestToDomain(i contracts.IngestRequest, mediaPos int) domain.Slide {
+	hasMedia := len(i.MediaURLs) > 0
+
+	slideType := domain.TypeSocialText
+	if hasMedia {
+		slideType = domain.TypeSocialMedia
+	}
+
 	author := (*domain.Author)(nil)
 	if i.Author != nil {
 		author = new(domain.Author)
-		*author = i.Author.toDomain()
+		*author = mapAuthorToDomain(*i.Author)
 	}
 
 	content := domain.Content{
-		Type:     domain.SlideType(domain.TypeSocial),
-		Title:    "",
+		Type:     domain.SlideType(slideType),
+		Title:    smartTruncate(i.Body, 30),
 		Body:     i.Body,
 		Language: i.Language,
 	}
@@ -93,13 +66,35 @@ func (i IngestRequest) toDomain(mediaPos int) domain.Slide {
 		Author:          author,
 		Status:          domain.StatusPending,
 		OriginCreatedAt: i.OriginCreatedAt,
-		CreatedAt:       time.Now(),
+		DisplayOptions: domain.DisplayOptions{
+			AllowSocialOverlay: true,
+			Priority:           1,
+			IsUrgent:           false,
+		},
+		CreatedAt: time.Now(),
 	}
 
 	if mediaPos >= 0 && mediaPos < len(i.MediaURLs) {
 		slide.Content.Media = new(domain.Media)
-		*slide.Content.Media = i.MediaURLs[mediaPos].toDomain()
+		*slide.Content.Media = mapMediaURLToDomain(i.MediaURLs[mediaPos])
 	}
 
 	return slide
+}
+
+func smartTruncate(text string, limit int) string {
+	runes := []rune(text)
+
+	if len(runes) <= limit {
+		return text
+	}
+
+	subString := string(runes[:limit])
+	lastSpace := strings.LastIndex(subString, " ")
+
+	if lastSpace == -1 {
+		return subString
+	}
+
+	return strings.TrimSpace(subString[:lastSpace]) + "..."
 }

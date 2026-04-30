@@ -50,8 +50,6 @@ func fromDomain(s *domain.Slide) *dbSlide {
 		Type:               string(s.Content.Type),
 		ExternalSubID:      s.ExternalSubID,
 		Status:             string(s.Status),
-		AuthorDisplayName:  s.Author.DisplayName,
-		AuthorHandle:       s.Author.Username,
 		ContentTitle:       s.Content.Title,
 		ContentBody:        s.Content.Body,
 		OriginCreatedAt:    s.OriginCreatedAt,
@@ -60,14 +58,19 @@ func fromDomain(s *domain.Slide) *dbSlide {
 		Priority:           s.DisplayOptions.Priority,
 	}
 
-	if s.ExternalID != "" {
-		db.ExternalID = &s.ExternalID
+	if s.Author != nil {
+		db.AuthorDisplayName = s.Author.DisplayName
+		db.AuthorHandle = s.Author.Username
+
+		if s.Author.Avatar != nil {
+			db.AuthorAvatarURLLocal = s.Author.Avatar.LocalURL
+			db.AuthorAvatarURLOriginal = s.Author.Avatar.OriginalURL
+			db.AuthorAvatarMimeType = s.Author.Avatar.MimeType
+		}
 	}
 
-	if s.Author.Avatar != nil {
-		db.AuthorAvatarURLLocal = s.Author.Avatar.LocalURL
-		db.AuthorAvatarURLOriginal = s.Author.Avatar.OriginalURL
-		db.AuthorAvatarMimeType = s.Author.Avatar.MimeType
+	if s.ExternalID != "" {
+		db.ExternalID = &s.ExternalID
 	}
 
 	if s.Content.Media != nil {
@@ -108,16 +111,18 @@ func (s *dbSlide) toDomain() *domain.Slide {
 		ds.ExternalID = *s.ExternalID
 	}
 
-	ds.Author = &domain.Author{
-		DisplayName: s.AuthorDisplayName,
-		Username:    s.AuthorHandle,
-	}
+	if s.AuthorDisplayName != "" || s.AuthorHandle != "" {
+		ds.Author = &domain.Author{
+			DisplayName: s.AuthorDisplayName,
+			Username:    s.AuthorHandle,
+		}
 
-	if s.AuthorAvatarURLLocal != "" || s.AuthorAvatarURLOriginal != "" {
-		ds.Author.Avatar = &domain.Media{
-			OriginalURL: s.AuthorAvatarURLOriginal,
-			LocalURL:    s.AuthorAvatarURLLocal,
-			MimeType:    s.AuthorAvatarMimeType,
+		if s.AuthorAvatarURLLocal != "" || s.AuthorAvatarURLOriginal != "" {
+			ds.Author.Avatar = &domain.Media{
+				OriginalURL: s.AuthorAvatarURLOriginal,
+				LocalURL:    s.AuthorAvatarURLLocal,
+				MimeType:    s.AuthorAvatarMimeType,
+			}
 		}
 	}
 

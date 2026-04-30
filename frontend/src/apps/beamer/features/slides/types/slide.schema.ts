@@ -13,9 +13,21 @@ export const slideSchema = z.object({
           local_url: z.string().optional(),
           mime_type: z.string(),
         })
-        .optional(),
+        .nullish(),
     })
     .default({ type: "slide" }),
+  author: z
+    .object({
+      username: z.string().optional(),
+      displayname: z.string().optional(),
+      media: z
+        .object({
+          local_url: z.string().optional(),
+          mime_type: z.string(),
+        })
+        .nullish(),
+    })
+    .nullish(),
   display_options: z.object({
     priority: z.number(),
     is_urgent: z.boolean(),

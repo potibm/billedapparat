@@ -33,7 +33,13 @@ export const useSlideManager = () => {
 
     const handleInit = (e: MessageEvent) => {
       const parsed = z.array(slideSchema).safeParse(JSON.parse(e.data));
-      logger.debug("Received INIT event", "count", parsed.data?.length);
+      logger.debug(
+        "Received INIT event",
+        "count",
+        parsed.data?.length,
+        "rawData",
+        e.data,
+      );
       if (parsed.error) {
         logger.warn(
           "Failed to parse INIT event",

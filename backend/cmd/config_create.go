@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/potibm/billedapparat/internal/app/collectors/mastodon"
 	"github.com/potibm/billedapparat/internal/app/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -29,19 +30,8 @@ func NewConfigCreateCmd() *cobra.Command {
 				"day":      "numeric",
 			})
 
-			collectors := map[string]config.CollectorConfig{
-				"mastodon": {
-					Enabled: false,
-					APIKey:  generateSecureToken(defaultAPIKeyLength),
-				},
-				"bluesky": {
-					Enabled: false,
-					APIKey:  generateSecureToken(defaultAPIKeyLength),
-				},
-				"discord": {
-					Enabled: false,
-					APIKey:  generateSecureToken(defaultAPIKeyLength),
-				},
+			collectors := map[string]any{
+				"mastodon": mastodon.DefaultConfig(generateSecureToken(32)),
 			}
 			viper.Set("collectors", collectors)
 

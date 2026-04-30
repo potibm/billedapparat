@@ -8,10 +8,11 @@ type (
 )
 
 const (
-	TypeSocial    SlideType = "social"
-	TypeSponsor   SlideType = "sponsor"
-	TypeNews      SlideType = "news"
-	TypeTimetable SlideType = "timetable"
+	TypeSocialMedia SlideType = "social.media"
+	TypeSocialText  SlideType = "social.text"
+	TypeSponsor     SlideType = "sponsor"
+	TypeNews        SlideType = "news"
+	TypeTimetable   SlideType = "timetable"
 
 	StatusActive   SlideStatus = "active"
 	StatusPending  SlideStatus = "pending"

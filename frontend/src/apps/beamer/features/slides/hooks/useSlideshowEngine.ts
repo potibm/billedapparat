@@ -4,14 +4,14 @@ import { createLogger } from "@core/logger/logger";
 import { Slide } from "../types/slide.schema";
 
 const PLAYLIST_PATTERN = [
-  "news",
+  /*"news",
   "sponsor",
   "sponsor",
   "news",
-  /*  "timetable",
- "sponsor",
-  "social",
-  "social",*/
+    "timetable",
+ "sponsor",*/
+  "social.media",
+  "socia.media",
 ];
 const HISTORY_LIMIT = 50;
 const NEXT_TICK_TIMEOUT = 0;

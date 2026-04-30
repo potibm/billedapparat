@@ -86,7 +86,7 @@ func ProcessAndSaveAvatar(file io.Reader) (string, error) {
 		return "", err
 	}
 
-	return config.MediaURL + "avatars/" + filename, nil
+	return config.MediaURL + filename, nil
 }
 
 func ProcessAndSave(file io.Reader, imageType ImageType) (string, error) {

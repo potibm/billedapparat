@@ -1,19 +1,24 @@
 package hub
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/potibm/billedapparat/internal/app/contracts"
 	"github.com/potibm/billedapparat/internal/app/domain"
 )
 
 func (s *Server) collectorIngestSlide(ctx *gin.Context) {
-	var req IngestRequest
+	var req contracts.IngestRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		slog.Error("Failed to parse ingest request", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 
 		return
 	}
+
+	// @TODO need to check that the source matches the token
 
 	// 1. Blacklist Check (Soft-Filter)
 	initialStatus := domain.StatusPending
@@ -33,7 +38,7 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 	}
 
 	for _, mediaPos := range mediaPosList {
-		slide := req.toDomain(mediaPos)
+		slide := mapIngestToDomain(req, mediaPos)
 
 		exists, _ := s.slideRepo.SlideExists(slide.Source, slide.ExternalID, slide.ExternalSubID)
 		if exists {
@@ -50,6 +55,13 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 	}
 
 	if len(createdSlideIDs) == 0 {
+		slog.Warn(
+			"Ingest request skipped - all slides are duplicates",
+			"source",
+			req.Source,
+			"external_id",
+			req.ExternalID,
+		)
 		ctx.JSON(http.StatusOK, gin.H{"status": "skipped", "reason": "all duplicates"})
 
 		return
@@ -59,5 +71,14 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 		go s.mediaDownloader.ProcessSlideMedia(id)
 	}
 
+	slog.Info(
+		"Ingest request processed",
+		"source",
+		req.Source,
+		"external_id",
+		req.ExternalID,
+		"created_slides",
+		len(createdSlideIDs),
+	)
 	ctx.JSON(http.StatusCreated, gin.H{"status": "ingested", "processed_slides": len(createdSlideIDs)})
 }

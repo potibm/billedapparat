@@ -20,6 +20,7 @@ type AppConfig struct {
 
 	DbFilename         string                 `mapstructure:"db_filename"         validate:"required"`
 	FrontendURL        string                 `mapstructure:"frontend_url"        validate:"required,http_url"`
+	CollectorURL       string                 `mapstructure:"collector_url"       validate:"required,http_url"`
 	CorsAllowOrigins   CorsAllowOriginsConfig `mapstructure:"cors_allow_origins"  validate:"dive,required"`
 	EnvironmentMessage string                 `mapstructure:"environment_message"`
 }
