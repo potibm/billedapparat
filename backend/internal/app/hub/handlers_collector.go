@@ -18,7 +18,12 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 		return
 	}
 
-	// @TODO need to check that the source matches the token
+	if req.Source != ctx.MustGet("collector_token").(string) {
+		slog.Warn("Ingest request with invalid source token", "source", req.Source)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid source token"})
+
+		return
+	}
 
 	// 1. Blacklist Check (Soft-Filter)
 	initialStatus := domain.StatusPending
@@ -81,4 +86,37 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 		len(createdSlideIDs),
 	)
 	ctx.JSON(http.StatusCreated, gin.H{"status": "ingested", "processed_slides": len(createdSlideIDs)})
+}
+
+func (s *Server) collectorDeleteSlide(ctx *gin.Context) {
+	source := ctx.Param("source")
+	externalID := ctx.Param("external_id")
+
+	if source == "" || externalID == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "provide both source and external_id in the URL",
+		})
+
+		return
+	}
+
+	err := s.slideRepo.MarkAsDeleted(ctx.Request.Context(), source, externalID)
+	if err != nil {
+		s.logger.Error("Error marking slide as deleted",
+			"error", err,
+			"source", source,
+			"external_id", externalID,
+		)
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "could not delete slide(s)",
+		})
+
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "deleted",
+		"source":  source,
+		"id":      externalID,
+	})
 }

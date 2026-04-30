@@ -62,11 +62,34 @@ func (c *HubClient) SendSlide(payload contracts.IngestRequest) error {
 		return nil
 	}
 
-	if resp.StatusCode == http.StatusOK { // Unser "skipped / all duplicates" Fall
+	if resp.StatusCode == http.StatusOK {
 		c.Logger.Debug("OK.", "external_id", payload.ExternalID, "body", resp.Body)
 
 		return nil
 	}
 
 	return fmt.Errorf("hub returned status %d", resp.StatusCode)
+}
+
+func (c *HubClient) DeleteSlide(source, externalID string) error {
+	url := fmt.Sprintf("%s/api/collectors/ingest/%s/%s", strings.TrimRight(c.BaseURL, "/"), source, externalID)
+
+	req, err := http.NewRequest(http.MethodDelete, url, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.APIKey)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("error deleting slide from hub: %s", resp.Status)
+	}
+
+	return nil
 }

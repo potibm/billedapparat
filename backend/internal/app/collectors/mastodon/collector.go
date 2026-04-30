@@ -14,6 +14,8 @@ import (
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
 )
 
+const mastodonCollectorName = "mastodon"
+
 type Collector struct {
 	cfg       Config
 	hubClient *hubclient.HubClient
@@ -126,7 +128,9 @@ func (c *Collector) handleEvent(eventType, payload string) {
 		statusID := string(payload)
 		c.logger.Info("Post was deleted", "id", statusID, "event_type", eventType)
 
-		// @TODO
+		if err := c.hubClient.DeleteSlide(mastodonCollectorName, statusID); err != nil {
+			c.logger.Error("Error sending delete request to the hub", "error", err)
+		}
 	default:
 		c.logger.Info("Received unsupported event type", "type", eventType)
 	}

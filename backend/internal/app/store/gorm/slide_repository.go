@@ -169,3 +169,10 @@ func (r *slideRepository) FindLocalURLByOriginalURL(ctx context.Context, origina
 
 	return localURL, true // Cache Hit!
 }
+
+func (r *slideRepository) MarkAsDeleted(ctx context.Context, source, externalID string) error {
+	return r.db.WithContext(ctx).
+		Model(&dbSlide{}).
+		Where("source = ? AND external_id = ?", source, externalID).
+		Update("status", domain.StatusDeleted).Error
+}

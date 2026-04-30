@@ -22,6 +22,7 @@ type SlideRepository interface {
 	GetAllMediaURLs(ctx context.Context) ([]string, error)
 	SlideExists(source, externalID string, subID *int) (bool, error)
 	FindLocalURLByOriginalURL(ctx context.Context, originalURL string) (string, bool)
+	MarkAsDeleted(ctx context.Context, source, externalID string) error
 }
 
 type AdminListParams struct {

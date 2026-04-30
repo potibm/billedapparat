@@ -17,6 +17,7 @@ const (
 	StatusActive   SlideStatus = "active"
 	StatusPending  SlideStatus = "pending"
 	StatusInactive SlideStatus = "inactive"
+	StatusDeleted  SlideStatus = "deleted"
 )
 
 type Media struct {
@@ -36,6 +37,7 @@ type Slide struct {
 	Status          SlideStatus    `json:"status"`
 	OriginCreatedAt time.Time      `json:"origin_created_at"`
 	CreatedAt       time.Time      `json:"created_at"`
+	DeletedAt       *time.Time     `json:"deleted_at,omitempty"`
 }
 
 type Author struct {
