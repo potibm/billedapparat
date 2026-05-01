@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
@@ -27,10 +28,16 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 	}
 
 	// 1. Blacklist Check (Soft-Filter)
-	initialStatus := domain.StatusPending
-	/*if s.blacklist.IsBanned(req.Content.Text) || s.blacklist.IsBanned(req.Author.Username) {
-		initialStatus = domain.StatusFiltered
-	}*/
+	initialStatus := s.evaluateModerationRules(ctx.Request.Context(), req)
+
+	if initialStatus == domain.StatusFiltered {
+		slog.Info("Ingest request filtered by moderation rules",
+			"source", req.Source,
+			"language", req.Language,
+			"display_name", req.Author.DisplayName,
+			"username", req.Author.Username,
+		)
+	}
 
 	var createdSlideIDs []int64
 
@@ -87,6 +94,25 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 		len(createdSlideIDs),
 	)
 	ctx.JSON(http.StatusCreated, gin.H{"status": "ingested", "processed_slides": len(createdSlideIDs)})
+}
+
+func (s *Server) evaluateModerationRules(ctx context.Context, req contracts.IngestRequest) domain.SlideStatus {
+	const maxRules = 1000
+
+	rules, _, err := s.filterRuleRepo.List(ctx, maxRules, 0)
+	if err != nil {
+		s.logger.Error("Error fetching filter rules", "error", err)
+
+		return domain.StatusPending
+	}
+
+	for _, rule := range rules {
+		if rule.Matches(req.Source, req.Author.Username, req.Author.DisplayName, req.Language) {
+			return domain.StatusFiltered
+		}
+	}
+
+	return domain.StatusPending
 }
 
 func (s *Server) collectorDeleteSlide(ctx *gin.Context) {
