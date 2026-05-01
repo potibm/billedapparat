@@ -10,7 +10,7 @@ const slideResourceMap: Record<string, string> = {
   sponsors: "sponsor",
   news: "news",
   timetable: "timetable",
-  social: "social",
+  "social-media": "social.media",
 };
 
 interface SlideFormData {

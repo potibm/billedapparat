@@ -1,42 +1,38 @@
 import { StatusChipField } from "@admin/components/fields/StatusChipField";
+import { ImagePreviewField } from "@admin/components/fields/ImagePreviewField";
 import {
   List,
   Datagrid,
   TextField,
-  EditButton,
   DeleteButton,
   NumberField,
 } from "react-admin";
 import { DefaultFilters } from "@admin/components/filters/DefaultFilters";
-import { ImagePreviewField } from "@admin/components/fields/ImagePreviewField";
 
-export const SponsorList = () => (
+export const SocialMediaList = () => (
   <List
-    title="Sponsor Screens"
+    title="Social with Media"
     filters={DefaultFilters}
     sort={{ field: "id", order: "DESC" }}
   >
-    <Datagrid rowClick="edit" bulkActionButtons={false}>
+    <Datagrid rowClick="show" bulkActionButtons={false}>
       <NumberField source="id" label="ID" />
 
       <ImagePreviewField
-              source="content.media.local_url"
-              label="Logo"
-              maxWidth={80}
-              maxHeight={45}
-              sortable={false}
-            />
+        source="content.media.local_url"
+        label="Logo"
+        maxWidth={80}
+        maxHeight={45}
+        sortable={false}
+      />
 
       <TextField source="content.title" label="Name" />
 
-      <NumberField source="display_options.priority" label="Priority" />
-
       <StatusChipField source="status" />
 
-      <EditButton />
       <DeleteButton />
     </Datagrid>
   </List>
 );
 
-export default SponsorList;
+export default SocialMediaList;
