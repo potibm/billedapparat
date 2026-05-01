@@ -37,7 +37,7 @@ func NewImportSlidesCmd() *cobra.Command {
 
 			req, _ := http.NewRequest(http.MethodPost, url, strings.NewReader(`{"directory":"`+importDirectory+`"}`))
 			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("X-API-Key", Cfg.API.AdminAPIKey)
+			req.Header.Set("Authorization", "Bearer "+Cfg.API.AdminAPIKey)
 
 			client := &http.Client{}
 			resp, err := client.Do(req)

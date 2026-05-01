@@ -13,18 +13,24 @@ type dbSlide struct {
 	Type   string `gorm:"index"` // sponsor, social, news
 	Status string `gorm:"index"` // active, pending, hidden
 
-	Source     *string `gorm:"uniqueIndex:idx_ext"`
-	ExternalID *string `gorm:"uniqueIndex:idx_ext"`
+	Source        *string `gorm:"uniqueIndex:idx_ext"`
+	ExternalID    *string `gorm:"uniqueIndex:idx_ext"`
+	ExternalSubID *int    `gorm:"uniqueIndex:idx_ext"`
 
-	AuthorDisplayName string
-	AuthorHandle      string
-	AuthorAvatarURL   string
+	AuthorUsername          string
+	AuthorDisplayName       string
+	AuthorExternalID        string
+	AuthorAvatarURLLocal    string
+	AuthorAvatarURLOriginal string `gorm:"index"`
+	AuthorAvatarMimeType    string
 
 	// Content
-	ContentTitle     string
-	ContentBody      string
-	MediaURLOriginal string
-	MediaURLLocal    string
+	ContentTitle            string
+	ContentBody             string
+	ContentMediaURLOriginal string `gorm:"index"`
+	ContentMediaURLLocal    string
+	ContentMediaMimeType    string
+	ContentLanguage         string
 
 	// Display options
 	AllowSocialOverlay bool
@@ -44,25 +50,41 @@ func fromDomain(s *domain.Slide) *dbSlide {
 		GormModel: GormModel{ID: s.ID},
 
 		Type:               string(s.Content.Type),
-		Status:             s.Status,
-		AuthorDisplayName:  s.Author.DisplayName,
-		AuthorHandle:       s.Author.Username,
-		AuthorAvatarURL:    s.Author.AvatarURL,
+		ExternalSubID:      s.ExternalSubID,
+		Status:             string(s.Status),
 		ContentTitle:       s.Content.Title,
 		ContentBody:        s.Content.Body,
-		MediaURLOriginal:   s.MediaURLOriginal,
+		ContentLanguage:    s.Content.Language,
 		OriginCreatedAt:    s.OriginCreatedAt,
 		AllowSocialOverlay: s.DisplayOptions.AllowSocialOverlay,
 		IsUrgent:           s.DisplayOptions.IsUrgent,
 		Priority:           s.DisplayOptions.Priority,
 	}
 
-	if s.Source != "" {
-		db.Source = &s.Source
+	if s.Author != nil {
+		db.AuthorDisplayName = s.Author.DisplayName
+		db.AuthorExternalID = s.Author.ExternalID
+		db.AuthorUsername = s.Author.Username
+
+		if s.Author.Avatar != nil {
+			db.AuthorAvatarURLLocal = s.Author.Avatar.LocalURL
+			db.AuthorAvatarURLOriginal = s.Author.Avatar.OriginalURL
+			db.AuthorAvatarMimeType = s.Author.Avatar.MimeType
+		}
 	}
 
 	if s.ExternalID != "" {
 		db.ExternalID = &s.ExternalID
+	}
+
+	if s.Content.Media != nil {
+		db.ContentMediaURLLocal = s.Content.Media.LocalURL
+		db.ContentMediaURLOriginal = s.Content.Media.OriginalURL
+		db.ContentMediaMimeType = s.Content.Media.MimeType
+	}
+
+	if s.Source != "" {
+		db.Source = &s.Source
 	}
 
 	return db
@@ -70,26 +92,22 @@ func fromDomain(s *domain.Slide) *dbSlide {
 
 func (s *dbSlide) toDomain() *domain.Slide {
 	ds := &domain.Slide{
-		ID:     s.ID,
-		Status: s.Status,
-		Author: domain.Author{
-			DisplayName: s.AuthorDisplayName,
-			Username:    s.AuthorHandle,
-			AvatarURL:   s.AuthorAvatarURL,
-		},
+		ID:            s.ID,
+		ExternalSubID: s.ExternalSubID,
+		Status:        domain.SlideStatus(s.Status),
 		Content: domain.Content{
-			Type:  domain.SlideType(s.Type),
-			Title: s.ContentTitle,
-			Body:  s.ContentBody,
+			Type:     domain.SlideType(s.Type),
+			Title:    s.ContentTitle,
+			Body:     s.ContentBody,
+			Language: s.ContentLanguage,
 		},
+		Author: nil,
 		DisplayOptions: domain.DisplayOptions{
 			AllowSocialOverlay: s.AllowSocialOverlay,
 			IsUrgent:           s.IsUrgent,
 			Priority:           s.Priority,
 		},
-
-		MediaURLOriginal: s.MediaURLOriginal,
-		OriginCreatedAt:  s.OriginCreatedAt,
+		OriginCreatedAt: s.OriginCreatedAt,
 	}
 
 	if s.Source != nil {
@@ -98,6 +116,30 @@ func (s *dbSlide) toDomain() *domain.Slide {
 
 	if s.ExternalID != nil {
 		ds.ExternalID = *s.ExternalID
+	}
+
+	if s.AuthorDisplayName != "" || s.AuthorUsername != "" || s.AuthorExternalID != "" {
+		ds.Author = &domain.Author{
+			DisplayName: s.AuthorDisplayName,
+			Username:    s.AuthorUsername,
+			ExternalID:  s.AuthorExternalID,
+		}
+
+		if s.AuthorAvatarURLLocal != "" || s.AuthorAvatarURLOriginal != "" {
+			ds.Author.Avatar = &domain.Media{
+				OriginalURL: s.AuthorAvatarURLOriginal,
+				LocalURL:    s.AuthorAvatarURLLocal,
+				MimeType:    s.AuthorAvatarMimeType,
+			}
+		}
+	}
+
+	if s.ContentMediaURLOriginal != "" || s.ContentMediaURLLocal != "" {
+		ds.Content.Media = &domain.Media{
+			OriginalURL: s.ContentMediaURLOriginal,
+			LocalURL:    s.ContentMediaURLLocal,
+			MimeType:    s.ContentMediaMimeType,
+		}
 	}
 
 	return ds

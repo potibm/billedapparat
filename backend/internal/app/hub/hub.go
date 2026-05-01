@@ -33,20 +33,32 @@ type Config struct {
 }
 
 type Server struct {
-	port        int
-	staticFiles embed.FS
-	slideRepo   repository.SlideRepository
-	cfg         config.Config
-	streamer    *Streamer
+	port            int
+	staticFiles     embed.FS
+	slideRepo       repository.SlideRepository
+	cfg             config.Config
+	streamer        *Streamer
+	mediaProcessor  MediaProcessor
+	mediaDownloader *MediaDownloader
+	logger          *slog.Logger
+}
+
+type MediaProcessor interface {
+	ProcessSlideImage(c *gin.Context, formField string) (string, error)
 }
 
 func NewServer(cfg Config) (*Server, error) {
+	logger := slog.Default()
+	streamer := NewStreamer(logger.With("component", "Streamer"))
+
 	return &Server{
-		port:        cfg.Port,
-		staticFiles: cfg.StaticFiles,
-		slideRepo:   cfg.SlideRepo,
-		cfg:         cfg.Cfg,
-		streamer:    NewStreamer(),
+		port:            cfg.Port,
+		staticFiles:     cfg.StaticFiles,
+		slideRepo:       cfg.SlideRepo,
+		cfg:             cfg.Cfg,
+		streamer:        streamer,
+		mediaDownloader: NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader")),
+		logger:          logger.With("component", "HubServer"),
 	}, nil
 }
 
@@ -62,7 +74,8 @@ func (s *Server) Run(ctx context.Context) error {
 		Handler:           router,
 	}
 
-	s.StartMediaGarbageCollector()
+	s.StartMediaGarbageCollector(ctx)
+	s.StartCollectorTextGarbageCollector(ctx)
 
 	// Start server in Goroutine
 	go func() {
@@ -71,7 +84,7 @@ func (s *Server) Run(ctx context.Context) error {
 		}
 	}()
 
-	slog.Info("Hub server is up", "port", s.port)
+	slog.Info("Server is up", "port", s.port)
 
 	<-ctx.Done()
 	slog.Info("Shutting down server gracefully...")
@@ -119,6 +132,11 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	internal := r.Group("/api/internal")
 	internal.Use(APIKeyAuthMiddleware(s.cfg.API.AdminAPIKey))
 	internal.POST("/import", s.internalImportDirectory)
+
+	collectors := r.Group("/api/collectors")
+	collectors.Use(CollectorAuthMiddleware(s.cfg.Collectors))
+	collectors.POST("/ingest", s.collectorIngestSlide)
+	collectors.DELETE("/ingest/:source/:external_id", s.collectorDeleteSlide)
 
 	r.NoRoute(func(c *gin.Context) {
 		if !strings.HasPrefix(c.Request.RequestURI, "/api") && !strings.Contains(c.Request.RequestURI, ".") {

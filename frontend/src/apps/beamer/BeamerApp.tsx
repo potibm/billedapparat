@@ -6,15 +6,17 @@ import {
   animations,
   AnimationType,
 } from "./features/animations/types/animations.schemas";
-import { createLogger } from "@core/logger/logger";
+import { ToastManager } from "./features/slides/components/ToastManager";
 
 const SLIDE_DURATION = 10000;
 
-const effectLogger = createLogger("Effect");
-
 export const BeamerApp = () => {
-  const { currentSlide, next, previous, isUrgent } = useSlideshowEngine();
+  const { currentSlide, next, previous, togglePause, isUrgent, toastSlides } =
+    useSlideshowEngine();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const allowOverlay =
+    currentSlide?.display_options.allow_social_overlay ?? false;
 
   const activeAnimation = useMemo(() => {
     if (!currentSlide) return "fade"; // Fallback
@@ -22,13 +24,6 @@ export const BeamerApp = () => {
     const keys = Object.keys(animations) as AnimationType[];
     const randomAnim = keys[Math.floor(Math.random() * keys.length)];
 
-    effectLogger.debug(
-      "Selected animation",
-      "animation",
-      randomAnim,
-      "slideId",
-      currentSlide.id,
-    );
     return randomAnim;
   }, [currentSlide]);
 
@@ -36,10 +31,14 @@ export const BeamerApp = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") next();
       if (e.key === "ArrowLeft") previous();
+      if (e.key === " " || e.key === "Spacebar") {
+        e.preventDefault();
+        togglePause();
+      }
     };
     globalThis.addEventListener("keydown", handleKeyDown);
     return () => globalThis.removeEventListener("keydown", handleKeyDown);
-  }, [next, previous]);
+  }, [next, previous, togglePause]);
 
   useEffect(() => {
     if (isUrgent) return;
@@ -65,6 +64,8 @@ export const BeamerApp = () => {
           <SlideRenderer slide={currentSlide} />
         </motion.div>
       </AnimatePresence>
+
+      <ToastManager toastSlides={toastSlides} allowOverlay={allowOverlay} />
     </div>
   );
 };

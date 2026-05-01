@@ -20,6 +20,7 @@ type AppConfig struct {
 
 	DbFilename         string                 `mapstructure:"db_filename"         validate:"required"`
 	FrontendURL        string                 `mapstructure:"frontend_url"        validate:"required,http_url"`
+	CollectorURL       string                 `mapstructure:"collector_url"       validate:"required,http_url"`
 	CorsAllowOrigins   CorsAllowOriginsConfig `mapstructure:"cors_allow_origins"  validate:"dive,required"`
 	EnvironmentMessage string                 `mapstructure:"environment_message"`
 }
@@ -41,9 +42,15 @@ type APIConfig struct {
 	AdminAPIKey string `mapstructure:"admin_api_key" validate:"required"`
 }
 
+type CollectorConfig struct {
+	Enabled bool   `mapstructure:"enabled"`
+	APIKey  string `mapstructure:"api_key" validate:"required_if=Enabled true"`
+}
+
 type Config struct {
-	App    AppConfig    `mapstructure:"app"`
-	Format FormatConfig `mapstructure:"format"`
-	Sentry SentryConfig `mapstructure:"sentry"`
-	API    APIConfig    `mapstructure:"api"`
+	App        AppConfig                  `mapstructure:"app"`
+	Format     FormatConfig               `mapstructure:"format"`
+	Sentry     SentryConfig               `mapstructure:"sentry"`
+	API        APIConfig                  `mapstructure:"api"`
+	Collectors map[string]CollectorConfig `mapstructure:"collectors" validate:"dive"`
 }

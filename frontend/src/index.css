@@ -7,22 +7,20 @@ body {
   @apply bg-black text-gray-600;
 }
 
-.ba-slide-news {
-  @apply text-gray-200 p-8 max-w-4xl mx-auto;
-}
+/** NEWS **/
 
-.ba-slide-news h1 {
+.slide-news__content h1 {
   @apply text-white text-5xl font-bold mb-4;
 }
 
-.ba-slide-news h2 {
+.slide-news__content h2 {
   @apply text-3xl font-bold mb-4;
 }
 
-.ba-slide-news p {
+.slide-news__content p {
   @apply text-lg leading-relaxed mb-4;
 }
 
-.ba-slide-news li {
+.slide-news__content li {
   @apply text-lg leading-relaxed list-disc list-inside;
 }

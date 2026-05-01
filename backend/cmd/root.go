@@ -93,7 +93,12 @@ func Execute() error {
 
 	rootCmd.AddCommand(NewServeCmd())
 
-	rootCmd.AddCommand(NewConfigCmd())
+	configCmd := NewConfigCmd()
+	configCmd.AddCommand(
+		NewConfigExportCmd(),
+		NewConfigCreateCmd(),
+	)
+	rootCmd.AddCommand(configCmd)
 
 	importCmd := NewImportCmd()
 	importCmd.AddCommand(
@@ -107,19 +112,31 @@ func Execute() error {
 	)
 	rootCmd.AddCommand(databaseCmd)
 
+	collectorCmd := NewCollectorCmd()
+	rootCmd.AddCommand(collectorCmd)
+
 	return rootCmd.ExecuteContext(ctx)
 }
 
 func loadConfig() error {
 	_ = godotenv.Load()
 
-	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
+
+	viper.SetConfigName("config")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			return fmt.Errorf("error reading config file: %w", err)
+		}
+	}
+
+	viper.SetConfigName("config.local")
+
+	if err := viper.MergeInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return fmt.Errorf("error merging local config: %w", err)
 		}
 	}
 

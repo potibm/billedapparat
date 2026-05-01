@@ -1,13 +1,14 @@
 package hub
 
 import (
+	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/potibm/billedapparat/internal/app/domain"
-	"github.com/potibm/billedapparat/internal/app/media"
 	"github.com/potibm/billedapparat/internal/app/repository"
 )
 
@@ -26,7 +27,55 @@ func (s *Server) adminListSlides(c *gin.Context) {
 		Type:   slideType,
 	}
 
-	slides, total, err := s.slideRepo.AdminList(c.Request.Context(), params)
+	filters := repository.AdminListFilters{
+		Query:    nil,
+		Status:   nil,
+		Priority: nil,
+		Source:   nil,
+		ID:       nil,
+	}
+	if c.Query("q") != "" {
+		query := c.Query("q")
+		filters.Query = &query
+	}
+
+	switch {
+	case c.Query("status_active") == "true":
+		status := "active"
+		filters.Status = &status
+	case c.Query("status_inactive") == "true":
+		status := "inactive"
+		filters.Status = &status
+	case c.Query("status_pending") == "true":
+		status := "pending"
+		filters.Status = &status
+	case c.Query("status_deleted") == "true":
+		status := "deleted"
+		filters.Status = &status
+	}
+
+	if priorityStr := c.Query("display_options.priority"); priorityStr != "" {
+		priority64, err := strconv.ParseInt(priorityStr, 10, 32)
+
+		if err == nil && priority64 >= 1 && priority64 <= 10 {
+			priority32 := int32(priority64)
+			filters.Priority = &priority32
+		}
+	}
+
+	if c.Query("id") != "" {
+		id, err := strconv.ParseInt(c.Query("id"), 10, 64)
+		if err == nil {
+			filters.ID = &id
+		}
+	}
+
+	if c.Query("source") != "" {
+		source := c.Query("source")
+		filters.Source = &source
+	}
+
+	slides, total, err := s.slideRepo.AdminList(c.Request.Context(), params, filters)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 
@@ -34,7 +83,6 @@ func (s *Server) adminListSlides(c *gin.Context) {
 	}
 
 	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
-	//	c.Header("Access-Control-Expose-Headers", "X-Total-Count")
 
 	c.JSON(http.StatusOK, slides)
 }
@@ -58,20 +106,34 @@ func (s *Server) adminGetSlide(c *gin.Context) {
 }
 
 func (s *Server) adminCreateSlide(c *gin.Context) {
+	slog.Debug("Admin Create Slide: Received request to create a new slide")
+
 	slide, err := s.parseSlidePayload(c)
 	if err != nil {
+		slog.Debug("Admin Create Slide: Error parsing slide payload", "error", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload: " + err.Error()})
 
 		return
+	} else {
+		slog.Info(
+			"Admin Create Slide: Successfully parsed slide payload",
+			"title",
+			slide.Content.Title,
+			"type",
+			slide.Content.Type,
+		)
 	}
 
 	if err := s.slideRepo.Save(c.Request.Context(), slide); err != nil {
+		slog.Error("Admin Create Slide: Failed to create slide", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create slide"})
 
 		return
+	} else {
+		slog.Info("Admin Create Slide: Successfully created slide", "id", slide.ID)
 	}
 
-	s.streamer.Broadcast("CREATE", slide)
+	s.streamer.Broadcast(EventCreate, slide)
 
 	c.JSON(http.StatusCreated, slide)
 }
@@ -99,7 +161,7 @@ func (s *Server) adminUpdateSlide(c *gin.Context) {
 		return
 	}
 
-	s.streamer.Broadcast("UPDATE", slide)
+	s.streamer.Broadcast(EventUpdate, slide)
 
 	c.JSON(http.StatusOK, slide)
 }
@@ -118,55 +180,55 @@ func (s *Server) adminDeleteSlide(c *gin.Context) {
 		return
 	}
 
-	s.streamer.Broadcast("DELETE", id)
+	s.streamer.Broadcast(EventDelete, id)
 
 	c.JSON(http.StatusOK, gin.H{"id": id})
 }
 
-func (s *Server) processSlideImage(c *gin.Context, fieldName string) (string, error) {
-	fileHeader, err := c.FormFile(fieldName)
-	if err != nil {
-		return "", err
+func (s *Server) parseSlidePayload(c *gin.Context) (*domain.Slide, error) {
+	if strings.Contains(c.GetHeader("Content-Type"), "multipart/form-data") {
+		return s.parseMultipartSlide(c)
 	}
 
-	file, err := fileHeader.Open()
-	if err != nil {
-		return "", err
+	var slide domain.Slide
+	if err := c.ShouldBindJSON(&slide); err != nil {
+		return nil, err
 	}
-	defer file.Close()
 
-	return media.ProcessAndSaveSlide(file)
+	return &slide, nil
 }
 
-func (s *Server) parseSlidePayload(c *gin.Context) (*domain.Slide, error) {
+func (s *Server) parseMultipartSlide(c *gin.Context) (*domain.Slide, error) {
 	var slide domain.Slide
 
-	contentType := c.GetHeader("Content-Type")
+	priority := 1
+	if p, err := strconv.Atoi(c.PostForm("display_options.priority")); err == nil {
+		priority = p
+	}
 
-	if strings.Contains(contentType, "multipart/form-data") {
-		priority, err := strconv.Atoi(c.PostForm("display_options.priority"))
-		if err != nil {
-			priority = 1
-		}
+	slide.Status = domain.SlideStatus(c.PostForm("status"))
+	slide.Content.Type = domain.SlideType(c.PostForm("content.type"))
+	slide.Content.Title = c.PostForm("content.title")
+	slide.Content.Body = c.PostForm("content.body")
+	slide.Author.DisplayName = c.PostForm("author.display_name")
+	slide.DisplayOptions.Priority = priority
+	slide.DisplayOptions.AllowSocialOverlay = c.PostForm("display_options.allow_social_overlay") == "true"
 
-		slide.Status = c.PostForm("status")
-		slide.Content.Type = domain.SlideType(c.PostForm("content.type"))
-		slide.Content.Title = c.PostForm("content.title")
-		slide.Content.Body = c.PostForm("content.body")
-		slide.Author.DisplayName = c.PostForm("author.display_name")
-		slide.DisplayOptions.Priority = priority
-		slide.DisplayOptions.AllowSocialOverlay = c.PostForm("display_options.allow_social_overlay") == "true"
-
-		newPath, err := s.processSlideImage(c, "image_upload")
-		if err == nil && newPath != "" {
-			slide.MediaURLOriginal = newPath
-		}
-
+	_, fileErr := c.FormFile("image_upload")
+	if fileErr != nil {
 		return &slide, nil
 	}
 
-	if err := c.ShouldBindJSON(&slide); err != nil {
-		return nil, err
+	newPath, err := s.mediaProcessor.ProcessSlideImage(c, "image_upload")
+	if err != nil {
+		return nil, fmt.Errorf("failed to process image_upload: %w", err)
+	}
+
+	if newPath != "" {
+		slide.Content.Media = &domain.Media{
+			LocalURL: newPath,
+			MimeType: "image/webp",
+		}
 	}
 
 	return &slide, nil

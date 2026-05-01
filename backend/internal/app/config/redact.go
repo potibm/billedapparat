@@ -8,6 +8,12 @@ func (c Config) RedactConfigForDisplay() Config {
 	result := c
 
 	result.Sentry.DSN = redacted
+	result.API.AdminAPIKey = redacted
+
+	for key, collector := range result.Collectors {
+		collector.APIKey = redacted
+		result.Collectors[key] = collector
+	}
 
 	return result
 }

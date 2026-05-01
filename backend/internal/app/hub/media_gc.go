@@ -8,22 +8,30 @@ import (
 	"time"
 )
 
-func (s *Server) StartMediaGarbageCollector() {
+func (s *Server) StartMediaGarbageCollector(ctx context.Context) {
 	ticker := time.NewTicker(1 * time.Hour)
 
 	go func() {
-		for range ticker.C {
-			s.runGarbageCollectionCycle()
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				s.runGarbageCollectionCycle()
+			}
 		}
 	}()
 }
 
 func (s *Server) runGarbageCollectionCycle() {
-	slog.Info("[GC] Starting Media Garbage Collection...")
+	logger := s.logger.With("cycle", "media_gc")
+	logger.Info("Starting Media Garbage Collection...")
 
 	activeURLs, err := s.slideRepo.GetAllMediaURLs(context.Background())
 	if err != nil {
-		slog.Warn("[GC] Error fetching URLs from DB", "error", err)
+		logger.Warn("Error fetching URLs from DB", "error", err)
 
 		return
 	}
@@ -37,7 +45,7 @@ func (s *Server) runGarbageCollectionCycle() {
 
 	files, err := os.ReadDir(mediaDir)
 	if err != nil {
-		slog.Warn("[GC] Error reading media directory", "error", err)
+		logger.Warn("Error reading media directory", "error", err)
 
 		return
 	}
@@ -45,15 +53,15 @@ func (s *Server) runGarbageCollectionCycle() {
 	deletedCount := 0
 
 	for _, file := range files {
-		if s.deleteIfOrphaned(mediaDir, file, urlMap) {
+		if s.deleteIfOrphaned(mediaDir, file, urlMap, logger) {
 			deletedCount++
 		}
 	}
 
-	slog.Info("[GC] Media Garbage Collection finished.", "deleted", deletedCount)
+	logger.Info("Media Garbage Collection finished.", "deleted", deletedCount)
 }
 
-func (s *Server) deleteIfOrphaned(mediaDir string, file os.DirEntry, urlMap map[string]bool) bool {
+func (s *Server) deleteIfOrphaned(mediaDir string, file os.DirEntry, urlMap map[string]bool, logger *slog.Logger) bool {
 	info, err := file.Info()
 	if err != nil || info.IsDir() {
 		return false
@@ -69,10 +77,10 @@ func (s *Server) deleteIfOrphaned(mediaDir string, file os.DirEntry, urlMap map[
 		return false
 	}
 
-	slog.Info("[GC] Deleting orphaned file", "url", publicURL)
+	logger.Info("Deleting orphaned file", "url", publicURL)
 
 	if err := os.Remove(filepath.Join(mediaDir, file.Name())); err != nil {
-		slog.Warn("[GC] Failed to delete", "file", file.Name(), "error", err)
+		logger.Warn("Failed to delete", "file", file.Name(), "error", err)
 
 		return false
 	}

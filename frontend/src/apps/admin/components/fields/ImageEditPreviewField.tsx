@@ -1,15 +1,17 @@
 import { useRecordContext } from "react-admin";
+import { ImagePreviewField } from "./ImagePreviewField";
 
 export const ImageEditPreviewField = () => {
   const record = useRecordContext();
-  if (!record || !record.media_url_original) return null;
+  if (!record || !record.content?.media?.local_url) return null;
   return (
     <div className="mb-4 ml-1">
       <p className="text-gray-300 text-xs mb-1">Current Slide</p>
-      <img
-        src={record.media_url_original}
-        alt="Current Slide"
-        className="max-w-[200px] max-h-[100px] object-contain bg-gray-100 p-2 rounded"
+      <ImagePreviewField
+        source="content.media.local_url"
+        label="Preview"
+        maxWidth={200}
+        maxHeight={100}
       />
     </div>
   );

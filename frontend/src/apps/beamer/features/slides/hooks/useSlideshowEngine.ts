@@ -4,14 +4,15 @@ import { createLogger } from "@core/logger/logger";
 import { Slide } from "../types/slide.schema";
 
 const PLAYLIST_PATTERN = [
+  "sponsor",
+  "social.media",
   "news",
   "sponsor",
-  "sponsor",
+  "timetable",
   "news",
-  /*  "timetable",
- "sponsor",
-  "social",
-  "social",*/
+  "sponsor",
+  "social.media",
+  "social.media",
 ];
 const HISTORY_LIMIT = 50;
 const NEXT_TICK_TIMEOUT = 0;
@@ -24,9 +25,11 @@ export const useSlideshowEngine = () => {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [history, setHistory] = useState<number[]>([]);
   const [historyPointer, setHistoryPointer] = useState(-1);
+  const [isPaused, setIsPaused] = useState(false);
 
   const urgentSlides = getUrgent();
   const hasUrgent = urgentSlides.length > 0;
+  const toastSlides = getByType("social.text");
 
   const pickWeightedSlide = useCallback((slides: Slide[]): Slide | null => {
     if (slides.length === 0) return null;
@@ -53,6 +56,8 @@ export const useSlideshowEngine = () => {
   }, []);
 
   const next = useCallback(() => {
+    if (isPaused) return;
+
     if (historyPointer < history.length - 1) {
       setHistoryPointer((prev) => prev + 1);
       return;
@@ -125,6 +130,7 @@ export const useSlideshowEngine = () => {
     pickWeightedSlide,
     urgentSlides,
     allSlides.length,
+    isPaused,
   ]);
 
   const previous = useCallback(() => {
@@ -132,6 +138,10 @@ export const useSlideshowEngine = () => {
       setHistoryPointer((prev) => prev - 1);
     }
   }, [historyPointer]);
+
+  const togglePause = useCallback(() => {
+    setIsPaused((prev) => !prev);
+  }, []);
 
   const currentSlide = useMemo(() => {
     const id = history[historyPointer];
@@ -157,6 +167,9 @@ export const useSlideshowEngine = () => {
     currentSlide,
     next,
     previous,
+    isPaused,
+    togglePause,
     isUrgent: currentSlide?.content.type === "urgent",
+    toastSlides,
   };
 };

@@ -3,16 +3,20 @@ package hub
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/potibm/billedapparat/internal/app/config"
 )
 
-func APIKeyAuthMiddleware(validKey string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		key := c.GetHeader("X-API-Key")
+const collectorSourceKey = "collector_source"
 
-		if key == "" || key != validKey {
-			slog.Warn("Unauthorized API access attempt", "ip", c.ClientIP())
+func APIKeyAuthMiddleware(validAdminKey string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := extractToken(c)
+
+		if token == "" || token != validAdminKey {
+			slog.Warn("Unauthorized admin access attempt", "ip", c.ClientIP())
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 
 			return
@@ -20,4 +24,54 @@ func APIKeyAuthMiddleware(validKey string) gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+func CollectorAuthMiddleware(collectors map[string]config.CollectorConfig) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := extractToken(c)
+
+		if token == "" {
+			slog.Warn("Unauthorized collector access attempt (missing token)", "ip", c.ClientIP())
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+
+			return
+		}
+
+		var authenticatedSource string
+
+		isAuthenticated := false
+
+		// Check against all configured collectors
+		for sourceName, cfg := range collectors {
+			if cfg.Enabled && cfg.APIKey == token {
+				isAuthenticated = true
+				authenticatedSource = sourceName
+
+				break
+			}
+		}
+
+		if !isAuthenticated {
+			slog.Warn("Unauthorized collector access attempt (invalid token)", "ip", c.ClientIP())
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+
+			return
+		}
+
+		// Store collector name in context for later use in handlers
+		c.Set(collectorSourceKey, authenticatedSource)
+
+		c.Next()
+	}
+}
+
+func extractToken(c *gin.Context) string {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		return ""
+	}
+
+	token := strings.TrimPrefix(authHeader, "Bearer ")
+
+	return strings.TrimSpace(token)
 }

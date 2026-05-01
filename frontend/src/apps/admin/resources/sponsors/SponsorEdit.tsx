@@ -8,11 +8,14 @@ import {
   TextInput,
   required,
   BooleanInput,
+  NumberInput,
 } from "react-admin";
 
 export const SponsorEdit = () => (
   <Edit title="Edit Sponsor Screens">
     <SimpleForm>
+      <NumberInput source="id" label="ID" disabled />
+
       <TextInput
         source="content.title"
         label="Name"
