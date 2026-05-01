@@ -28,9 +28,9 @@ export const ToastOverlay = ({ toasts }: ToastOverlayProps) => {
               className="toast-overlay__header mb-3"
             />
 
-            <p className="toast-overlay__body text-white text-lg leading-snug whitespace-pre-wrap">
+            <div className="toast-overlay__body text-white text-lg leading-snug whitespace-pre-wrap">
               <FormattedText text={toast.content.body} />
-            </p>
+            </div>
           </motion.div>
         ))}
       </AnimatePresence>
