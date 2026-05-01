@@ -17,6 +17,6 @@ export const AdminApp = () => (
   >
     <Resource name="sponsors" {...sponsors} />
     <Resource name="news" {...news} />
-    <Resource name="social-media" {...socialMedia} /> 
+    <Resource name="social-media" {...socialMedia} />
   </Admin>
 );

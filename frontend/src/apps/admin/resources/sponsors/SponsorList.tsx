@@ -20,12 +20,12 @@ export const SponsorList = () => (
       <NumberField source="id" label="ID" />
 
       <ImagePreviewField
-              source="content.media.local_url"
-              label="Logo"
-              maxWidth={80}
-              maxHeight={45}
-              sortable={false}
-            />
+        source="content.media.local_url"
+        label="Logo"
+        maxWidth={80}
+        maxHeight={45}
+        sortable={false}
+      />
 
       <TextField source="content.title" label="Name" />
 

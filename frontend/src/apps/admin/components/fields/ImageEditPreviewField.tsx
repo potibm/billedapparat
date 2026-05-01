@@ -7,7 +7,12 @@ export const ImageEditPreviewField = () => {
   return (
     <div className="mb-4 ml-1">
       <p className="text-gray-300 text-xs mb-1">Current Slide</p>
-      <ImagePreviewField source="content.media.local_url" label="Preview" maxWidth={200} maxHeight={100} />
+      <ImagePreviewField
+        source="content.media.local_url"
+        label="Preview"
+        maxWidth={200}
+        maxHeight={100}
+      />
     </div>
   );
 };

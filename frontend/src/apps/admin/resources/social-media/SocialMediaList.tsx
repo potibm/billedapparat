@@ -8,6 +8,7 @@ import {
   NumberField,
 } from "react-admin";
 import { DefaultFilters } from "@admin/components/filters/DefaultFilters";
+import { SourceField } from "@admin/components/fields/SourceField";
 
 export const SocialMediaList = () => (
   <List
@@ -18,6 +19,8 @@ export const SocialMediaList = () => (
     <Datagrid rowClick="show" bulkActionButtons={false}>
       <NumberField source="id" label="ID" />
 
+      <SourceField source="source" label="Source" width={24} height={24} />
+
       <ImagePreviewField
         source="content.media.local_url"
         label="Logo"
@@ -25,6 +28,8 @@ export const SocialMediaList = () => (
         maxHeight={45}
         sortable={false}
       />
+
+      <TextField source="author.display_name" label="Author" />
 
       <TextField source="content.title" label="Name" />
 
