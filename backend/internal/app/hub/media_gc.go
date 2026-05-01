@@ -8,20 +8,26 @@ import (
 	"time"
 )
 
-func (s *Server) StartMediaGarbageCollector() {
+func (s *Server) StartMediaGarbageCollector(ctx context.Context) {
 	ticker := time.NewTicker(1 * time.Hour)
 
 	go func() {
-		for range ticker.C {
-			s.runGarbageCollectionCycle()
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				s.runGarbageCollectionCycle()
+			}
 		}
 	}()
 }
 
 func (s *Server) runGarbageCollectionCycle() {
-	slog.Info("[GC] Starting Media Garbage Collection...")
-
 	logger := s.logger.With("cycle", "media_gc")
+	logger.Info("Starting Media Garbage Collection...")
 
 	activeURLs, err := s.slideRepo.GetAllMediaURLs(context.Background())
 	if err != nil {

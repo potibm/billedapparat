@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -69,9 +70,14 @@ func (c *HubClient) SendSlide(payload contracts.IngestRequest) error {
 }
 
 func (c *HubClient) DeleteSlide(source, externalID string) error {
-	url := fmt.Sprintf("%s/api/collectors/ingest/%s/%s", strings.TrimRight(c.BaseURL, "/"), source, externalID)
+	endpoint := fmt.Sprintf(
+		"%s/api/collectors/ingest/%s/%s",
+		strings.TrimRight(c.BaseURL, "/"),
+		url.PathEscape(source),
+		url.PathEscape(externalID),
+	)
 
-	req, err := http.NewRequest(http.MethodDelete, url, http.NoBody)
+	req, err := http.NewRequest(http.MethodDelete, endpoint, http.NoBody)
 	if err != nil {
 		return err
 	}

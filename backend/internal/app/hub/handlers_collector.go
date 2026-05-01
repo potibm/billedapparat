@@ -101,6 +101,14 @@ func (s *Server) collectorDeleteSlide(ctx *gin.Context) {
 		return
 	}
 
+	collectorToken := ctx.GetString(collectorSourceKey)
+	if source != collectorToken {
+		slog.Warn("Delete request with invalid source token", "source", source, "collector_token", collectorToken)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid source token"})
+
+		return
+	}
+
 	err := s.slideRepo.MarkAsDeleted(ctx.Request.Context(), source, externalID)
 	if err != nil {
 		s.logger.Error("Error marking slide as deleted",

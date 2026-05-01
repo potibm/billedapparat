@@ -52,7 +52,15 @@ func (c *Collector) Run(ctx context.Context) error {
 			const reconnectDuration = 5 * time.Second
 
 			c.logger.Warn("Stream disconnected, reconnecting in 5s...", "error", err)
-			time.Sleep(reconnectDuration)
+
+			timer := time.NewTimer(reconnectDuration)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+
+				return nil
+			case <-timer.C:
+			}
 		}
 	}
 }
@@ -144,7 +152,11 @@ func (c *Collector) handleEvent(eventType, payload string) {
 func (c *Collector) verifyCredentials() error {
 	verifyURL := fmt.Sprintf("%s/api/v1/apps/verify_credentials", c.getBaseURL())
 
-	req, _ := http.NewRequest(http.MethodGet, verifyURL, http.NoBody)
+	req, err := http.NewRequest(http.MethodGet, verifyURL, http.NoBody)
+	if err != nil {
+		return fmt.Errorf("failed to create verification request: %w", err)
+	}
+
 	req.Header.Set("Authorization", "Bearer "+c.cfg.AccessToken)
 
 	resp, err := http.DefaultClient.Do(req)

@@ -31,7 +31,10 @@ export const BeamerApp = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") next();
       if (e.key === "ArrowLeft") previous();
-      if (e.key === " " || e.key === "Spacebar") togglePause();
+      if (e.key === " " || e.key === "Spacebar") {
+        e.preventDefault();
+        togglePause();
+      }
     };
     globalThis.addEventListener("keydown", handleKeyDown);
     return () => globalThis.removeEventListener("keydown", handleKeyDown);

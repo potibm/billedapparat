@@ -6,12 +6,19 @@ import (
 	"time"
 )
 
-func (s *Server) StartCollectorTextGarbageCollector() {
+func (s *Server) StartCollectorTextGarbageCollector(ctx context.Context) {
 	ticker := time.NewTicker(1 * time.Minute)
 
 	go func() {
-		for range ticker.C {
-			s.runCollectorTextGarbageCollectionCycle()
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				s.runCollectorTextGarbageCollectionCycle()
+			}
 		}
 	}()
 }
@@ -38,7 +45,7 @@ func (s *Server) runCollectorTextGarbageCollectionCycle() {
 		if err != nil {
 			logger.Error("Unable to delete expired slide", "id", slide.ID, "error", err)
 
-			return
+			continue
 		}
 
 		logger.Debug("Expired social text slide cleaned up", "id", slide.ID)

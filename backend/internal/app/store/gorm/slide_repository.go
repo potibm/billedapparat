@@ -3,6 +3,7 @@ package gorm
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/potibm/billedapparat/internal/app/domain"
@@ -65,28 +66,10 @@ func (r *slideRepository) AdminList(
 
 	query := r.db.WithContext(ctx).Model(&dbSlide{})
 
+	// filters
 	if p.Type != "" {
 		query = query.Where("type = ?", p.Type)
 	}
-
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	switch p.Sort {
-	case "content.title":
-		p.Sort = "content_title"
-	case "display_options.priority":
-		p.Sort = "priority,id"
-	case "author.display_name":
-		p.Sort = "author_display_name,id"
-	case "source":
-		p.Sort = "source,id"
-	default:
-		p.Sort = "id"
-	}
-
-	orderClause := fmt.Sprintf("%s %s", p.Sort, p.Order)
 
 	if filters.Query != nil {
 		likeQuery := fmt.Sprintf("%%%s%%", *filters.Query)
@@ -115,7 +98,16 @@ func (r *slideRepository) AdminList(
 		query = query.Where("source = ?", *filters.Source)
 	}
 
-	err := query.Order(orderClause).
+	// determine count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// sorting
+	safeOrderClause := getOrderClause(p.Sort, p.Order)
+
+	// perform query with pagination and sorting
+	err := query.Order(safeOrderClause).
 		Limit(p.Limit).
 		Offset(p.Offset).
 		Find(&dbSlides).Error
@@ -126,6 +118,37 @@ func (r *slideRepository) AdminList(
 	slides := toDomainSlice(dbSlides)
 
 	return slides, total, nil
+}
+
+func getOrderClause(sortField, order string) string {
+	var sortCols []string
+
+	switch sortField {
+	case "content.title":
+		sortCols = []string{"content_title"}
+	case "display_options.priority":
+		sortCols = []string{"priority", "id"}
+	case "author.display_name":
+		sortCols = []string{"author_display_name", "id"}
+	case "source":
+		sortCols = []string{"source", "id"}
+	default:
+		sortCols = []string{"id"}
+	}
+
+	orderDir := "ASC"
+	if strings.ToUpper(order) == "DESC" {
+		orderDir = "DESC"
+	}
+
+	var orderClauses []string
+	for _, col := range sortCols {
+		orderClauses = append(orderClauses, fmt.Sprintf("%s %s", col, orderDir))
+	}
+
+	safeOrderClause := strings.Join(orderClauses, ", ")
+
+	return safeOrderClause
 }
 
 func (r *slideRepository) GetByID(ctx context.Context, id int64) (*domain.Slide, error) {

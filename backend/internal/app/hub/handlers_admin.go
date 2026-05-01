@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -185,37 +186,49 @@ func (s *Server) adminDeleteSlide(c *gin.Context) {
 }
 
 func (s *Server) parseSlidePayload(c *gin.Context) (*domain.Slide, error) {
+	if strings.Contains(c.GetHeader("Content-Type"), "multipart/form-data") {
+		return s.parseMultipartSlide(c)
+	}
+
+	var slide domain.Slide
+	if err := c.ShouldBindJSON(&slide); err != nil {
+		return nil, err
+	}
+
+	return &slide, nil
+}
+
+func (s *Server) parseMultipartSlide(c *gin.Context) (*domain.Slide, error) {
 	var slide domain.Slide
 
-	contentType := c.GetHeader("Content-Type")
+	priority := 1
+	if p, err := strconv.Atoi(c.PostForm("display_options.priority")); err == nil {
+		priority = p
+	}
 
-	if strings.Contains(contentType, "multipart/form-data") {
-		priority, err := strconv.Atoi(c.PostForm("display_options.priority"))
-		if err != nil {
-			priority = 1
-		}
+	slide.Status = domain.SlideStatus(c.PostForm("status"))
+	slide.Content.Type = domain.SlideType(c.PostForm("content.type"))
+	slide.Content.Title = c.PostForm("content.title")
+	slide.Content.Body = c.PostForm("content.body")
+	slide.Author.DisplayName = c.PostForm("author.display_name")
+	slide.DisplayOptions.Priority = priority
+	slide.DisplayOptions.AllowSocialOverlay = c.PostForm("display_options.allow_social_overlay") == "true"
 
-		slide.Status = domain.SlideStatus(c.PostForm("status"))
-		slide.Content.Type = domain.SlideType(c.PostForm("content.type"))
-		slide.Content.Title = c.PostForm("content.title")
-		slide.Content.Body = c.PostForm("content.body")
-		slide.Author.DisplayName = c.PostForm("author.display_name")
-		slide.DisplayOptions.Priority = priority
-		slide.DisplayOptions.AllowSocialOverlay = c.PostForm("display_options.allow_social_overlay") == "true"
-
-		newPath, err := s.mediaProcessor.ProcessSlideImage(c, "image_upload")
-		if err == nil && newPath != "" {
-			slide.Content.Media = &domain.Media{
-				LocalURL: newPath,
-				MimeType: "image/webp",
-			}
-		}
-
+	_, fileErr := c.FormFile("image_upload")
+	if fileErr != nil {
 		return &slide, nil
 	}
 
-	if err := c.ShouldBindJSON(&slide); err != nil {
-		return nil, err
+	newPath, err := s.mediaProcessor.ProcessSlideImage(c, "image_upload")
+	if err != nil {
+		return nil, fmt.Errorf("failed to process image_upload: %w", err)
+	}
+
+	if newPath != "" {
+		slide.Content.Media = &domain.Media{
+			LocalURL: newPath,
+			MimeType: "image/webp",
+		}
 	}
 
 	return &slide, nil

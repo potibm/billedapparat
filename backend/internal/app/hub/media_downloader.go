@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/potibm/billedapparat/internal/app/domain"
@@ -12,10 +14,16 @@ import (
 	"github.com/potibm/billedapparat/internal/app/repository"
 )
 
+const (
+	defaultTimeout   = 5 * time.Second
+	defaultKeepAlive = 30 * time.Second
+)
+
 type MediaDownloader struct {
 	slideRepo repository.SlideRepository
 	streamer  *Streamer
 	logger    *slog.Logger
+	client    *http.Client
 }
 
 func NewMediaDownloader(
@@ -27,6 +35,7 @@ func NewMediaDownloader(
 		slideRepo: slideRepo,
 		streamer:  streamer,
 		logger:    logger,
+		client:    newSafeHTTPClient(),
 	}
 }
 
@@ -109,11 +118,11 @@ func (m *MediaDownloader) resolveAndDownload(
 func (m *MediaDownloader) downloadAndConvert(originalURL string, imageType media.ImageType) (string, error) {
 	const defaultTimeout = 15 * time.Second
 
-	client := &http.Client{
-		Timeout: defaultTimeout,
+	if err := validateURL(originalURL); err != nil {
+		return "", fmt.Errorf("url validation failed: %w", err)
 	}
 
-	resp, err := client.Get(originalURL)
+	resp, err := m.client.Get(originalURL)
 	if err != nil {
 		return "", fmt.Errorf("http get failed: %w", err)
 	}
@@ -129,4 +138,67 @@ func (m *MediaDownloader) downloadAndConvert(originalURL string, imageType media
 	}
 
 	return publicURL, nil
+}
+
+func validateURL(rawURL string) error {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid URL: %w", err)
+	}
+
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
+		return fmt.Errorf("unsupported URL schema: %s", parsedURL.Scheme)
+	}
+
+	if parsedURL.User != nil && parsedURL.User.String() != "" {
+		return fmt.Errorf("urls with credentials blocked")
+	}
+
+	return nil
+}
+
+func newSafeHTTPClient() *http.Client {
+	safeTransport := &http.Transport{
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			host, port, err := net.SplitHostPort(addr)
+			if err != nil {
+				return nil, err
+			}
+
+			ips, err := net.DefaultResolver.LookupIP(ctx, "ip", host)
+			if err != nil {
+				return nil, err
+			}
+
+			var safeIP net.IP
+
+			for _, ip := range ips {
+				if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() ||
+					ip.IsUnspecified() {
+					return nil, fmt.Errorf("access to internal IP %s blocked (SSRF)", ip.String())
+				}
+
+				if safeIP == nil {
+					safeIP = ip
+				}
+			}
+
+			if safeIP == nil {
+				return nil, fmt.Errorf("no resolvable, public IP found")
+			}
+
+			safeAddr := net.JoinHostPort(safeIP.String(), port)
+			dialer := &net.Dialer{
+				Timeout:   defaultTimeout,
+				KeepAlive: defaultKeepAlive,
+			}
+
+			return dialer.DialContext(ctx, network, safeAddr)
+		},
+	}
+
+	return &http.Client{
+		Timeout:   defaultTimeout,
+		Transport: safeTransport,
+	}
 }

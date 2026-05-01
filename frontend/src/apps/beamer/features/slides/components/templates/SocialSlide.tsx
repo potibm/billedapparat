@@ -31,7 +31,7 @@ export const SocialSlide = ({ slide }: { slide: Slide }) => {
 
       {!slide.content.body && slide.content.title && (
         <h2 className="text-2xl font-bold text-gray-400 uppercase">
-          News: {slide.content.title}
+          Social: {slide.content.title}
         </h2>
       )}
     </div>

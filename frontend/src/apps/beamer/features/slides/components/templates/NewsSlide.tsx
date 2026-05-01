@@ -11,7 +11,7 @@ export const NewsSlide = ({ slide }: { slide: Slide }) => {
             <Markdown>{slide.content.body}</Markdown>
           </div>
         ) : (
-          <h2 className="slide-news__fallbackl text-5xl font-light text-gray-500 tracking-widest uppercase">
+          <h2 className="slide-news__fallback text-5xl font-light text-gray-500 tracking-widest uppercase">
             News: {slide.content.title}
           </h2>
         )}

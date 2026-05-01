@@ -74,8 +74,8 @@ func (s *Server) Run(ctx context.Context) error {
 		Handler:           router,
 	}
 
-	s.StartMediaGarbageCollector()
-	s.StartCollectorTextGarbageCollector()
+	s.StartMediaGarbageCollector(ctx)
+	s.StartCollectorTextGarbageCollector(ctx)
 
 	// Start server in Goroutine
 	go func() {

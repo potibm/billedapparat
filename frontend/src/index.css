@@ -13,7 +13,7 @@ body {
   @apply text-white text-5xl font-bold mb-4;
 }
 
-.slide-news__contenth2 {
+.slide-news__content h2 {
   @apply text-3xl font-bold mb-4;
 }
 

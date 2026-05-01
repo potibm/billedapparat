@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"log"
 
 	"github.com/potibm/billedapparat/internal/app/collectors/mastodon"
 	"github.com/potibm/billedapparat/internal/app/config"
@@ -19,7 +18,12 @@ func NewConfigCreateCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			const defaultAPIKeyLength = 32
 
-			viper.Set("api.admin_api_key", generateSecureToken(defaultAPIKeyLength))
+			adminAPIKey, err := generateSecureToken(defaultAPIKeyLength)
+			if err != nil {
+				return fmt.Errorf("failed to generate admin api key: %w", err)
+			}
+
+			viper.Set("api.admin_api_key", adminAPIKey)
 
 			viper.Set("format.date.locale", "de-DE")
 			viper.Set("format.date.options", config.DateFormatOptionsConfig{
@@ -30,14 +34,19 @@ func NewConfigCreateCmd() *cobra.Command {
 				"day":      "numeric",
 			})
 
+			mastodonCollectorAPIKey, err := generateSecureToken(defaultAPIKeyLength)
+			if err != nil {
+				return fmt.Errorf("failed to generate collector api key: %w", err)
+			}
+
 			collectors := map[string]any{
-				"mastodon": mastodon.DefaultConfig(generateSecureToken(defaultAPIKeyLength)),
+				"mastodon": mastodon.DefaultConfig(mastodonCollectorAPIKey),
 			}
 			viper.Set("collectors", collectors)
 
 			filename := "config.yaml"
 
-			err := viper.SafeWriteConfigAs(filename)
+			err = viper.SafeWriteConfigAs(filename)
 			if err != nil {
 				if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 					return fmt.Errorf(
@@ -57,11 +66,11 @@ func NewConfigCreateCmd() *cobra.Command {
 	}
 }
 
-func generateSecureToken(byteLength int) string {
+func generateSecureToken(byteLength int) (string, error) {
 	bytes := make([]byte, byteLength)
 	if _, err := rand.Read(bytes); err != nil {
-		log.Fatalf("Error while generating the token: %v", err)
+		return "", fmt.Errorf("error while generating the token: %w", err)
 	}
 
-	return hex.EncodeToString(bytes)
+	return hex.EncodeToString(bytes), nil
 }

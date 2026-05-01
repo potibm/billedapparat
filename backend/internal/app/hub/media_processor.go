@@ -7,7 +7,7 @@ import (
 
 type LocalDiskMediaProcessor struct{}
 
-func (lmp *LocalDiskMediaProcessor) processSlideImage(c *gin.Context, fieldName string) (string, error) {
+func (lmp *LocalDiskMediaProcessor) ProcessSlideImage(c *gin.Context, fieldName string) (string, error) {
 	fileHeader, err := c.FormFile(fieldName)
 	if err != nil {
 		return "", err
