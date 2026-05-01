@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/potibm/billedapparat/internal/app/domain"
 )
@@ -24,6 +25,7 @@ type SlideRepository interface {
 	SlideExists(source, externalID string, subID *int) (bool, error)
 	FindLocalURLByOriginalURL(ctx context.Context, originalURL string) (string, bool)
 	MarkAsDeleted(ctx context.Context, source, externalID string) error
+	FindExpiredSlidesByType(ctx context.Context, slideType string, cutoff time.Time) ([]domain.Slide, error)
 }
 
 type AdminListParams struct {

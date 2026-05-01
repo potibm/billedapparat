@@ -75,6 +75,7 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 
 	s.StartMediaGarbageCollector()
+	s.StartCollectorTextGarbageCollector()
 
 	// Start server in Goroutine
 	go func() {

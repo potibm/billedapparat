@@ -3,6 +3,7 @@ package gorm
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/potibm/billedapparat/internal/app/domain"
 	"github.com/potibm/billedapparat/internal/app/repository"
@@ -191,4 +192,23 @@ func (r *slideRepository) MarkAsDeleted(ctx context.Context, source, externalID 
 		Model(&dbSlide{}).
 		Where("source = ? AND external_id = ?", source, externalID).
 		Update("status", domain.StatusDeleted).Error
+}
+
+func (r *slideRepository) FindExpiredSlidesByType(
+	ctx context.Context,
+	slideType string,
+	cutoff time.Time,
+) ([]domain.Slide, error) {
+	var dbSlides []dbSlide
+
+	err := r.db.WithContext(ctx).
+		Where("type = ? AND status = ? AND created_at < ?", slideType, domain.StatusActive, cutoff).
+		Find(&dbSlides).Error
+	if err != nil {
+		return nil, err
+	}
+
+	slides := toDomainSlice(dbSlides)
+
+	return slides, nil
 }

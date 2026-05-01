@@ -2,6 +2,7 @@ package mastodon
 
 import (
 	"html"
+	"regexp"
 	"strings"
 	"time"
 
@@ -9,7 +10,11 @@ import (
 	"github.com/potibm/billedapparat/internal/app/contracts"
 )
 
-var stripHTMLPolicy = bluemonday.StrictPolicy()
+var (
+	stripHTMLPolicy = bluemonday.StrictPolicy()
+	reBR            = regexp.MustCompile(`(?i)<br\s*/?>`)
+	reP             = regexp.MustCompile(`(?i)</p>`)
+)
 
 type MastoStatus struct {
 	ID        string    `json:"id"`
@@ -30,6 +35,9 @@ type MastoStatus struct {
 }
 
 func stripHTML(content string) string {
+	content = reBR.ReplaceAllString(content, "\n")
+	content = reP.ReplaceAllString(content, "\n\n")
+
 	cleanBody := stripHTMLPolicy.Sanitize(content)
 
 	cleanBody = html.UnescapeString(cleanBody)
