@@ -26,16 +26,18 @@ const (
 )
 
 type Config struct {
-	Port        int
-	StaticFiles embed.FS
-	SlideRepo   repository.SlideRepository
-	Cfg         config.Config
+	Port           int
+	StaticFiles    embed.FS
+	SlideRepo      repository.SlideRepository
+	FilterRuleRepo repository.FilterRuleRepository
+	Cfg            config.Config
 }
 
 type Server struct {
 	port            int
 	staticFiles     embed.FS
 	slideRepo       repository.SlideRepository
+	filterRuleRepo  repository.FilterRuleRepository
 	cfg             config.Config
 	streamer        *Streamer
 	mediaProcessor  MediaProcessor
@@ -55,6 +57,7 @@ func NewServer(cfg Config) (*Server, error) {
 		port:            cfg.Port,
 		staticFiles:     cfg.StaticFiles,
 		slideRepo:       cfg.SlideRepo,
+		filterRuleRepo:  cfg.FilterRuleRepo,
 		cfg:             cfg.Cfg,
 		streamer:        streamer,
 		mediaDownloader: NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader")),
@@ -128,6 +131,14 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	admin.GET("/slides/:id", s.adminGetSlide)
 	admin.PUT("/slides/:id", s.adminUpdateSlide)
 	admin.DELETE("/slides/:id", s.adminDeleteSlide)
+
+	admin.GET("/filter-rules", s.adminListFilterRules)
+	admin.POST("/filter-rules", s.adminCreateFilterRule)
+	admin.GET("/filter-rules/:id", s.adminGetFilterRule)
+	admin.PUT("/filter-rules/:id", s.adminUpdateFilterRule)
+	admin.DELETE("/filter-rules/:id", s.adminDeleteFilterRule)
+
+	admin.GET("/sources", s.adminListSources)
 
 	internal := r.Group("/api/internal")
 	internal.Use(APIKeyAuthMiddleware(s.cfg.API.AdminAPIKey))

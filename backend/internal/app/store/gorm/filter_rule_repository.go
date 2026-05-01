@@ -13,6 +13,10 @@ type filterRuleRepository struct {
 	db *gorm.DB
 }
 
+func (s *Store) NewFilterRuleRepository() repository.FilterRuleRepository {
+	return NewFilterRuleRepository(s.db)
+}
+
 func NewFilterRuleRepository(db *gorm.DB) repository.FilterRuleRepository {
 	return &filterRuleRepository{db: db}
 }
