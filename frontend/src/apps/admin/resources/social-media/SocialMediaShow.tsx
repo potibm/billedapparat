@@ -49,6 +49,12 @@ export const SocialMediaShow = () => (
             sx={{ fontWeight: "bold", display: "block" }}
           />
           <TextField
+            source="author.username"
+            label="Username"
+            emptyText="Unknown Username"
+            sx={{ fontWeight: "bold", display: "block" }}
+          />
+          <TextField
             source="author.external_id"
             label="External ID"
             emptyText="No ID available"

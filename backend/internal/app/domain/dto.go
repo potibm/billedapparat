@@ -42,6 +42,7 @@ type Slide struct {
 
 type Author struct {
 	ExternalID  string `json:"external_id"`
+	Username    string `json:"username"`
 	DisplayName string `json:"display_name"`
 	Avatar      *Media `json:"avatar,omitempty"`
 }

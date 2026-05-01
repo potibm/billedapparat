@@ -76,14 +76,26 @@ func (r *slideRepository) AdminList(
 	case "content.title":
 		p.Sort = "content_title"
 	case "display_options.priority":
-		p.Sort = "priority"
+		p.Sort = "priority,id"
+	case "author.display_name":
+		p.Sort = "author_display_name,id"
+	case "source":
+		p.Sort = "source,id"
+	default:
+		p.Sort = "id"
 	}
 
 	orderClause := fmt.Sprintf("%s %s", p.Sort, p.Order)
 
 	if filters.Query != nil {
 		likeQuery := fmt.Sprintf("%%%s%%", *filters.Query)
-		query = query.Where("content_title LIKE ? OR content_body LIKE ?", likeQuery, likeQuery)
+		query = query.Where(
+			"content_title LIKE ? OR content_body LIKE ? OR author_display_name LIKE ? OR author_username LIKE ?",
+			likeQuery,
+			likeQuery,
+			likeQuery,
+			likeQuery,
+		)
 	}
 
 	if filters.Status != nil {
@@ -96,6 +108,10 @@ func (r *slideRepository) AdminList(
 
 	if filters.ID != nil {
 		query = query.Where("id = ?", *filters.ID)
+	}
+
+	if filters.Source != nil {
+		query = query.Where("source = ?", *filters.Source)
 	}
 
 	err := query.Order(orderClause).

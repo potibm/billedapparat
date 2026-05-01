@@ -26,6 +26,7 @@ func mapAuthorToDomain(a contracts.IngestRequestAuthor) domain.Author {
 
 	return domain.Author{
 		ExternalID:  a.ExternalID,
+		Username:    a.Username,
 		DisplayName: a.DisplayName,
 		Avatar:      avatar,
 	}

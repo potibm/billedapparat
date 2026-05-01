@@ -30,6 +30,7 @@ func (s *Server) adminListSlides(c *gin.Context) {
 		Query:    nil,
 		Status:   nil,
 		Priority: nil,
+		Source:   nil,
 		ID:       nil,
 	}
 	if c.Query("q") != "" {
@@ -37,11 +38,18 @@ func (s *Server) adminListSlides(c *gin.Context) {
 		filters.Query = &query
 	}
 
-	if c.Query("status_active") == "true" {
+	switch {
+	case c.Query("status_active") == "true":
 		status := "active"
 		filters.Status = &status
-	} else if c.Query("status_inactive") == "true" {
+	case c.Query("status_inactive") == "true":
 		status := "inactive"
+		filters.Status = &status
+	case c.Query("status_pending") == "true":
+		status := "pending"
+		filters.Status = &status
+	case c.Query("status_deleted") == "true":
+		status := "deleted"
 		filters.Status = &status
 	}
 
@@ -61,6 +69,11 @@ func (s *Server) adminListSlides(c *gin.Context) {
 		}
 	}
 
+	if c.Query("source") != "" {
+		source := c.Query("source")
+		filters.Source = &source
+	}
+
 	slides, total, err := s.slideRepo.AdminList(c.Request.Context(), params, filters)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -69,7 +82,6 @@ func (s *Server) adminListSlides(c *gin.Context) {
 	}
 
 	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
-	//	c.Header("Access-Control-Expose-Headers", "X-Total-Count")
 
 	c.JSON(http.StatusOK, slides)
 }

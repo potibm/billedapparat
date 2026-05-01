@@ -7,13 +7,13 @@ import {
   DeleteButton,
   NumberField,
 } from "react-admin";
-import { DefaultFilters } from "@admin/components/filters/DefaultFilters";
+import { SocialFilters } from "@admin/components/filters/SocialFilters";
 import { SourceField } from "@admin/components/fields/SourceField";
 
 export const SocialMediaList = () => (
   <List
     title="Social with Media"
-    filters={DefaultFilters}
+    filters={SocialFilters}
     sort={{ field: "id", order: "DESC" }}
   >
     <Datagrid rowClick="show" bulkActionButtons={false}>

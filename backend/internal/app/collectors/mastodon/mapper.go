@@ -48,6 +48,7 @@ func mapToIngestRequest(status MastoStatus) contracts.IngestRequest {
 		OriginCreatedAt: status.CreatedAt,
 		Author: &contracts.IngestRequestAuthor{
 			ExternalID:        status.Account.ID,
+			Username:          status.Account.Username,
 			DisplayName:       status.Account.DisplayName,
 			AvatarExternalURL: status.Account.Avatar,
 		},

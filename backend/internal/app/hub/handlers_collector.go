@@ -18,8 +18,9 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 		return
 	}
 
-	if req.Source != ctx.MustGet("collector_token").(string) {
-		slog.Warn("Ingest request with invalid source token", "source", req.Source)
+	collectorToken := ctx.GetString(collectorSourceKey)
+	if req.Source != collectorToken {
+		slog.Warn("Ingest request with invalid source token", "source", req.Source, "collector_token", collectorToken)
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid source token"})
 
 		return

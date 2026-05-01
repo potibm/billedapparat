@@ -11,6 +11,7 @@ type AdminListFilters struct {
 	Status   *string
 	Priority *int32
 	ID       *int64
+	Source   *string
 }
 
 type SlideRepository interface {

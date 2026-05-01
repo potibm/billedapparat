@@ -9,6 +9,7 @@ type IngestRequestMediaURL struct {
 
 type IngestRequestAuthor struct {
 	ExternalID        string `json:"external_id"          binding:"required"`
+	Username          string `json:"username"             binding:"required"`
 	DisplayName       string `json:"display_name"         binding:"required"`
 	AvatarExternalURL string `json:"avatar_url,omitempty"`
 }
@@ -19,6 +20,6 @@ type IngestRequest struct {
 	Author          *IngestRequestAuthor    `json:"author,omitempty"`
 	Body            string                  `json:"body,omitempty"`
 	MediaURLs       []IngestRequestMediaURL `json:"media_urls,omitempty"`
-	Language        string                  `json:"language,omitempty"   binding:"required"`
+	Language        string                  `json:"language,omitempty"`
 	OriginCreatedAt time.Time               `json:"origin_created_at"    binding:"required"`
 }

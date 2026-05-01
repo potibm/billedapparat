@@ -17,6 +17,7 @@ type dbSlide struct {
 	ExternalID    *string `gorm:"uniqueIndex:idx_ext"`
 	ExternalSubID *int    `gorm:"uniqueIndex:idx_ext"`
 
+	AuthorUsername          string
 	AuthorDisplayName       string
 	AuthorExternalID        string
 	AuthorAvatarURLLocal    string
@@ -29,6 +30,7 @@ type dbSlide struct {
 	ContentMediaURLOriginal string `gorm:"index"`
 	ContentMediaURLLocal    string
 	ContentMediaMimeType    string
+	ContentLanguage         string
 
 	// Display options
 	AllowSocialOverlay bool
@@ -52,6 +54,7 @@ func fromDomain(s *domain.Slide) *dbSlide {
 		Status:             string(s.Status),
 		ContentTitle:       s.Content.Title,
 		ContentBody:        s.Content.Body,
+		ContentLanguage:    s.Content.Language,
 		OriginCreatedAt:    s.OriginCreatedAt,
 		AllowSocialOverlay: s.DisplayOptions.AllowSocialOverlay,
 		IsUrgent:           s.DisplayOptions.IsUrgent,
@@ -61,6 +64,7 @@ func fromDomain(s *domain.Slide) *dbSlide {
 	if s.Author != nil {
 		db.AuthorDisplayName = s.Author.DisplayName
 		db.AuthorExternalID = s.Author.ExternalID
+		db.AuthorUsername = s.Author.Username
 
 		if s.Author.Avatar != nil {
 			db.AuthorAvatarURLLocal = s.Author.Avatar.LocalURL
@@ -91,9 +95,10 @@ func (s *dbSlide) toDomain() *domain.Slide {
 		ID:     s.ID,
 		Status: domain.SlideStatus(s.Status),
 		Content: domain.Content{
-			Type:  domain.SlideType(s.Type),
-			Title: s.ContentTitle,
-			Body:  s.ContentBody,
+			Type:     domain.SlideType(s.Type),
+			Title:    s.ContentTitle,
+			Body:     s.ContentBody,
+			Language: s.ContentLanguage,
 		},
 		Author: nil,
 		DisplayOptions: domain.DisplayOptions{
@@ -112,9 +117,11 @@ func (s *dbSlide) toDomain() *domain.Slide {
 		ds.ExternalID = *s.ExternalID
 	}
 
-	if s.AuthorDisplayName != "" {
+	if s.AuthorDisplayName != "" || s.AuthorUsername != "" || s.AuthorExternalID != "" {
 		ds.Author = &domain.Author{
 			DisplayName: s.AuthorDisplayName,
+			Username:    s.AuthorUsername,
+			ExternalID:  s.AuthorExternalID,
 		}
 
 		if s.AuthorAvatarURLLocal != "" || s.AuthorAvatarURLOriginal != "" {

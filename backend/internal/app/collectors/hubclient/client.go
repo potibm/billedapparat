@@ -32,7 +32,6 @@ func New(baseURL, apiKey string, logger *slog.Logger) *HubClient {
 	}
 }
 
-// SendSlide schickt ein fertiges DTO an deinen Hub.
 func (c *HubClient) SendSlide(payload contracts.IngestRequest) error {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
@@ -63,8 +62,6 @@ func (c *HubClient) SendSlide(payload contracts.IngestRequest) error {
 	}
 
 	if resp.StatusCode == http.StatusOK {
-		c.Logger.Debug("OK.", "external_id", payload.ExternalID, "body", resp.Body)
-
 		return nil
 	}
 

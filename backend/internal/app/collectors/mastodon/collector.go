@@ -111,6 +111,8 @@ func (c *Collector) handleEvent(eventType, payload string) {
 	case "update", "status.update":
 		var status MastoStatus
 
+		c.logger.Debug("Received new status", "payload", payload)
+
 		if err := json.Unmarshal([]byte(payload), &status); err != nil {
 			c.logger.Error("Unable to parse post", "error", err)
 
@@ -120,6 +122,9 @@ func (c *Collector) handleEvent(eventType, payload string) {
 		c.logger.Info("Received new post", "id", status.ID, "author", status.Account.Username)
 
 		req := mapToIngestRequest(status)
+
+		c.logger.Debug("Mapped post to ingest request", "request", req, "account", status.Account)
+
 		if err := c.hubClient.SendSlide(req); err != nil {
 			c.logger.Error("Error sending the post to the hub", "error", err)
 		}

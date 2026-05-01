@@ -9,6 +9,8 @@ import (
 	"github.com/potibm/billedapparat/internal/app/config"
 )
 
+const collectorSourceKey = "collector_source"
+
 func APIKeyAuthMiddleware(validAdminKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := extractToken(c)
@@ -57,7 +59,7 @@ func CollectorAuthMiddleware(collectors map[string]config.CollectorConfig) gin.H
 		}
 
 		// Store collector name in context for later use in handlers
-		c.Set("collector_source", authenticatedSource)
+		c.Set(collectorSourceKey, authenticatedSource)
 
 		c.Next()
 	}
