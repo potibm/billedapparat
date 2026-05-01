@@ -39,10 +39,10 @@ func (c *HubClient) SendSlide(payload contracts.IngestRequest) error {
 		return fmt.Errorf("json marshal error: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/api/collectors/ingest", strings.TrimRight(c.BaseURL, "/"))
-	slog.Debug("Sending slide to hub", "url", url, "external_id", payload.ExternalID)
+	u := fmt.Sprintf("%s/api/collectors/ingest", strings.TrimRight(c.BaseURL, "/"))
+	slog.Debug("Sending slide to hub", "url", u, "external_id", payload.ExternalID)
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest(http.MethodPost, u, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
 	}
