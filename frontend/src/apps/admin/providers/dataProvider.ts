@@ -11,6 +11,7 @@ const slideResourceMap: Record<string, string> = {
   news: "news",
   timetable: "timetable",
   "social-media": "social.media",
+  "social-text": "social.text",
 };
 
 interface SlideFormData {
