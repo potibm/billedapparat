@@ -20,6 +20,7 @@ export const slideSchema = z.object({
   author: z
     .object({
       display_name: z.string(),
+      username: z.string().optional(),
       avatar: z
         .object({
           local_url: z.string().optional(),
@@ -31,6 +32,7 @@ export const slideSchema = z.object({
   display_options: z.object({
     priority: z.number(),
     is_urgent: z.boolean(),
+    allow_social_overlay: z.boolean(),
   }),
 });
 

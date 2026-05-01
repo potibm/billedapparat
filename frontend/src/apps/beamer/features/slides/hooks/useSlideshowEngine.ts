@@ -4,14 +4,15 @@ import { createLogger } from "@core/logger/logger";
 import { Slide } from "../types/slide.schema";
 
 const PLAYLIST_PATTERN = [
-  /*"news",
   "sponsor",
-  "sponsor",
-  "news",
-    "timetable",
- "sponsor",*/
   "social.media",
-  "socia.media",
+  "news",
+  "sponsor",
+  "timetable",
+  "news",
+  "sponsor",
+  "social.media",
+  "social.media",
 ];
 const HISTORY_LIMIT = 50;
 const NEXT_TICK_TIMEOUT = 0;
@@ -28,6 +29,7 @@ export const useSlideshowEngine = () => {
 
   const urgentSlides = getUrgent();
   const hasUrgent = urgentSlides.length > 0;
+  const toastSlides = getByType("social.text");
 
   const pickWeightedSlide = useCallback((slides: Slide[]): Slide | null => {
     if (slides.length === 0) return null;
@@ -168,5 +170,6 @@ export const useSlideshowEngine = () => {
     isPaused,
     togglePause,
     isUrgent: currentSlide?.content.type === "urgent",
+    toastSlides,
   };
 };

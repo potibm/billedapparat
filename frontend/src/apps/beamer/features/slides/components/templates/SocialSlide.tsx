@@ -1,11 +1,8 @@
-import { Avatar } from "flowbite-react";
 import { Slide } from "../../types/slide.schema";
 import { FormattedText } from "../FormattedText";
+import { AuthorHeader } from "../ui/AuthorHeader";
 
 export const SocialSlide = ({ slide }: { slide: Slide }) => {
-  const authorAvatarImage = slide.author?.avatar?.local_url;
-  const authorName = slide.author?.display_name || "Unknown";
-
   return (
     <div className="w-full h-full p-4 flex flex-col items-start gap-4 social-slide__wrapper">
       {slide.content.media?.local_url && (
@@ -18,19 +15,13 @@ export const SocialSlide = ({ slide }: { slide: Slide }) => {
         </div>
       )}
 
-      <div className="flex items-center gap-3 social-slide__header">
-        <Avatar img={authorAvatarImage} rounded size="sm" />
-        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-          <span className="font-bold text-gray-900 dark:text-white">
-            {authorName}
-          </span>
-          {slide.origin_created_at && (
-            <span className="text-sm text-gray-500">
-              • {new Date(slide.origin_created_at).toLocaleDateString()}
-            </span>
-          )}
-        </div>
-      </div>
+      <AuthorHeader
+        displayName={slide.author?.display_name}
+        username={slide.author?.username}
+        avatarUrl={slide.author?.avatar?.local_url}
+        createdAt={slide.origin_created_at}
+        className="social-slide__header"
+      />
 
       {slide.content.body && (
         <div className="text-lg leading-relaxed text-gray-800 social-slide__body">

@@ -5,6 +5,8 @@ interface FormattedTextProps {
   className?: string | null;
 }
 
+const MAX_URL_LENGTH = 35; // Define a maximum length for displayed URLs
+
 export function FormattedText({
   text,
   className,
@@ -25,18 +27,24 @@ export function FormattedText({
 
   return (
     <div
-      className={`formatted-text text-gray-800 whitespace-pre-wrap ${className}`}
+      className={`formatted-text text-gray-300 whitespace-pre-wrap ${className}`}
     >
       {parts.map((partObj) => {
         const { id, content } = partObj;
 
-        if (new RegExp(/^https?:\/\//).exec(content)) {
+        const isUrl = new RegExp(/^https?:\/\//).exec(content);
+        if (isUrl) {
+          const displayContent =
+            content.length > MAX_URL_LENGTH
+              ? `${content.substring(0, MAX_URL_LENGTH)}...`
+              : content;
           return (
             <span
               key={id}
               className="formatted-text__link text-blue-500 hover:text-blue-700 hover:underline"
+              title={content}
             >
-              {content}
+              {displayContent}
             </span>
           );
         }
