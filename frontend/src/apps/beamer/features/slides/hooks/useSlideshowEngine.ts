@@ -1,28 +1,28 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSlideManager } from "./useSlideManager";
 import { createLogger } from "@core/logger/logger";
-import { Slide } from "../types/slide.schema";
+import { useCurrentPlaylist } from "./useCurrentPlaylist";
+import { PlaylistStep } from "@core/config/config.schemas";
+import { SlideshowEngine } from "../types/slideshow.types";
+import {
+  pickWeightedSlide,
+  sortSlides,
+  selectNextSlide,
+  findNextValidStep,
+} from "../utils/slideshow.logic";
 
-const PLAYLIST_PATTERN = [
-  "sponsor",
-  "social.media",
-  "news",
-  "sponsor",
-  "timetable",
-  "news",
-  "sponsor",
-  "social.media",
-  "social.media",
-];
 const HISTORY_LIMIT = 50;
 const NEXT_TICK_TIMEOUT = 0;
 
 const logger = createLogger("Slideshow");
 
-export const useSlideshowEngine = () => {
+export const useSlideshowEngine = (): SlideshowEngine => {
   const { getByType, getUrgent, slides: allSlides } = useSlideManager();
+  const activePlaylist = useCurrentPlaylist();
 
-  const [currentIndex, setCurrentIndex] = useState(-1);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [stepCountPointer, setStepCountPointer] = useState(0);
+
   const [history, setHistory] = useState<number[]>([]);
   const [historyPointer, setHistoryPointer] = useState(-1);
   const [isPaused, setIsPaused] = useState(false);
@@ -31,32 +31,28 @@ export const useSlideshowEngine = () => {
   const hasUrgent = urgentSlides.length > 0;
   const toastSlides = getByType("social.text");
 
-  const pickWeightedSlide = useCallback((slides: Slide[]): Slide | null => {
-    if (slides.length === 0) return null;
-    const totalWeight = slides.reduce(
-      (sum, s) => sum + Number(s.display_options?.priority || 1),
-      0,
-    );
-    let random = Math.random() * totalWeight;
-    logger.debug(
-      "Picking weighted slide",
-      "totalWeight",
-      totalWeight,
-      "candidates",
-      slides.map((s) => ({ id: s.id, priority: s.display_options?.priority })),
-      "randomValue",
-      random,
-    );
-    for (const slide of slides) {
-      const weight = Number(slide.display_options?.priority || 1);
-      if (random < weight) return slide;
-      random -= weight;
-    }
-    return slides[0];
+  const updateHistory = useCallback((id: number) => {
+    setHistory((prev) => [...prev, id].slice(-HISTORY_LIMIT));
+    setHistoryPointer((prev) => Math.min(prev + 1, HISTORY_LIMIT - 1));
   }, []);
 
+  const advanceStepPointers = useCallback(
+    (currentStepCount: number, stepsLength: number) => {
+      setStepCountPointer((prevCount) => {
+        const nextCount = prevCount + 1;
+        if (nextCount >= currentStepCount) {
+          setStepIndex((prevIndex) => (prevIndex + 1) % stepsLength);
+          return 0;
+        }
+        return nextCount;
+      });
+    },
+    [],
+  );
+
   const next = useCallback(() => {
-    if (isPaused) return;
+    // 1. Guard & history navigation
+    if (isPaused || !activePlaylist?.steps) return;
 
     if (historyPointer < history.length - 1) {
       setHistoryPointer((prev) => prev + 1);
@@ -65,72 +61,62 @@ export const useSlideshowEngine = () => {
 
     const currentlyShownId = history[historyPointer];
 
+    // 2. Urgent override
     if (hasUrgent) {
-      const urgentCandidates =
-        urgentSlides.length > 1
-          ? urgentSlides.filter((s) => s.id !== currentlyShownId)
-          : urgentSlides;
-
-      const selected = pickWeightedSlide(urgentCandidates);
-      if (selected) {
-        logger.debug("Selected URGENT slide", "id", selected.id);
+      const selected = pickWeightedSlide(urgentSlides);
+      if (selected && selected.id !== currentlyShownId) {
         setHistory((prev) => [...prev, selected.id].slice(-HISTORY_LIMIT));
         setHistoryPointer((prev) => Math.min(prev + 1, HISTORY_LIMIT - 1));
         return;
       }
     }
 
-    let nextIndex = currentIndex;
-    let attempts = 0;
-    let foundSlide: Slide | null = null;
+    // 3. Find playlist step
+    const result = findNextValidStep(
+      activePlaylist.steps,
+      stepIndex,
+      getByType,
+    );
 
-    while (attempts < PLAYLIST_PATTERN.length) {
-      nextIndex = (nextIndex + 1) % PLAYLIST_PATTERN.length;
-      const nextType = PLAYLIST_PATTERN[nextIndex];
-
-      const availableSlides = getByType(nextType);
-      const candidates =
-        availableSlides.length > 1
-          ? availableSlides.filter((s) => s.id !== currentlyShownId)
-          : availableSlides;
-
-      foundSlide = pickWeightedSlide(candidates);
-
-      if (foundSlide) {
-        logger.debug(
-          "Selected next slide",
-          "id",
-          foundSlide.id,
-          "type",
-          nextType,
-        );
-        setHistory((prev) => [...prev, foundSlide!.id].slice(-HISTORY_LIMIT));
-        setHistoryPointer((prev) => Math.min(prev + 1, HISTORY_LIMIT - 1));
-        setCurrentIndex(nextIndex);
-        return;
-      }
-
-      logger.warn(
-        `No active slides found for type "${nextType}". Skipping immediately to next type.`,
-      );
-      attempts++;
+    if (!result) {
+      logger.warn("No slides found for any step in playlist");
+      return;
     }
 
-    if (!foundSlide && allSlides.length > 0) {
-      logger.error(
-        "Playlist pattern mismatch: No slides matched any type in the pattern.",
-      );
+    const { step, index: foundIndex, candidates } = result;
+
+    // In case findNextValidStep found a different index than the current one:
+    if (foundIndex !== stepIndex) {
+      setStepIndex(foundIndex);
+      setStepCountPointer(0);
+    }
+
+    // 4. Select slide
+    const sorted = sortSlides(candidates, step.order);
+    const selected = selectNextSlide(
+      sorted,
+      step,
+      stepCountPointer,
+      currentlyShownId,
+    );
+
+    // 5. Syncronize state
+    if (selected) {
+      updateHistory(selected.id);
+      advanceStepPointers(step.count, activePlaylist.steps.length);
     }
   }, [
-    currentIndex,
-    getByType,
-    hasUrgent,
-    history,
-    historyPointer,
-    pickWeightedSlide,
-    urgentSlides,
-    allSlides.length,
     isPaused,
+    historyPointer,
+    history,
+    hasUrgent,
+    activePlaylist,
+    stepIndex,
+    stepCountPointer,
+    urgentSlides,
+    getByType,
+    advanceStepPointers,
+    updateHistory,
   ]);
 
   const previous = useCallback(() => {
@@ -148,6 +134,11 @@ export const useSlideshowEngine = () => {
     return allSlides.find((s) => s.id === id) || null;
   }, [history, historyPointer, allSlides]);
 
+  const currentStep = useMemo<PlaylistStep | undefined>(() => {
+    if (!activePlaylist) return undefined;
+    return activePlaylist.steps[stepIndex];
+  }, [activePlaylist, stepIndex]);
+
   useEffect(() => {
     if (history.length === 0 && allSlides.length > 0) {
       logger.debug("Kickstarting initial slide");
@@ -163,13 +154,48 @@ export const useSlideshowEngine = () => {
     }
   }, [hasUrgent, currentSlide, next]);
 
+  useEffect(() => {
+    logger.info("Playlist changed, resetting engine pointers");
+    const timeoutId = setTimeout(() => {
+      setStepIndex(0);
+      setStepCountPointer(0);
+      next();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
+  }, [activePlaylist?.id]);
+
+  if (!activePlaylist) {
+    return {
+      currentSlide: null,
+      next,
+      previous,
+      togglePause: () => setIsPaused((p) => !p),
+      isPaused,
+      isUrgent: false,
+      toastSlides: [],
+      duration: 10,
+      stepInfo: null,
+    };
+  }
+
   return {
     currentSlide,
     next,
     previous,
-    isPaused,
     togglePause,
+    isPaused,
     isUrgent: currentSlide?.content.type === "urgent",
     toastSlides,
+    duration: currentStep?.duration || 10,
+    stepInfo: currentStep
+      ? {
+          type: currentStep.type,
+          current: stepCountPointer + 1,
+          total: currentStep.count,
+          playlistName: activePlaylist.name,
+        }
+      : null,
   };
 };

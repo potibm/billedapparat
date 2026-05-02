@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/potibm/billedapparat/internal/app/domain"
 )
 
 var (
@@ -28,6 +29,12 @@ func (c *Config) Validate() error {
 
 	if err := c.API.Validate(c.App.Environment); err != nil {
 		return err
+	}
+
+	for i := range c.Playlists {
+		if err := c.Playlists[i].Validate(); err != nil {
+			return fmt.Errorf("playlist[%d] '%s' is invalid: %w", i, c.Playlists[i].Name, err)
+		}
 	}
 
 	return nil
@@ -62,6 +69,26 @@ func (f *FormatConfig) Validate() error {
 func (f *DateFormatConfig) Validate() error {
 	if !validLocale.MatchString(f.Locale) {
 		return fmt.Errorf("date.locale '%s' is not a valid locale", f.Locale)
+	}
+
+	return nil
+}
+
+func (p *PlaylistConfig) Validate() error {
+	if p.Name == "" {
+		return fmt.Errorf("playlist name cannot be empty")
+	}
+
+	if len(p.Steps) == 0 {
+		return fmt.Errorf("playlist '%s' must contain at least one step", p.Name)
+	}
+
+	for i := range p.Steps {
+		p.Steps[i].SetDefaults()
+
+		if !domain.IsValidSlideType(p.Steps[i].Type) {
+			return fmt.Errorf("step[%d] has no slide type defined", i)
+		}
 	}
 
 	return nil

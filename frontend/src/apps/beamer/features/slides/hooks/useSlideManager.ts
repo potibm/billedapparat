@@ -69,13 +69,7 @@ export const useSlideManager = () => {
 
     const handleUpdate = (e: MessageEvent) => {
       const parsed = slideSchema.safeParse(JSON.parse(e.data));
-      logger.debug(
-        "Received UPDATE event",
-        "id",
-        parsed.data?.id,
-        "rawData",
-        e.data,
-      );
+      logger.debug("Received UPDATE event", "id", parsed.data?.id);
       if (parsed.success) upsertSlide(parsed.data);
     };
 

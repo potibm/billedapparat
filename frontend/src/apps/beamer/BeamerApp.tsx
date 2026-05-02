@@ -7,26 +7,34 @@ import {
   AnimationType,
 } from "./features/animations/types/animations.schemas";
 import { ToastManager } from "./features/slides/components/ToastManager";
-
-const SLIDE_DURATION = 10000;
+import { useAppConfig } from "@core/config/useConfig";
+import * as Sentry from "@sentry/react";
 
 export const BeamerApp = () => {
-  const { currentSlide, next, previous, togglePause, isUrgent, toastSlides } =
-    useSlideshowEngine();
+  const {
+    currentSlide,
+    next,
+    previous,
+    togglePause,
+    isUrgent,
+    toastSlides,
+    duration,
+    stepInfo,
+  } = useSlideshowEngine();
+
+  const { version, environment } = useAppConfig();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const allowOverlay =
     currentSlide?.display_options.allow_social_overlay ?? false;
 
   const activeAnimation = useMemo(() => {
-    if (!currentSlide) return "fade"; // Fallback
-
+    if (!currentSlide) return "fade";
     const keys = Object.keys(animations) as AnimationType[];
-    const randomAnim = keys[Math.floor(Math.random() * keys.length)];
-
-    return randomAnim;
+    return keys[Math.floor(Math.random() * keys.length)];
   }, [currentSlide]);
 
+  // Tastatur-Steuerung
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") next();
@@ -41,31 +49,56 @@ export const BeamerApp = () => {
   }, [next, previous, togglePause]);
 
   useEffect(() => {
-    if (isUrgent) return;
-    const timer = setInterval(next, SLIDE_DURATION);
-    return () => clearInterval(timer);
-  }, [next, isUrgent]);
+    if (isUrgent || !currentSlide) return;
 
-  if (!currentSlide)
-    return <div className="bg-black h-screen">We are empty...</div>;
+    // duration ist in Sekunden in der Config, wir brauchen Millisekunden
+    const timer = setInterval(next, duration * 1000);
+
+    return () => clearInterval(timer);
+  }, [next, isUrgent, currentSlide, duration]);
+
+  if (!currentSlide) {
+    return (
+      <div className="bg-black h-screen flex items-center justify-center text-slate-700">
+        <div className="text-center">
+          <p className="text-2xl font-mono">STANDBY</p>
+          <p className="text-xs mt-2 uppercase tracking-widest">
+            {environment} v{version}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       ref={containerRef}
-      className={`h-screen w-screen transition-all duration-1000 ${isUrgent ? "border-8 border-red-600" : ""}`}
+      className={`h-screen w-screen overflow-hidden bg-black transition-all duration-1000 ${
+        isUrgent ? "ring-inset ring-12 ring-red-600" : ""
+      }`}
     >
       <AnimatePresence mode="wait">
         <motion.div
           key={currentSlide.id}
           {...animations[activeAnimation]}
-          transition={{ duration: 1, ease: "easeInOut" }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
           className="absolute inset-0"
         >
-          <SlideRenderer slide={currentSlide} />
+          <Sentry.ErrorBoundary fallback={<p>Slide Rendering Error</p>}>
+            <SlideRenderer slide={currentSlide} />
+          </Sentry.ErrorBoundary>
         </motion.div>
       </AnimatePresence>
 
       <ToastManager toastSlides={toastSlides} allowOverlay={allowOverlay} />
+
+      {environment !== "production" && (
+        <div className="absolute bottom-2 right-2 text-[10px] text-white/20 pointer-events-none font-mono">
+          {environment} | v{version} | {stepInfo?.playlistName} |{" "}
+          {stepInfo?.type} ({stepInfo?.current}/{stepInfo?.total}) |{" "}
+          {activeAnimation} | {duration}s
+        </div>
+      )}
     </div>
   );
 };

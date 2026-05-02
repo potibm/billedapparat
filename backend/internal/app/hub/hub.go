@@ -127,6 +127,7 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	r.Use(static.Serve("/", folder))
 
 	api := r.Group("/api")
+	api.GET("/config", s.handleGetPublicConfig)
 	api.GET("/stream", s.streamSlides)
 
 	admin := r.Group("/api/admin")

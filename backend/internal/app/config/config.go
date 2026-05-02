@@ -59,4 +59,15 @@ func InitViper() {
 
 	viper.RegisterAlias("sentry.environment", "app.env")
 	viper.RegisterAlias("sentry.version", "app.version")
+
+	viper.SetDefault("playlists", []PlaylistConfig{
+		{
+			ID:   1,
+			Name: "Default",
+			Steps: []PlaylistStep{
+				//nolint:mnd // reasonable defaults for playlist steps
+				{Type: "sponsor", Order: OrderRandom, Count: 1, Duration: 10},
+			},
+		},
+	})
 }

@@ -1,12 +1,36 @@
+//nolint:lll // struct tags can get long and it's more readable to keep them in one line
 package config
 
+import "github.com/potibm/billedapparat/internal/app/domain"
+
+type OrderType string
+
+const (
+	OrderRandom OrderType = "random"
+	OrderAsc    OrderType = "asc"
+	OrderDesc   OrderType = "desc"
+)
+
+type PlaylistStep struct {
+	Type     domain.SlideType `json:"type"     yaml:"type"`
+	Order    OrderType        `json:"order"    yaml:"order"`
+	Count    int              `json:"count"    yaml:"count"`
+	Duration int              `json:"duration" yaml:"duration"`
+}
+
+type PlaylistConfig struct {
+	ID    int            `json:"id"    yaml:"id"`
+	Name  string         `json:"name"  yaml:"name"`
+	Steps []PlaylistStep `json:"steps" yaml:"steps"`
+}
+
 type SentryConfig struct {
-	DSN                     string  `mapstructure:"dsn"                        validate:"omitempty,url"`
-	TraceSampleRate         float64 `mapstructure:"trace_sample_rate"          validate:"omitempty,gte=0,lte=1"`
-	ReplaySessionSampleRate float64 `mapstructure:"replay_session_sample_rate" validate:"omitempty,gte=0,lte=1"`
-	ReplayErrorSampleRate   float64 `mapstructure:"replay_error_sample_rate"   validate:"omitempty,gte=0,lte=1"`
-	Environment             string  `mapstructure:"environment"`
-	Version                 string  `mapstructure:"version"`
+	DSN                     string  `json:"dsn"                        mapstructure:"dsn"                        validate:"omitempty,url"`
+	TraceSampleRate         float64 `json:"trace_sample_rate"          mapstructure:"trace_sample_rate"          validate:"omitempty,gte=0,lte=1"`
+	ReplaySessionSampleRate float64 `json:"replay_session_sample_rate" mapstructure:"replay_session_sample_rate" validate:"omitempty,gte=0,lte=1"`
+	ReplayErrorSampleRate   float64 `json:"replay_error_sample_rate"   mapstructure:"replay_error_sample_rate"   validate:"omitempty,gte=0,lte=1"`
+	Environment             string  `json:"environment"                mapstructure:"environment"                validate:"required"`
+	Version                 string  `json:"version"                    mapstructure:"version"                    validate:"required"`
 }
 
 type AppConfig struct {
@@ -26,14 +50,14 @@ type AppConfig struct {
 }
 
 type FormatConfig struct {
-	Date DateFormatConfig `mapstructure:"date"`
+	Date DateFormatConfig `json:"date" mapstructure:"date"`
 }
 
 type DateFormatOptionsConfig map[string]any
 
 type DateFormatConfig struct {
-	Locale  string                  `mapstructure:"locale"  validate:"required"`
-	Options DateFormatOptionsConfig `mapstructure:"options"`
+	Locale  string                  `json:"locale"  mapstructure:"locale"  validate:"required"`
+	Options DateFormatOptionsConfig `json:"options" mapstructure:"options"`
 }
 
 type CorsAllowOriginsConfig []string
@@ -53,4 +77,19 @@ type Config struct {
 	Sentry     SentryConfig               `mapstructure:"sentry"`
 	API        APIConfig                  `mapstructure:"api"`
 	Collectors map[string]CollectorConfig `mapstructure:"collectors" validate:"dive"`
+	Playlists  []PlaylistConfig           `mapstructure:"playlists"`
+}
+
+func (p *PlaylistStep) SetDefaults() {
+	if p.Order == "" {
+		p.Order = OrderRandom
+	}
+
+	if p.Count <= 0 {
+		p.Count = 1
+	}
+
+	if p.Duration <= 0 {
+		p.Duration = 10
+	}
 }
