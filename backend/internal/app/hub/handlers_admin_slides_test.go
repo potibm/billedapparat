@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/potibm/billedapparat/internal/app/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -50,7 +51,7 @@ func TestParseSlidePayload_MultipartSuccess(t *testing.T) {
 	require.NoError(t, err, "Parsing should not return an error")
 	require.NotNil(t, slide, "Slide is not nil")
 
-	assert.Equal(t, "pending", slide.Status)
+	assert.Equal(t, domain.StatusPending, slide.Status, "Status should be 'pending'")
 	assert.Equal(t, "My Test Slide", slide.Content.Title)
 	assert.Equal(t, 5, slide.DisplayOptions.Priority)
 

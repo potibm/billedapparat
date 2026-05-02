@@ -201,6 +201,8 @@ func (s *Server) parseSlidePayload(c *gin.Context) (*domain.Slide, error) {
 func (s *Server) parseMultipartSlide(c *gin.Context) (*domain.Slide, error) {
 	var slide domain.Slide
 
+	slide.Author = &domain.Author{}
+
 	priority := 1
 	if p, err := strconv.Atoi(c.PostForm("display_options.priority")); err == nil {
 		priority = p
