@@ -13,14 +13,14 @@ const DateFormatSchema = z.object({
   options: z.record(z.string(), z.any()).default({}),
 });
 
-const PlaylistStepSchema = z.object({
+export const PlaylistStepSchema = z.object({
   type: z.string(),
   order: z.enum(["random", "asc", "desc"]),
   count: z.number().positive().default(1),
   duration: z.number().positive().default(10),
 });
 
-const PlaylistSchema = z.object({
+export const PlaylistSchema = z.object({
   id: z.number(),
   name: z.string(),
   steps: z.array(PlaylistStepSchema),

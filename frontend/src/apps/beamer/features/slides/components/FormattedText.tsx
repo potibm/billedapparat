@@ -27,7 +27,7 @@ export function FormattedText({
 
   return (
     <div
-      className={`formatted-text text-gray-300 whitespace-pre-wrap ${className}`}
+      className={`formatted-text text-gray-300 whitespace-normal ${className}`}
     >
       {parts.map((partObj) => {
         const { id, content } = partObj;

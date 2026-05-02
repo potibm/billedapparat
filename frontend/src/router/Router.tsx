@@ -21,7 +21,7 @@ export const Router: React.FC = () => {
         element: <AdminApp />,
       },
       {
-        path: "/beamer/*",
+        path: "/beamer/:id?",
         element: <BeamerApp />,
       },
       {

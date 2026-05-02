@@ -4,6 +4,7 @@ export const slideSchema = z.object({
   id: z.number(),
   status: z.string().default("active"),
   origin_created_at: z.iso.datetime().nullish(),
+  created_at: z.iso.datetime(),
   content: z
     .object({
       type: z.string().default("slide"),
