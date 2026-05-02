@@ -1,9 +1,12 @@
+import { ConfigProvider } from "@core/config/ConfigProvider";
 import { Router } from "./router/Router";
 
 function App() {
   return (
     <div className="App">
-      <Router />
+      <ConfigProvider>
+        <Router />
+      </ConfigProvider>
     </div>
   );
 }

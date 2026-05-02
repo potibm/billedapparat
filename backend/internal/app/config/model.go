@@ -49,14 +49,14 @@ type AppConfig struct {
 }
 
 type FormatConfig struct {
-	Date DateFormatConfig `mapstructure:"date"`
+	Date DateFormatConfig `json:"date" mapstructure:"date"`
 }
 
 type DateFormatOptionsConfig map[string]any
 
 type DateFormatConfig struct {
-	Locale  string                  `mapstructure:"locale"  validate:"required"`
-	Options DateFormatOptionsConfig `mapstructure:"options"`
+	Locale  string                  `json:"locale"  mapstructure:"locale"  validate:"required"`
+	Options DateFormatOptionsConfig `json:"options" mapstructure:"options"`
 }
 
 type CorsAllowOriginsConfig []string
