@@ -11,14 +11,24 @@ export const useCurrentPlaylist = () => {
   const navigate = useNavigate();
 
   const activePlaylist = useMemo(() => {
-    logger.info("Available playlists:", playlists);
-    logger.info("URL playlist ID:", id);
+    if (!playlists || playlists.length === 0) {
+      logger.warn("No playlists available in config");
+      return null;
+    }
+
     if (!id) return playlists[0];
 
     const playlistId = Number.parseInt(id, 10);
     const found = playlists.find((p) => p.id === playlistId);
 
-    return found || playlists[0];
+    if (!found) {
+      logger.warn(
+        `Playlist ID ${id} not found, falling back to first available`,
+      );
+      return playlists[0];
+    }
+
+    return found;
   }, [id, playlists]);
 
   useEffect(() => {

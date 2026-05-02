@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSlideManager } from "./useSlideManager";
 import { createLogger } from "@core/logger/logger";
-import { Slide } from "../types/slide.schema";
 import { useCurrentPlaylist } from "./useCurrentPlaylist";
 import { PlaylistStep } from "@core/config/config.schemas";
 import { SlideshowEngine } from "../types/slideshow.types";
+import {
+  pickWeightedSlide,
+  sortSlides,
+  selectNextSlide,
+  findNextValidStep,
+} from "../utils/slideshow.logic";
 
 const HISTORY_LIMIT = 50;
 const NEXT_TICK_TIMEOUT = 0;
@@ -26,51 +31,28 @@ export const useSlideshowEngine = (): SlideshowEngine => {
   const hasUrgent = urgentSlides.length > 0;
   const toastSlides = getByType("social.text");
 
-  const sortSlides = useCallback((slides: Slide[], order: string): Slide[] => {
-    const list = [...slides];
-    switch (order) {
-      case "asc":
-        return list.sort(
-          (a, b) =>
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-        );
-      case "desc":
-        return list.sort(
-          (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-        );
-      case "random":
-      default:
-        return list;
-    }
+  const updateHistory = useCallback((id: number) => {
+    setHistory((prev) => [...prev, id].slice(-HISTORY_LIMIT));
+    setHistoryPointer((prev) => Math.min(prev + 1, HISTORY_LIMIT - 1));
   }, []);
 
-  const pickWeightedSlide = useCallback((slides: Slide[]): Slide | null => {
-    if (slides.length === 0) return null;
-    const totalWeight = slides.reduce(
-      (sum, s) => sum + Number(s.display_options?.priority || 1),
-      0,
-    );
-    let random = Math.random() * totalWeight;
-    logger.debug(
-      "Picking weighted slide",
-      "totalWeight",
-      totalWeight,
-      "candidates",
-      slides.map((s) => ({ id: s.id, priority: s.display_options?.priority })),
-      "randomValue",
-      random,
-    );
-    for (const slide of slides) {
-      const weight = Number(slide.display_options?.priority || 1);
-      if (random < weight) return slide;
-      random -= weight;
-    }
-    return slides[0];
-  }, []);
+  const advanceStepPointers = useCallback(
+    (currentStepCount: number, stepsLength: number) => {
+      setStepCountPointer((prevCount) => {
+        const nextCount = prevCount + 1;
+        if (nextCount >= currentStepCount) {
+          setStepIndex((prevIndex) => (prevIndex + 1) % stepsLength);
+          return 0;
+        }
+        return nextCount;
+      });
+    },
+    [],
+  );
 
   const next = useCallback(() => {
-    if (isPaused) return;
+    // 1. Guard & history navigation
+    if (isPaused || !activePlaylist?.steps) return;
 
     if (historyPointer < history.length - 1) {
       setHistoryPointer((prev) => prev + 1);
@@ -79,8 +61,9 @@ export const useSlideshowEngine = (): SlideshowEngine => {
 
     const currentlyShownId = history[historyPointer];
 
+    // 2. Urgent override
     if (hasUrgent) {
-      const selected = urgentSlides[0];
+      const selected = pickWeightedSlide(urgentSlides);
       if (selected && selected.id !== currentlyShownId) {
         setHistory((prev) => [...prev, selected.id].slice(-HISTORY_LIMIT));
         setHistoryPointer((prev) => Math.min(prev + 1, HISTORY_LIMIT - 1));
@@ -88,56 +71,39 @@ export const useSlideshowEngine = (): SlideshowEngine => {
       }
     }
 
-    // 3. Playlist Logic
-    const steps = activePlaylist.steps;
-    if (steps.length === 0) return;
+    // 3. Find playlist step
+    const result = findNextValidStep(
+      activePlaylist.steps,
+      stepIndex,
+      getByType,
+    );
 
-    let currentStep = steps[stepIndex];
-    let candidates = getByType(currentStep.type);
+    if (!result) {
+      logger.warn("No slides found for any step in playlist");
+      return;
+    }
 
-    let attempts = 0;
-    while (candidates.length === 0 && attempts < steps.length) {
-      const nextIdx = (stepIndex + 1) % steps.length;
-      currentStep = steps[nextIdx];
-      candidates = getByType(currentStep.type);
-      setStepIndex(nextIdx);
+    const { step, index: foundIndex, candidates } = result;
+
+    // In case findNextValidStep found a different index than the current one:
+    if (foundIndex !== stepIndex) {
+      setStepIndex(foundIndex);
       setStepCountPointer(0);
-      attempts++;
     }
 
-    // Sortierung und Auswahl
-    const sortedCandidates = sortSlides(candidates, currentStep.order);
+    // 4. Select slide
+    const sorted = sortSlides(candidates, step.order);
+    const selected = selectNextSlide(
+      sorted,
+      step,
+      stepCountPointer,
+      currentlyShownId,
+    );
 
-    // Bei "random" nutzen wir dein Gewichtungs-System
-    let selected: Slide | null = null;
-    if (currentStep.order === "random") {
-      const otherCandidates = candidates.filter(
-        (s) => s.id !== currentlyShownId,
-      );
-      const pool = otherCandidates.length > 0 ? otherCandidates : candidates;
-
-      selected = pickWeightedSlide(pool);
-      logger.debug("Weighted random selection", {
-        type: currentStep.type,
-        id: selected?.id,
-        priority: selected?.display_options?.priority,
-      });
-    } else {
-      // Bei asc/desc nehmen wir den nächsten aus der Liste basierend auf dem Pointer
-      selected = sortedCandidates[stepCountPointer % sortedCandidates.length];
-    }
-
+    // 5. Syncronize state
     if (selected) {
-      setHistory((prev) => [...prev, selected!.id].slice(-HISTORY_LIMIT));
-      setHistoryPointer((prev) => Math.min(prev + 1, HISTORY_LIMIT - 1));
-
-      const nextCountPointer = stepCountPointer + 1;
-      if (nextCountPointer >= currentStep.count) {
-        setStepIndex((prev) => (prev + 1) % steps.length);
-        setStepCountPointer(0);
-      } else {
-        setStepCountPointer(nextCountPointer);
-      }
+      updateHistory(selected.id);
+      advanceStepPointers(step.count, activePlaylist.steps.length);
     }
   }, [
     isPaused,
@@ -147,10 +113,10 @@ export const useSlideshowEngine = (): SlideshowEngine => {
     activePlaylist,
     stepIndex,
     stepCountPointer,
-    getByType,
-    sortSlides,
     urgentSlides,
-    pickWeightedSlide,
+    getByType,
+    advanceStepPointers,
+    updateHistory,
   ]);
 
   const previous = useCallback(() => {
@@ -168,11 +134,8 @@ export const useSlideshowEngine = (): SlideshowEngine => {
     return allSlides.find((s) => s.id === id) || null;
   }, [history, historyPointer, allSlides]);
 
-  const currentStepConfig = useMemo(() => {
-    return activePlaylist.steps[stepIndex];
-  }, [activePlaylist, stepIndex]);
-
   const currentStep = useMemo<PlaylistStep | undefined>(() => {
+    if (!activePlaylist) return undefined;
     return activePlaylist.steps[stepIndex];
   }, [activePlaylist, stepIndex]);
 
@@ -201,7 +164,21 @@ export const useSlideshowEngine = (): SlideshowEngine => {
 
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line @eslint-react/exhaustive-deps
-  }, [activePlaylist.id]);
+  }, [activePlaylist?.id]);
+
+  if (!activePlaylist) {
+    return {
+      currentSlide: null,
+      next,
+      previous,
+      togglePause: () => setIsPaused((p) => !p),
+      isPaused,
+      isUrgent: false,
+      toastSlides: [],
+      duration: 10,
+      stepInfo: null,
+    };
+  }
 
   return {
     currentSlide,
@@ -211,7 +188,7 @@ export const useSlideshowEngine = (): SlideshowEngine => {
     isPaused,
     isUrgent: currentSlide?.content.type === "urgent",
     toastSlides,
-    duration: currentStepConfig?.duration || 10,
+    duration: currentStep?.duration || 10,
     stepInfo: currentStep
       ? {
           type: currentStep.type,

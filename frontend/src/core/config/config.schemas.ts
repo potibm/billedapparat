@@ -16,8 +16,14 @@ const DateFormatSchema = z.object({
 export const PlaylistStepSchema = z.object({
   type: z.string(),
   order: z.enum(["random", "asc", "desc"]),
-  count: z.number().positive().default(1),
-  duration: z.number().positive().default(10),
+  count: z.preprocess(
+    (v) => (v === 0 ? undefined : v),
+    z.number().int().positive().default(1),
+  ),
+  duration: z.preprocess(
+    (v) => (v === 0 ? undefined : v),
+    z.number().int().positive().default(10),
+  ),
 });
 
 export const PlaylistSchema = z.object({
@@ -34,7 +40,9 @@ export const AppConfigSchema = z.object({
   format: z.object({
     date: DateFormatSchema,
   }),
-  playlists: z.array(PlaylistSchema),
+  playlists: z
+    .array(PlaylistSchema)
+    .min(1, "At least one playlist must be defined"),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;

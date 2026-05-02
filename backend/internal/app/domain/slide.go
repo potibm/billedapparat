@@ -1,6 +1,8 @@
 package domain
 
-import "time"
+import (
+	"time"
+)
 
 type (
 	SlideType   string
@@ -20,6 +22,15 @@ const (
 	StatusInactive SlideStatus = "inactive"
 	StatusDeleted  SlideStatus = "deleted"
 )
+
+func IsValidSlideType(t SlideType) bool {
+	switch t {
+	case TypeSocialMedia, TypeSocialText, TypeSponsor, TypeNews, TypeTimetable:
+		return true
+	default:
+		return false
+	}
+}
 
 type Media struct {
 	OriginalURL string `json:"original_url"`

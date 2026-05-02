@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/potibm/billedapparat/internal/app/config"
@@ -37,4 +38,8 @@ func TestMapToPublicConfig(t *testing.T) {
 
 	assert.Len(t, public.Playlists, 1)
 	assert.Equal(t, "Test Playlist", public.Playlists[0].Name)
+
+	payload, err := json.Marshal(public)
+	assert.NoError(t, err)
+	assert.NotContains(t, string(payload), "admin_api_key")
 }

@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/potibm/billedapparat/internal/app/domain"
 )
 
 var (
@@ -78,10 +79,14 @@ func (p *PlaylistConfig) Validate() error {
 		return fmt.Errorf("playlist name cannot be empty")
 	}
 
+	if len(p.Steps) == 0 {
+		return fmt.Errorf("playlist '%s' must contain at least one step", p.Name)
+	}
+
 	for i := range p.Steps {
 		p.Steps[i].SetDefaults()
 
-		if p.Steps[i].Type == "" {
+		if !domain.IsValidSlideType(p.Steps[i].Type) {
 			return fmt.Errorf("step[%d] has no slide type defined", i)
 		}
 	}

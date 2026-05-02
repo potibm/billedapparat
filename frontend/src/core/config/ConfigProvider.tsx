@@ -10,10 +10,15 @@ const API_HOST = import.meta.env.VITE_API_HOST ?? "http://localhost:3101";
 export const ConfigProvider = ({ children }: { children: ReactNode }) => {
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(API_HOST + "/api/config")
+    const controller = new AbortController();
+    const timeoutId = globalThis.setTimeout(() => controller.abort(), 10000);
+
+    fetch(API_HOST + "/api/config", { signal: controller.signal })
       .then((res) => {
+        setError(null);
         if (!res.ok) throw new Error(`Config error: ${res.statusText}`);
         return res.json();
       })
@@ -23,13 +28,33 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         log.info("System config loaded successfully", validated);
       })
       .catch((err) => {
+        if (err.name === "AbortError") {
+          log.debug("Fetch aborted (cleanly)");
+          return;
+        }
         log.error("Failed to load system config:", err);
-        setError(err.message);
+        setError(err instanceof Error ? err.message : "Unknown config error");
+      })
+      .finally(() => {
+        globalThis.clearTimeout(timeoutId);
+        setLoading(false);
       });
+
+    return () => {
+      controller.abort();
+      globalThis.clearTimeout(timeoutId);
+    };
   }, []);
 
   useEffect(() => {
     if (config?.sentry.dsn) {
+      if (Sentry.isInitialized()) {
+        log.warn(
+          "Sentry is already initialized, skipping re-initialization with new config",
+        );
+        return;
+      }
+
       Sentry.init({
         dsn: config.sentry.dsn,
         environment: config.sentry.environment,
@@ -59,6 +84,10 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         <pre>{error}</pre>
       </div>
     );
+  }
+
+  if (loading) {
+    return null;
   }
 
   if (!config) {
