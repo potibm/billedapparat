@@ -1,5 +1,26 @@
 package config
 
+type OrderType string
+
+const (
+	OrderRandom OrderType = "random"
+	OrderAsc    OrderType = "asc"
+	OrderDesc   OrderType = "desc"
+)
+
+type PlaylistStep struct {
+	Type     string    `json:"type"     yaml:"type"`
+	Order    OrderType `json:"order"    yaml:"order"`
+	Count    int       `json:"count"    yaml:"count"`
+	Duration int       `json:"duration" yaml:"duration"`
+}
+
+type PlaylistConfig struct {
+	ID    int            `json:"id"    yaml:"id"`
+	Name  string         `json:"name"  yaml:"name"`
+	Steps []PlaylistStep `json:"steps" yaml:"steps"`
+}
+
 type SentryConfig struct {
 	DSN                     string  `mapstructure:"dsn"                        validate:"omitempty,url"`
 	TraceSampleRate         float64 `mapstructure:"trace_sample_rate"          validate:"omitempty,gte=0,lte=1"`
@@ -53,4 +74,5 @@ type Config struct {
 	Sentry     SentryConfig               `mapstructure:"sentry"`
 	API        APIConfig                  `mapstructure:"api"`
 	Collectors map[string]CollectorConfig `mapstructure:"collectors" validate:"dive"`
+	Playlists  []PlaylistConfig           `mapstructure:"playlists"`
 }
