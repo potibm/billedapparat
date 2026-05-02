@@ -76,7 +76,7 @@ export const pickWeightedSlide = (slides: Slide[]): Slide | null => {
 
 export const sortSlides = (
   slides: Slide[],
-  order: "asc" | "desc" | string,
+  order: "asc" | "desc" | (string & {}),
 ): Slide[] => {
   const list = [...slides];
   if (order === "asc") {
