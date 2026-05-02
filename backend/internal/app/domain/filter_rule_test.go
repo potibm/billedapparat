@@ -65,6 +65,22 @@ func TestFilterRule_Matches(t *testing.T) {
 			inputLang:   "",
 			want:        false,
 		},
+		{
+			name:         "No rules match at all",
+			rule:         FilterRule{Source: "*", Type: FilterTypeUsername, Value: "non-existent-user"},
+			inputSource:  "mastodon",
+			inputUser:    "happy_user",
+			inputDisplay: "Just a normal post",
+			inputLang:    "de",
+			want:         false,
+		},
+		{
+			name:        "Unknown filter type should not match",
+			rule:        FilterRule{Source: "*", Type: "unknown_type", Value: "some_value"},
+			inputSource: "mastodon",
+			inputUser:   "some_value",
+			want:        false,
+		},
 	}
 
 	for _, tt := range tests {
