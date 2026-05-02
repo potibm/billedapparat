@@ -16,6 +16,7 @@ const (
 
 	StatusActive   SlideStatus = "active"
 	StatusPending  SlideStatus = "pending"
+	StatusFiltered SlideStatus = "filtered"
 	StatusInactive SlideStatus = "inactive"
 	StatusDeleted  SlideStatus = "deleted"
 )

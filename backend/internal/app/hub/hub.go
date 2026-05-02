@@ -23,19 +23,25 @@ import (
 const (
 	defaultShutdownTimeout   = 5 * time.Second
 	defaultReadHeaderTimeout = 3 * time.Second
+	pathSlides               = "/slides"
+	pathSlidesWithID         = "/slides/:id"
+	pathFilterRules          = "/filter-rules"
+	pathFilterRulesWithID    = "/filter-rules/:id"
 )
 
 type Config struct {
-	Port        int
-	StaticFiles embed.FS
-	SlideRepo   repository.SlideRepository
-	Cfg         config.Config
+	Port           int
+	StaticFiles    embed.FS
+	SlideRepo      repository.SlideRepository
+	FilterRuleRepo repository.FilterRuleRepository
+	Cfg            config.Config
 }
 
 type Server struct {
 	port            int
 	staticFiles     embed.FS
 	slideRepo       repository.SlideRepository
+	filterRuleRepo  repository.FilterRuleRepository
 	cfg             config.Config
 	streamer        *Streamer
 	mediaProcessor  MediaProcessor
@@ -55,6 +61,7 @@ func NewServer(cfg Config) (*Server, error) {
 		port:            cfg.Port,
 		staticFiles:     cfg.StaticFiles,
 		slideRepo:       cfg.SlideRepo,
+		filterRuleRepo:  cfg.FilterRuleRepo,
 		cfg:             cfg.Cfg,
 		streamer:        streamer,
 		mediaDownloader: NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader")),
@@ -123,11 +130,19 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	api.GET("/stream", s.streamSlides)
 
 	admin := r.Group("/api/admin")
-	admin.GET("/slides", s.adminListSlides)
-	admin.POST("/slides", s.adminCreateSlide)
-	admin.GET("/slides/:id", s.adminGetSlide)
-	admin.PUT("/slides/:id", s.adminUpdateSlide)
-	admin.DELETE("/slides/:id", s.adminDeleteSlide)
+	admin.GET(pathSlides, s.adminListSlides)
+	admin.POST(pathSlides, s.adminCreateSlide)
+	admin.GET(pathSlidesWithID, s.adminGetSlide)
+	admin.PUT(pathSlidesWithID, s.adminUpdateSlide)
+	admin.DELETE(pathSlidesWithID, s.adminDeleteSlide)
+
+	admin.GET(pathFilterRules, s.adminListFilterRules)
+	admin.POST(pathFilterRules, s.adminCreateFilterRule)
+	admin.GET(pathFilterRulesWithID, s.adminGetFilterRule)
+	admin.PUT(pathFilterRulesWithID, s.adminUpdateFilterRule)
+	admin.DELETE(pathFilterRulesWithID, s.adminDeleteFilterRule)
+
+	admin.GET("/sources", s.adminListSources)
 
 	internal := r.Group("/api/internal")
 	internal.Use(APIKeyAuthMiddleware(s.cfg.API.AdminAPIKey))

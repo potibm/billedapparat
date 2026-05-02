@@ -59,75 +59,13 @@ func NewServeCmd() *cobra.Command {
 			// 4. Initialize external services (Sentry)
 			initializer.InitializeSentry(Cfg.Sentry)
 
-			/*
-
-				// 5. Dependency Injection (Repositories & Middleware)
-				sqliteRepository := sqliteRepo.NewRepository(db, Cfg.Format.Currency.FractionDigitsMax)
-				sumupRepository := sumupRepo.NewRepository(initializer.GetSumupService())
-				mailer := initializer.InitializeMailer(Cfg.Mailer)
-				jwtMiddleware := initializer.InitializeJwtMiddleware(sqliteRepository, Cfg.Jwt, &Cfg.App.RedisURL)
-
-				// 6. Services & Handler
-				purchaseSvc := purchaseService.NewPurchaseService(
-					sqliteRepository,
-					sumupRepository,
-					&mailer,
-					Cfg.Format.Currency.FractionDigitsMax,
-					Cfg.Format.Currency.Code,
-				)
-
-				websocketHandler := websocket.NewHandler(
-					sqliteRepository,
-					sumupRepository,
-					purchaseSvc,
-					jwtMiddleware,
-					&Cfg.App.CorsAllowOrigins,
-				)
-				publisher := &websocket.WebsocketPublisher{}
-				poller := monitor.NewPoller(sumupRepository, sqliteRepository, purchaseSvc, publisher)
-
-				httpHandlerConfig := handlerHttp.HandlerConfig{
-					Repo:            sqliteRepository,
-					SumupRepository: sumupRepository,
-					PurchaseService: purchaseSvc,
-					Monitor:         poller,
-					StatusPublisher: publisher,
-					Mailer:          mailer,
-					AppConfig:       Cfg,
-				}
-				httpHandler := handlerHttp.NewHandler(httpHandlerConfig)
-
-				// 7. Initialize HTTP Server
-				router, err := initializer.InitializeHTTPServer(
-					*httpHandler,
-					websocketHandler,
-					*sqliteRepository,
-					staticFiles,
-					jwtMiddleware,
-					Cfg,
-					slog.Default(),
-				)
-				if err != nil {
-					return fmt.Errorf("failed to initialize HTTP server: %w", err)
-				}
-
-				// 8. Start background tasks
-				startPollerForPendingPurchases(poller, sqliteRepository)
-				startCleanupForWebsocketConnections()
-
-				// 9. Server hochfahren
-				portStr := ":" + strconv.Itoa(port)
-				slog.Info("HTTP server listening", slog.Int("port", port))
-
-				if err := router.Run(portStr); err != nil {
-					return fmt.Errorf("failed to start server: %w", err)
-				}
-			*/
+			// 5. Start the server
 			server, err := hub.NewServer(hub.Config{
-				Port:        port,
-				StaticFiles: staticFiles,
-				SlideRepo:   dbStore.NewSlideRepository(),
-				Cfg:         Cfg,
+				Port:           port,
+				StaticFiles:    staticFiles,
+				SlideRepo:      dbStore.NewSlideRepository(),
+				FilterRuleRepo: dbStore.NewFilterRuleRepository(),
+				Cfg:            Cfg,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to initialize server: %w", err)

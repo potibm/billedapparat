@@ -22,14 +22,14 @@ type ImportRequest struct {
 func (s *Server) internalImportDirectory(c *gin.Context) {
 	var req ImportRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+		respondWithFailedToParsePayloadProblem(c, err)
 
 		return
 	}
 
 	baseDropzone, err := filepath.Abs(config.ImportDirname)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "server config error"})
+		respondWithInternalServerProblem(c, "Server configuration error: "+err.Error())
 
 		return
 	}
@@ -38,7 +38,7 @@ func (s *Server) internalImportDirectory(c *gin.Context) {
 
 	if !strings.HasPrefix(requestedPath, baseDropzone) {
 		slog.Warn("Path traversal attempt detected!", "path", req.Directory, "ip", c.ClientIP())
-		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
+		respondWithBadRequestProblem(c, "invalid directory path")
 
 		return
 	}
@@ -46,10 +46,7 @@ func (s *Server) internalImportDirectory(c *gin.Context) {
 	files, err := os.ReadDir(requestedPath)
 	if err != nil {
 		slog.Warn("Directory read failed", "path", requestedPath, "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "invalid directory path",
-			"details": err.Error(),
-		})
+		respondWithBadRequestProblem(c, "invalid directory path")
 
 		return
 	}
