@@ -14,7 +14,7 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 	var req contracts.IngestRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		slog.Error("Failed to parse ingest request", "error", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondWithFailedToParsePayloadProblem(ctx, err)
 
 		return
 	}
@@ -22,7 +22,7 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 	collectorToken := ctx.GetString(collectorSourceKey)
 	if req.Source != collectorToken {
 		slog.Warn("Ingest request with invalid source token", "source", req.Source, "collector_token", collectorToken)
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid source token"})
+		respondWithUnauthorizedProblem(ctx, "invalid source token")
 
 		return
 	}
@@ -120,9 +120,7 @@ func (s *Server) collectorDeleteSlide(ctx *gin.Context) {
 	externalID := ctx.Param("external_id")
 
 	if source == "" || externalID == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": "provide both source and external_id in the URL",
-		})
+		respondWithBadRequestProblem(ctx, "provide both source and external_id in the URL")
 
 		return
 	}
@@ -130,7 +128,7 @@ func (s *Server) collectorDeleteSlide(ctx *gin.Context) {
 	collectorToken := ctx.GetString(collectorSourceKey)
 	if source != collectorToken {
 		slog.Warn("Delete request with invalid source token", "source", source, "collector_token", collectorToken)
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid source token"})
+		respondWithUnauthorizedProblem(ctx, "invalid source token")
 
 		return
 	}
@@ -142,9 +140,7 @@ func (s *Server) collectorDeleteSlide(ctx *gin.Context) {
 			"source", source,
 			"external_id", externalID,
 		)
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error": "could not delete slide(s)",
-		})
+		respondWithInternalServerProblem(ctx, "Failed to delete slide: "+err.Error())
 
 		return
 	}

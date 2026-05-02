@@ -20,7 +20,7 @@ func (s *Server) adminListFilterRules(c *gin.Context) {
 
 	rules, total, err := s.filterRuleRepo.List(c.Request.Context(), limit, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list filter rules"})
+		respondWithInternalServerProblem(c, "Failed to list filter rules: "+err.Error())
 
 		return
 	}
@@ -32,20 +32,20 @@ func (s *Server) adminListFilterRules(c *gin.Context) {
 func (s *Server) adminGetFilterRule(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id format"})
+		respondWithInvalidIDFormatProblem(c)
 
 		return
 	}
 
 	rule, err := s.filterRuleRepo.GetByID(c.Request.Context(), uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch rule"})
+		respondWithInternalServerProblem(c, "Failed to fetch rule: "+err.Error())
 
 		return
 	}
 
 	if rule == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "rule not found"})
+		respondWithNotFoundProblem(c, "Filter rule with ID "+strconv.FormatUint(id, 10)+" not found")
 
 		return
 	}
@@ -56,7 +56,7 @@ func (s *Server) adminGetFilterRule(c *gin.Context) {
 func (s *Server) adminCreateFilterRule(c *gin.Context) {
 	var payload filterRulePayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondWithFailedToParsePayloadProblem(c, err)
 
 		return
 	}
@@ -68,7 +68,7 @@ func (s *Server) adminCreateFilterRule(c *gin.Context) {
 	}
 
 	if err := s.filterRuleRepo.Create(c.Request.Context(), rule); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create rule"})
+		respondWithInternalServerProblem(c, "Failed to create filter rule: "+err.Error())
 
 		return
 	}
@@ -79,14 +79,14 @@ func (s *Server) adminCreateFilterRule(c *gin.Context) {
 func (s *Server) adminUpdateFilterRule(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id format"})
+		respondWithInvalidIDFormatProblem(c)
 
 		return
 	}
 
 	var payload filterRulePayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondWithFailedToParsePayloadProblem(c, err)
 
 		return
 	}
@@ -99,7 +99,7 @@ func (s *Server) adminUpdateFilterRule(c *gin.Context) {
 	}
 
 	if err := s.filterRuleRepo.Update(c.Request.Context(), rule); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update rule"})
+		respondWithInternalServerProblem(c, "Failed to update filter rule: "+err.Error())
 
 		return
 	}
@@ -112,13 +112,13 @@ func (s *Server) adminUpdateFilterRule(c *gin.Context) {
 func (s *Server) adminDeleteFilterRule(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id format"})
+		respondWithInvalidIDFormatProblem(c)
 
 		return
 	}
 
 	if err := s.filterRuleRepo.Delete(c.Request.Context(), uint(id)); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete rule"})
+		respondWithInternalServerProblem(c, "Failed to delete filter rule: "+err.Error())
 
 		return
 	}

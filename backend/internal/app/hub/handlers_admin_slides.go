@@ -77,7 +77,7 @@ func (s *Server) adminListSlides(c *gin.Context) {
 
 	slides, total, err := s.slideRepo.AdminList(c.Request.Context(), params, filters)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondWithInternalServerProblem(c, "Failed to list slides: "+err.Error())
 
 		return
 	}
@@ -90,14 +90,14 @@ func (s *Server) adminListSlides(c *gin.Context) {
 func (s *Server) adminGetSlide(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id format"})
+		respondWithInvalidIDFormatProblem(c)
 
 		return
 	}
 
 	slide, err := s.slideRepo.GetByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "slide not found"})
+		respondWithNotFoundProblem(c, "Slide with ID "+strconv.FormatInt(id, 10)+" not found")
 
 		return
 	}
@@ -111,7 +111,7 @@ func (s *Server) adminCreateSlide(c *gin.Context) {
 	slide, err := s.parseSlidePayload(c)
 	if err != nil {
 		slog.Debug("Admin Create Slide: Error parsing slide payload", "error", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload: " + err.Error()})
+		respondWithFailedToParsePayloadProblem(c, err)
 
 		return
 	} else {
@@ -126,7 +126,7 @@ func (s *Server) adminCreateSlide(c *gin.Context) {
 
 	if err := s.slideRepo.Save(c.Request.Context(), slide); err != nil {
 		slog.Error("Admin Create Slide: Failed to create slide", "error", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create slide"})
+		respondWithInternalServerProblem(c, "Failed to create slide: "+err.Error())
 
 		return
 	} else {
@@ -141,14 +141,14 @@ func (s *Server) adminCreateSlide(c *gin.Context) {
 func (s *Server) adminUpdateSlide(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid slide ID format"})
+		respondWithInvalidIDFormatProblem(c)
 
 		return
 	}
 
 	slide, err := s.parseSlidePayload(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload: " + err.Error()})
+		respondWithFailedToParsePayloadProblem(c, err)
 
 		return
 	}
@@ -156,7 +156,7 @@ func (s *Server) adminUpdateSlide(c *gin.Context) {
 	slide.ID = id
 
 	if err := s.slideRepo.Save(c.Request.Context(), slide); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update slide"})
+		respondWithInternalServerProblem(c, "Failed to update slide: "+err.Error())
 
 		return
 	}
@@ -169,13 +169,13 @@ func (s *Server) adminUpdateSlide(c *gin.Context) {
 func (s *Server) adminDeleteSlide(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id format"})
+		respondWithInvalidIDFormatProblem(c)
 
 		return
 	}
 
 	if err := s.slideRepo.Delete(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete slide"})
+		respondWithInternalServerProblem(c, "Failed to delete slide: "+err.Error())
 
 		return
 	}

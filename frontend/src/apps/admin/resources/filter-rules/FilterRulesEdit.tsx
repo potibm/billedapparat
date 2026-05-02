@@ -1,48 +1,11 @@
-import { useMemo } from "react";
-import {
-  Edit,
-  SelectInput,
-  SimpleForm,
-  TextInput,
-  useGetList,
-} from "react-admin";
+import { Edit, SimpleForm } from "react-admin";
+import { FilterRuleInputs } from "./FilterRuleInputs";
 
 export const FilterRulesEdit = () => {
-  const { data: sources, isLoading } = useGetList("sources", {
-    pagination: { page: 1, perPage: 100 },
-  });
-
-  const sourceChoices = useMemo(() => {
-    const defaultChoice = { id: "*", name: "All sources (*)" };
-    if (!sources) return [defaultChoice];
-    return [defaultChoice, ...sources];
-  }, [sources]);
-
-  const typeChoices = [
-    { id: "language", name: "Language" },
-    { id: "username", name: "Username" },
-    { id: "display_name", name: "Display Name" },
-  ];
-
   return (
     <Edit title="Edit Filter Rule">
       <SimpleForm defaultValues={{ source: "*", type: "username" }}>
-        <SelectInput
-          source="source"
-          choices={sourceChoices}
-          isLoading={isLoading}
-          translateChoice={false}
-          required
-        />
-
-        <SelectInput
-          source="type"
-          choices={typeChoices}
-          translateChoice={false}
-          required
-        />
-
-        <TextInput source="value" label="Value" fullWidth required />
+        <FilterRuleInputs />
       </SimpleForm>
     </Edit>
   );
