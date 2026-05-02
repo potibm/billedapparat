@@ -18,7 +18,6 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
 
     fetch(API_HOST + "/api/config", { signal: controller.signal })
       .then((res) => {
-        setError(null);
         if (!res.ok) throw new Error(`Config error: ${res.statusText}`);
         return res.json();
       })
