@@ -23,6 +23,10 @@ import (
 const (
 	defaultShutdownTimeout   = 5 * time.Second
 	defaultReadHeaderTimeout = 3 * time.Second
+	pathSlides               = "/slides"
+	pathSlidesWithID         = "/slides/:id"
+	pathFilterRules          = "/filter-rules"
+	pathFilterRulesWithID    = "/filter-rules/:id"
 )
 
 type Config struct {
@@ -126,17 +130,17 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	api.GET("/stream", s.streamSlides)
 
 	admin := r.Group("/api/admin")
-	admin.GET("/slides", s.adminListSlides)
-	admin.POST("/slides", s.adminCreateSlide)
-	admin.GET("/slides/:id", s.adminGetSlide)
-	admin.PUT("/slides/:id", s.adminUpdateSlide)
-	admin.DELETE("/slides/:id", s.adminDeleteSlide)
+	admin.GET(pathSlides, s.adminListSlides)
+	admin.POST(pathSlides, s.adminCreateSlide)
+	admin.GET(pathSlidesWithID, s.adminGetSlide)
+	admin.PUT(pathSlidesWithID, s.adminUpdateSlide)
+	admin.DELETE(pathSlidesWithID, s.adminDeleteSlide)
 
-	admin.GET("/filter-rules", s.adminListFilterRules)
-	admin.POST("/filter-rules", s.adminCreateFilterRule)
-	admin.GET("/filter-rules/:id", s.adminGetFilterRule)
-	admin.PUT("/filter-rules/:id", s.adminUpdateFilterRule)
-	admin.DELETE("/filter-rules/:id", s.adminDeleteFilterRule)
+	admin.GET(pathFilterRules, s.adminListFilterRules)
+	admin.POST(pathFilterRules, s.adminCreateFilterRule)
+	admin.GET(pathFilterRulesWithID, s.adminGetFilterRule)
+	admin.PUT(pathFilterRulesWithID, s.adminUpdateFilterRule)
+	admin.DELETE(pathFilterRulesWithID, s.adminDeleteFilterRule)
 
 	admin.GET("/sources", s.adminListSources)
 
