@@ -31,12 +31,21 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 	initialStatus := s.evaluateModerationRules(ctx.Request.Context(), req)
 
 	if initialStatus == domain.StatusFiltered {
-		slog.Info("Ingest request filtered by moderation rules",
+		logFields := []any{
 			"source", req.Source,
 			"language", req.Language,
-			"display_name", req.Author.DisplayName,
-			"username", req.Author.Username,
-		)
+		}
+
+		if req.Author != nil {
+			logFields = append(logFields,
+				"display_name", req.Author.DisplayName,
+				"username", req.Author.Username,
+			)
+		} else {
+			logFields = append(logFields, "author", "unknown")
+		}
+
+		slog.Info("Ingest request filtered by moderation rules", logFields...)
 	}
 
 	var createdSlideIDs []int64
@@ -106,8 +115,16 @@ func (s *Server) evaluateModerationRules(ctx context.Context, req contracts.Inge
 		return domain.StatusPending
 	}
 
+	username := ""
+	displayName := ""
+
+	if req.Author != nil {
+		username = req.Author.Username
+		displayName = req.Author.DisplayName
+	}
+
 	for _, rule := range rules {
-		if rule.Matches(req.Source, req.Author.Username, req.Author.DisplayName, req.Language) {
+		if rule.Matches(req.Source, username, displayName, req.Language) {
 			return domain.StatusFiltered
 		}
 	}
