@@ -2,6 +2,7 @@ import { useEffect, useState, ReactNode } from "react";
 import { AppConfigSchema, AppConfig } from "./config.schemas";
 import { createLogger } from "@core/logger/logger";
 import { ConfigContext } from "./ConfigContext";
+import * as Sentry from "@sentry/react";
 
 const log = createLogger("Config");
 const API_HOST = import.meta.env.VITE_API_HOST ?? "http://localhost:3101";
@@ -26,6 +27,30 @@ export const ConfigProvider = ({ children }: { children: ReactNode }) => {
         setError(err.message);
       });
   }, []);
+
+  useEffect(() => {
+    if (config?.sentry.dsn) {
+      Sentry.init({
+        dsn: config.sentry.dsn,
+        environment: config.sentry.environment,
+        release: config.sentry.version,
+        replaysSessionSampleRate: config.sentry.replay_session_sample_rate,
+        replaysOnErrorSampleRate: config.sentry.replay_error_sample_rate,
+        integrations: [
+          Sentry.replayIntegration(),
+          Sentry.browserTracingIntegration(),
+        ],
+      });
+
+      log.info(
+        "Sentry initialized",
+        "version",
+        config.version,
+        "environment",
+        config.environment,
+      );
+    }
+  }, [config]);
 
   if (error) {
     return (

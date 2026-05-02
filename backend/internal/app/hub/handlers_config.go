@@ -11,7 +11,7 @@ type AppConfigPublic struct {
 	Version            string                  `json:"version"`
 	Environment        string                  `json:"environment"`
 	EnvironmentMessage string                  `json:"environment_message"`
-	Sentry             SentryPublic            `json:"sentry"`
+	Sentry             config.SentryConfig     `json:"sentry"`
 	Format             config.FormatConfig     `json:"format"`
 	Playlists          []config.PlaylistConfig `json:"playlists"`
 }
@@ -35,10 +35,6 @@ func mapToPublicConfig(cfg *config.Config) AppConfigPublic {
 		EnvironmentMessage: cfg.App.EnvironmentMessage,
 		Format:             cfg.Format,
 		Playlists:          cfg.Playlists,
-		Sentry: SentryPublic{
-			DSN:         cfg.Sentry.DSN,
-			Environment: cfg.Sentry.Environment,
-			Version:     cfg.Sentry.Version,
-		},
+		Sentry:             cfg.Sentry,
 	}
 }

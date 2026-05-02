@@ -25,6 +25,14 @@ func TestConfig_PlaylistDefaultsAndValidation(t *testing.T) {
 		API: APIConfig{
 			AdminAPIKey: "test-key-12345",
 		},
+		Sentry: SentryConfig{
+			DSN:                     "https://test@sentry.io/123",
+			TraceSampleRate:         0.1,
+			ReplaySessionSampleRate: 0.1,
+			ReplayErrorSampleRate:   0.1,
+			Environment:             "development",
+			Version:                 "1.2.3",
+		},
 		Playlists: []PlaylistConfig{
 			{
 				ID:   1,

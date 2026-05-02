@@ -1,3 +1,4 @@
+//nolint:lll // struct tags can get long and it's more readable to keep them in one line
 package config
 
 import "github.com/potibm/billedapparat/internal/app/domain"
@@ -24,12 +25,12 @@ type PlaylistConfig struct {
 }
 
 type SentryConfig struct {
-	DSN                     string  `mapstructure:"dsn"                        validate:"omitempty,url"`
-	TraceSampleRate         float64 `mapstructure:"trace_sample_rate"          validate:"omitempty,gte=0,lte=1"`
-	ReplaySessionSampleRate float64 `mapstructure:"replay_session_sample_rate" validate:"omitempty,gte=0,lte=1"`
-	ReplayErrorSampleRate   float64 `mapstructure:"replay_error_sample_rate"   validate:"omitempty,gte=0,lte=1"`
-	Environment             string  `mapstructure:"environment"`
-	Version                 string  `mapstructure:"version"`
+	DSN                     string  `json:"dsn"                        mapstructure:"dsn"                        validate:"omitempty,url"`
+	TraceSampleRate         float64 `json:"trace_sample_rate"          mapstructure:"trace_sample_rate"          validate:"omitempty,gte=0,lte=1"`
+	ReplaySessionSampleRate float64 `json:"replay_session_sample_rate" mapstructure:"replay_session_sample_rate" validate:"omitempty,gte=0,lte=1"`
+	ReplayErrorSampleRate   float64 `json:"replay_error_sample_rate"   mapstructure:"replay_error_sample_rate"   validate:"omitempty,gte=0,lte=1"`
+	Environment             string  `json:"environment"                mapstructure:"environment"                validate:"required"`
+	Version                 string  `json:"version"                    mapstructure:"version"                    validate:"required"`
 }
 
 type AppConfig struct {
