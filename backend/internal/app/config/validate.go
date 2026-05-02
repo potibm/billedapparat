@@ -30,6 +30,12 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	for i := range c.Playlists {
+		if err := c.Playlists[i].Validate(); err != nil {
+			return fmt.Errorf("playlist[%d] '%s' is invalid: %w", i, c.Playlists[i].Name, err)
+		}
+	}
+
 	return nil
 }
 
@@ -62,6 +68,22 @@ func (f *FormatConfig) Validate() error {
 func (f *DateFormatConfig) Validate() error {
 	if !validLocale.MatchString(f.Locale) {
 		return fmt.Errorf("date.locale '%s' is not a valid locale", f.Locale)
+	}
+
+	return nil
+}
+
+func (p *PlaylistConfig) Validate() error {
+	if p.Name == "" {
+		return fmt.Errorf("playlist name cannot be empty")
+	}
+
+	for i := range p.Steps {
+		p.Steps[i].SetDefaults()
+
+		if p.Steps[i].Type == "" {
+			return fmt.Errorf("step[%d] has no slide type defined", i)
+		}
 	}
 
 	return nil

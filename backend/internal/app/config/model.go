@@ -1,5 +1,7 @@
 package config
 
+import "github.com/potibm/billedapparat/internal/app/domain"
+
 type OrderType string
 
 const (
@@ -9,10 +11,10 @@ const (
 )
 
 type PlaylistStep struct {
-	Type     string    `json:"type"     yaml:"type"`
-	Order    OrderType `json:"order"    yaml:"order"`
-	Count    int       `json:"count"    yaml:"count"`
-	Duration int       `json:"duration" yaml:"duration"`
+	Type     domain.SlideType `json:"type"     yaml:"type"`
+	Order    OrderType        `json:"order"    yaml:"order"`
+	Count    int              `json:"count"    yaml:"count"`
+	Duration int              `json:"duration" yaml:"duration"`
 }
 
 type PlaylistConfig struct {
@@ -75,4 +77,18 @@ type Config struct {
 	API        APIConfig                  `mapstructure:"api"`
 	Collectors map[string]CollectorConfig `mapstructure:"collectors" validate:"dive"`
 	Playlists  []PlaylistConfig           `mapstructure:"playlists"`
+}
+
+func (p *PlaylistStep) SetDefaults() {
+	if p.Order == "" {
+		p.Order = OrderRandom
+	}
+
+	if p.Count <= 0 {
+		p.Count = 1
+	}
+
+	if p.Duration <= 0 {
+		p.Duration = 10
+	}
 }
