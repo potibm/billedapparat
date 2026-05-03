@@ -8,5 +8,8 @@ func NewConfigCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "config",
 		Short: "Config commands",
+		Annotations: map[string]string{
+			skipConfigValidationAnnotation: "true",
+		},
 	}
 }
