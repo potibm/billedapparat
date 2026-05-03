@@ -46,6 +46,7 @@ func InitViper() {
 	viper.SetDefault("app.env", "production")
 	viper.SetDefault("app.db_filename", DefaultDBFilename)
 	viper.SetDefault("app.frontend_url", "")
+	viper.SetDefault("app.collector_url", "")
 	viper.SetDefault("app.cors_allow_origins", []string{})
 	viper.SetDefault("api.admin_api_key", DefaultAPIAdminKey)
 
