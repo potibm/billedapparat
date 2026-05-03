@@ -10,5 +10,6 @@ backend/.env.backup.*
 backend/config.yaml
 backend/config.local.yaml
 backend/coverage.*
+backend/_config.*
 backend/tmp
 *.log

@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 
 	"github.com/potibm/billedapparat/internal/app/collectors/mastodon"
 	"github.com/potibm/billedapparat/internal/app/config"
@@ -11,8 +12,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+var configCreateForce bool
+
 func NewConfigCreateCmd() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create a new configuration file with default values",
 		Annotations: map[string]string{
@@ -49,8 +52,14 @@ func NewConfigCreateCmd() *cobra.Command {
 
 			filename := "config.yaml"
 
-			err = viper.SafeWriteConfigAs(filename)
-			if err != nil {
+			var writeErr error
+			if configCreateForce {
+				writeErr = viper.WriteConfigAs(filename)
+			} else {
+				writeErr = viper.SafeWriteConfigAs(filename)
+			}
+
+			if writeErr != nil {
 				if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 					return fmt.Errorf(
 						"file %s already exists or was not able to be created: %w",
@@ -62,11 +71,15 @@ func NewConfigCreateCmd() *cobra.Command {
 				return fmt.Errorf("error writing the confiig: %w", err)
 			}
 
-			fmt.Printf("✅ Successfully created: %s\n", filename)
+			slog.Info("Configuration file created successfully", "filename", filename)
 
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVarP(&configCreateForce, "force", "f", false, "Overwrite existing config file if it already exists")
+
+	return cmd
 }
 
 func generateSecureToken(byteLength int) (string, error) {
