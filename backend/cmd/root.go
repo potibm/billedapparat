@@ -128,6 +128,7 @@ func loadConfig() error {
 	_ = godotenv.Load()
 
 	viper.SetConfigType("yaml")
+	viper.AddConfigPath("config")
 	viper.AddConfigPath(".")
 
 	viper.SetConfigName("config")

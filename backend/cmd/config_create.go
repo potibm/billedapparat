@@ -12,7 +12,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-var configCreateForce bool
+var (
+	configCreateForce    bool
+	configCreateFilename string
+)
 
 func NewConfigCreateCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -50,7 +53,7 @@ func NewConfigCreateCmd() *cobra.Command {
 			}
 			viper.Set("collectors", collectors)
 
-			filename := "config.yaml"
+			filename := configCreateFilename
 
 			var writeErr error
 			if configCreateForce {
@@ -60,7 +63,7 @@ func NewConfigCreateCmd() *cobra.Command {
 			}
 
 			if writeErr != nil {
-				if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				if _, ok := writeErr.(viper.ConfigFileNotFoundError); !ok {
 					return fmt.Errorf(
 						"file %s already exists or was not able to be created: %w",
 						filename,
@@ -78,6 +81,8 @@ func NewConfigCreateCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVarP(&configCreateForce, "force", "f", false, "Overwrite existing config file if it already exists")
+	cmd.Flags().
+		StringVarP(&configCreateFilename, "output", "o", "config/config.yaml", "Filename for the generated config file")
 
 	return cmd
 }
