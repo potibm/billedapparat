@@ -26,9 +26,10 @@ var Version = "dev"
 var Cfg config.Config
 
 const (
-	logFormatFlagName    = "log-format"
-	logLevelFlagName     = "log-level"
-	databaseFileFlagName = "db-file"
+	logFormatFlagName              = "log-format"
+	logLevelFlagName               = "log-level"
+	databaseFileFlagName           = "db-file"
+	skipConfigValidationAnnotation = "skip-config-validation"
 )
 
 var rootCmd = &cobra.Command{
@@ -37,6 +38,9 @@ var rootCmd = &cobra.Command{
 	Version:       Version,
 	SilenceUsage:  true,
 	SilenceErrors: true,
+	Annotations: map[string]string{
+		skipConfigValidationAnnotation: "true",
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()
 	},
@@ -63,7 +67,9 @@ var rootCmd = &cobra.Command{
 		Cfg.App.CorsAllowOrigins = strings.Split(viper.GetString("app.cors_allow_origins"), ",")
 
 		if err := Cfg.Validate(); err != nil {
-			return fmt.Errorf("invalid configuration: %w", err)
+			if !skipConfigValidation(cmd) {
+				return fmt.Errorf("invalid configuration: %w", err)
+			}
 		}
 
 		if !cmd.Flags().Changed(logFormatFlagName) {
@@ -158,6 +164,24 @@ func confirm(question string) bool {
 	response = strings.TrimSpace(strings.ToLower(response))
 
 	return response == "y" || response == "yes"
+}
+
+func skipConfigValidation(cmd *cobra.Command) bool {
+	cmdPath := cmd.CommandPath()
+
+	if cmd.Annotations[skipConfigValidationAnnotation] == "true" {
+		return true
+	}
+
+	if strings.HasPrefix(cmdPath, "billedapparat completion") {
+		return true
+	}
+
+	if strings.HasPrefix(cmdPath, "billedapparat help") {
+		return true
+	}
+
+	return false
 }
 
 func ensureAppInfrastructure() error {

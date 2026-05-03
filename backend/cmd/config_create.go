@@ -15,6 +15,9 @@ func NewConfigCreateCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "create",
 		Short: "Create a new configuration file with default values",
+		Annotations: map[string]string{
+			skipConfigValidationAnnotation: "true",
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			const defaultAPIKeyLength = 32
 

@@ -10,6 +10,9 @@ func NewImportCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "import",
 		Short: "Import commands",
+		Annotations: map[string]string{
+			skipConfigValidationAnnotation: "true",
+		},
 	}
 
 	cmd.PersistentFlags().
