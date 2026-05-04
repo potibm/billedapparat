@@ -12,6 +12,7 @@ Compact cheat-sheet for OpenCode. Omit anything an agent could guess from filena
 - **Root `go.work`**: points only to `./backend`. Run Go commands from `backend/`.
 
 Frontend apps (three SPAs routed by React Router):
+
 - `/` → Splash page
 - `/admin/*` → React Admin dashboard
 - `/beamer/:id?` → Bigscreen slideshow viewer
@@ -43,13 +44,16 @@ Docker image check: `mise run docker:build` (uses a custom `billedapparat-builde
 ## Critical gotchas
 
 ### `cmd/assets` must exist before any Go build
+
 `backend/cmd/serve.go` embeds `//go:embed assets`. If the directory is missing, **compilation fails**.
+
 - `mise run be:setup` creates it (plus a dummy `index.html`), copies `.env.example` → `.env`, and creates `data/` subdirectories.
 - `mise run be:lint` also creates a dummy file for this reason.
 - `mise run be:test` depends on `be:setup`, so tests via `mise` are safe; running `go test ./...` directly without `be:setup` first will fail.
 - Dockerfile copies the real frontend build into `backend/cmd/assets`.
 
 ### Config loading order
+
 1. `backend/config/config.yaml` (committed defaults)
 2. `backend/config/config.local.yaml` (gitignored overrides)
 3. `.env` (loaded by `godotenv`)
@@ -59,10 +63,12 @@ Docker image check: `mise run docker:build` (uses a custom `billedapparat-builde
 Use `config/config.local.yaml` for local secrets; do not edit `config.yaml`.
 
 ### Frontend dev proxy
+
 Vite proxies `/api`, `/media`, and `/style` to `http://127.0.0.1:3101`.  
 The backend dev server (`air`) runs on **3101**, not 3100.
 
 ### Frontend tests need `--no-webstorage`
+
 The `fe:test` task sets `NODE_OPTIONS="--no-webstorage"`. Running `npm run test` directly may behave differently.
 
 ---
@@ -105,6 +111,7 @@ SQLite file lives in `backend/data/db/`.
 ## Infra (local)
 
 `docker compose up -d` starts:
+
 - OpenObserve UI: http://localhost:3105 (admin@example.com / password123)
 - OTel gRPC: localhost:3117
 
