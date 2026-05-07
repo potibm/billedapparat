@@ -7,7 +7,7 @@ toolchain go1.25.1
 require (
 	github.com/HugoSmits86/nativewebp v1.2.1
 	github.com/brianvoe/gofakeit/v7 v7.14.1
-	github.com/getsentry/sentry-go v0.46.1
+	github.com/getsentry/sentry-go v0.46.2
 	github.com/getsentry/sentry-go/gin v0.46.1
 	github.com/gin-contrib/cors v1.7.7
 	github.com/gin-contrib/static v1.1.6
