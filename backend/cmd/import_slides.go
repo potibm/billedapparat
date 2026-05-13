@@ -43,7 +43,7 @@ func NewImportSlidesCmd() *cobra.Command {
 			resp, err := client.Do(req)
 
 			if err != nil || resp.StatusCode != http.StatusOK {
-				slog.Error("Import failed.", "error", err, "statusCode", resp.StatusCode)
+				slog.Error("Import failed.", "error", err, "status_code", resp.StatusCode)
 
 				return fmt.Errorf("import failed: %w", err)
 			}
