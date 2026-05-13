@@ -54,6 +54,10 @@ func InitViper() {
 	viper.SetDefault("app.cors_allow_origins", []string{})
 	viper.SetDefault("api.admin_api_key", DefaultAPIAdminKey)
 
+	viper.SetDefault("sync.redis_url", "")
+	viper.SetDefault("sync.news_stream", "")
+	viper.SetDefault("sync.event_stream", "")
+
 	viper.SetDefault("format.date.locale", "da-DK")
 	viper.SetDefault("format.date.options", DefaultDateOptions)
 

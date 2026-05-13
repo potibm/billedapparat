@@ -15,6 +15,8 @@ func (c Config) RedactConfigForDisplay() Config {
 		result.Collectors[key] = collector
 	}
 
+	result.Sync.RedisURL = result.Sync.RedisURL.Redacted()
+
 	return result
 }
 

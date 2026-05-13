@@ -74,6 +74,12 @@ type CollectorConfig struct {
 	APIKey  string `mapstructure:"api_key" validate:"required_if=Enabled true"`
 }
 
+type SyncConfig struct {
+	RedisURL    RedisURL `mapstructure:"redis_url"    validate:"url"`
+	NewsStream  string   `mapstructure:"news_stream"`
+	EventStream string   `mapstructure:"event_stream"`
+}
+
 type Config struct {
 	App        AppConfig                  `mapstructure:"app"`
 	Format     FormatConfig               `mapstructure:"format"`
@@ -81,6 +87,7 @@ type Config struct {
 	API        APIConfig                  `mapstructure:"api"`
 	Collectors map[string]CollectorConfig `mapstructure:"collectors" validate:"dive"`
 	Playlists  []PlaylistConfig           `mapstructure:"playlists"`
+	Sync       SyncConfig                 `mapstructure:"sync"`
 }
 
 func (p *PlaylistStep) SetDefaults() {
