@@ -10,6 +10,8 @@ const (
 	OtelServiceName        = "billedapparat"
 	OtelBackendServiceName = OtelServiceName + "-backend"
 
+	DefaultPort = 8080
+
 	DefaultTraceSampleRate         = 0.1
 	DefaultReplaySessionSampleRate = 0.1
 	DefaultReplayErrorSampleRate   = 0.1
@@ -41,6 +43,8 @@ func InitViper() {
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
+	viper.SetDefault("app.port", DefaultPort)
+	viper.SetDefault("app.otel_endpoint", "")
 	viper.SetDefault("app.gin_mode", "release")
 	viper.SetDefault("app.log_level", "info")
 	viper.SetDefault("app.env", "production")

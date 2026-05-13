@@ -6,7 +6,9 @@ import (
 	"log/slog"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
+	"github.com/potibm/billedapparat/internal/app/config"
 	"github.com/potibm/billedapparat/internal/app/hub"
 	"github.com/potibm/billedapparat/internal/app/initializer"
 	store "github.com/potibm/billedapparat/internal/app/store/gorm"
@@ -16,7 +18,8 @@ import (
 var staticFiles embed.FS
 
 const (
-	defaultPort = 3100
+	otelEndpointFlagName = "otel-endpoint"
+	portFlagName         = "port"
 )
 
 var (
@@ -36,7 +39,7 @@ func NewServeCmd() *cobra.Command {
 			ctx := cmd.Context()
 
 			// 2. Initialize Telemetry
-			shutdownFn, err := initializer.InitTelemetry(ctx, otelEndpoint, Cfg.App.Version)
+			shutdownFn, err := initializer.InitTelemetry(ctx, Cfg.App.OtelEndpoint, Cfg.App.Version)
 			if err != nil {
 				return fmt.Errorf("failed to initialize telemetry: %w", err)
 			}
@@ -61,7 +64,7 @@ func NewServeCmd() *cobra.Command {
 
 			// 5. Start the server
 			server, err := hub.NewServer(hub.Config{
-				Port:           port,
+				Port:           Cfg.App.Port,
 				StaticFiles:    staticFiles,
 				SlideRepo:      dbStore.NewSlideRepository(),
 				FilterRuleRepo: dbStore.NewFilterRuleRepository(),
@@ -75,9 +78,12 @@ func NewServeCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVarP(&port, "port", "p", defaultPort, "Set the port number for the server to listen on")
+	cmd.Flags().IntVarP(&port, portFlagName, "p", config.DefaultPort, "Set the port number for the server to listen on")
+	_ = viper.BindPFlag("app.port", cmd.Flags().Lookup(portFlagName))
+
 	cmd.Flags().
-		StringVar(&otelEndpoint, "otel-endpoint", "", "Set the OpenTelemetry endpoint (e.g., localhost:4317)")
+		StringVar(&otelEndpoint, otelEndpointFlagName, "", "Set the OpenTelemetry endpoint (e.g., localhost:4317)")
+	_ = viper.BindPFlag("app.otel_endpoint", cmd.Flags().Lookup(otelEndpointFlagName))
 
 	return cmd
 }
