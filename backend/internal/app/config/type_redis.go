@@ -60,8 +60,8 @@ func (ru RedisURL) RedisOptions() *redis.Options {
 	}
 }
 
-func (r RedisURL) Redacted() RedisURL {
-	return RedisURL(redactURLPassword(string(r)))
+func (ru RedisURL) Redacted() RedisURL {
+	return RedisURL(redactURLPassword(string(ru)))
 }
 
 func (ru *RedisURL) Validate() error {

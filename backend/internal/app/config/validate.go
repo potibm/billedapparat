@@ -51,6 +51,24 @@ func (s *SyncConfig) Validate() error {
 		}
 	}
 
+	if err := s.Event.Validate(); err != nil {
+		return fmt.Errorf("sync.event is invalid: %w", err)
+	}
+
+	if err := s.News.Validate(); err != nil {
+		return fmt.Errorf("sync.news is invalid: %w", err)
+	}
+
+	return nil
+}
+
+func (s *SyncStreamConfig) Validate() error {
+	if s.RedisURL != "" {
+		if err := s.RedisURL.Validate(); err != nil {
+			return fmt.Errorf("sync.redis_url is not a valid URL: %w", err)
+		}
+	}
+
 	return nil
 }
 

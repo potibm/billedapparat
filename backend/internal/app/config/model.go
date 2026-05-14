@@ -75,9 +75,14 @@ type CollectorConfig struct {
 }
 
 type SyncConfig struct {
-	RedisURL    RedisURL `mapstructure:"redis_url"    validate:"url"`
-	NewsStream  string   `mapstructure:"news_stream"`
-	EventStream string   `mapstructure:"event_stream"`
+	RedisURL RedisURL         `mapstructure:"redis_url" validate:"url"`
+	News     SyncStreamConfig `mapstructure:"news"`
+	Event    SyncStreamConfig `mapstructure:"event"`
+}
+
+type SyncStreamConfig struct {
+	RedisURL   RedisURL `mapstructure:"redis_url"   validate:"url"`
+	StreamName string   `mapstructure:"stream_name" validate:"required"`
 }
 
 type Config struct {

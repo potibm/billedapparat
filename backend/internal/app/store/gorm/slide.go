@@ -145,7 +145,7 @@ func (s *dbSlide) toDomain() *domain.Slide {
 	return ds
 }
 
-func toDomainSlice(dbSlides []dbSlide) []domain.Slide {
+func toDomainSlideList(dbSlides []dbSlide) []domain.Slide {
 	slides := make([]domain.Slide, len(dbSlides))
 	for i, s := range dbSlides {
 		slides[i] = *s.toDomain()

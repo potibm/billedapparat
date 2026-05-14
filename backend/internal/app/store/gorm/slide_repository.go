@@ -49,15 +49,15 @@ func (r *slideRepository) GetActive(ctx context.Context) ([]domain.Slide, error)
 		return nil, err
 	}
 
-	slides := toDomainSlice(dbSlides)
+	slides := toDomainSlideList(dbSlides)
 
 	return slides, nil
 }
 
 func (r *slideRepository) AdminList(
 	ctx context.Context,
-	p repository.AdminListParams,
-	filters repository.AdminListFilters,
+	p repository.SlideListParams,
+	filters repository.SlideListFilters,
 ) ([]domain.Slide, int64, error) {
 	var (
 		dbSlides []dbSlide
@@ -115,7 +115,7 @@ func (r *slideRepository) AdminList(
 		return nil, 0, err
 	}
 
-	slides := toDomainSlice(dbSlides)
+	slides := toDomainSlideList(dbSlides)
 
 	return slides, total, nil
 }
@@ -231,7 +231,7 @@ func (r *slideRepository) FindExpiredSlidesByType(
 		return nil, err
 	}
 
-	slides := toDomainSlice(dbSlides)
+	slides := toDomainSlideList(dbSlides)
 
 	return slides, nil
 }

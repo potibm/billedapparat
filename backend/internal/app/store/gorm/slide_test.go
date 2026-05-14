@@ -99,7 +99,7 @@ func TestSlideMapping(t *testing.T) {
 			{GormModel: GormModel{ID: 1}, Type: "news"},
 			{GormModel: GormModel{ID: 2}, Type: "sponsor"},
 		}
-		res := toDomainSlice(dbSlides)
+		res := toDomainSlideList(dbSlides)
 		assert.Len(t, res, 2)
 		assert.Equal(t, domain.SlideType("news"), res[0].Content.Type)
 	})

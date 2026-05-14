@@ -19,15 +19,17 @@ func (s *Server) adminListSlides(c *gin.Context) {
 	order := c.DefaultQuery("_order", "DESC")
 	slideType := domain.SlideType(c.Query("type"))
 
-	params := repository.AdminListParams{
-		Offset: start,
-		Limit:  end - start,
-		Sort:   sort,
-		Order:  order,
-		Type:   slideType,
+	params := repository.SlideListParams{
+		ListParams: repository.ListParams{
+			Offset: start,
+			Limit:  end - start,
+			Sort:   sort,
+			Order:  order,
+		},
+		Type: slideType,
 	}
 
-	filters := repository.AdminListFilters{
+	filters := repository.SlideListFilters{
 		Query:    nil,
 		Status:   nil,
 		Priority: nil,

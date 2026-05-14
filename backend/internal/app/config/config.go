@@ -55,8 +55,8 @@ func InitViper() {
 	viper.SetDefault("api.admin_api_key", DefaultAPIAdminKey)
 
 	viper.SetDefault("sync.redis_url", "")
-	viper.SetDefault("sync.news_stream", "")
-	viper.SetDefault("sync.event_stream", "")
+	viper.RegisterAlias("sync.news.redis_url", "sync.redis_url")
+	viper.RegisterAlias("sync.event.redis_url", "sync.redis_url")
 
 	viper.SetDefault("format.date.locale", "da-DK")
 	viper.SetDefault("format.date.options", DefaultDateOptions)

@@ -16,10 +16,12 @@ linters:
     - gocritic
     - revive
     - gosec
+    - gomodguard_v2
   disable:
     - wsl
     - testpackage
     - funlen
+    - gomodguard
   settings:
     revive:
       rules:
