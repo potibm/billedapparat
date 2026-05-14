@@ -71,32 +71,7 @@ func (r *slideRepository) AdminList(
 		query = query.Where("type = ?", p.Type)
 	}
 
-	if filters.Query != nil {
-		likeQuery := fmt.Sprintf("%%%s%%", *filters.Query)
-		query = query.Where(
-			"content_title LIKE ? OR content_body LIKE ? OR author_display_name LIKE ? OR author_username LIKE ?",
-			likeQuery,
-			likeQuery,
-			likeQuery,
-			likeQuery,
-		)
-	}
-
-	if filters.Status != nil {
-		query = query.Where("status = ?", *filters.Status)
-	}
-
-	if filters.Priority != nil {
-		query = query.Where("priority = ?", *filters.Priority)
-	}
-
-	if filters.ID != nil {
-		query = query.Where("id = ?", *filters.ID)
-	}
-
-	if filters.Source != nil {
-		query = query.Where("source = ?", *filters.Source)
-	}
+	query = r.applyFilters(query, filters)
 
 	// determine count
 	if err := query.Count(&total).Error; err != nil {
@@ -104,7 +79,7 @@ func (r *slideRepository) AdminList(
 	}
 
 	// sorting
-	safeOrderClause := getOrderClause(p.Sort, p.Order)
+	safeOrderClause := r.getOrderClause(p.Sort, p.Order)
 
 	// perform query with pagination and sorting
 	err := query.Order(safeOrderClause).
@@ -118,37 +93,6 @@ func (r *slideRepository) AdminList(
 	slides := toDomainSlideList(dbSlides)
 
 	return slides, total, nil
-}
-
-func getOrderClause(sortField, order string) string {
-	var sortCols []string
-
-	switch sortField {
-	case "content.title":
-		sortCols = []string{"content_title"}
-	case "display_options.priority":
-		sortCols = []string{"priority", "id"}
-	case "author.display_name":
-		sortCols = []string{"author_display_name", "id"}
-	case "source":
-		sortCols = []string{"source", "id"}
-	default:
-		sortCols = []string{"id"}
-	}
-
-	orderDir := "ASC"
-	if strings.ToUpper(order) == "DESC" {
-		orderDir = "DESC"
-	}
-
-	var orderClauses []string
-	for _, col := range sortCols {
-		orderClauses = append(orderClauses, fmt.Sprintf("%s %s", col, orderDir))
-	}
-
-	safeOrderClause := strings.Join(orderClauses, ", ")
-
-	return safeOrderClause
 }
 
 func (r *slideRepository) GetByID(ctx context.Context, id int64) (*domain.Slide, error) {
@@ -234,4 +178,66 @@ func (r *slideRepository) FindExpiredSlidesByType(
 	slides := toDomainSlideList(dbSlides)
 
 	return slides, nil
+}
+
+func (r *slideRepository) getOrderClause(sortField, order string) string {
+	var sortCols []string
+
+	switch sortField {
+	case "content.title":
+		sortCols = []string{"content_title"}
+	case "display_options.priority":
+		sortCols = []string{"priority", "id"}
+	case "author.display_name":
+		sortCols = []string{"author_display_name", "id"}
+	case "source":
+		sortCols = []string{"source", "id"}
+	default:
+		sortCols = []string{"id"}
+	}
+
+	orderDir := "ASC"
+	if strings.ToUpper(order) == "DESC" {
+		orderDir = "DESC"
+	}
+
+	var orderClauses []string
+	for _, col := range sortCols {
+		orderClauses = append(orderClauses, fmt.Sprintf("%s %s", col, orderDir))
+	}
+
+	safeOrderClause := strings.Join(orderClauses, ", ")
+
+	return safeOrderClause
+}
+
+func (r *slideRepository) applyFilters(query *gorm.DB, filters repository.SlideListFilters) *gorm.DB {
+	if filters.Query != nil {
+		likeQuery := fmt.Sprintf("%%%s%%", *filters.Query)
+		query = query.Where(
+			"content_title LIKE ? OR content_body LIKE ? OR author_display_name LIKE ? OR author_username LIKE ?",
+			likeQuery,
+			likeQuery,
+			likeQuery,
+			likeQuery,
+		)
+	}
+
+	if filters.Status != nil {
+		query = query.Where("status = ?", *filters.Status)
+	}
+
+	if filters.Priority != nil {
+		query = query.Where("priority = ?", *filters.Priority)
+	}
+
+	if filters.ID != nil {
+		query = query.Where("id = ?", *filters.ID)
+	}
+
+	if filters.Source != nil {
+		query = query.Where("source = ?", *filters.Source)
+	}
+
+	return query
 }

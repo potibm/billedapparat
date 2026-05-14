@@ -18,9 +18,9 @@ type EventListFilters struct {
 
 type TimetableEventRepository interface {
 	GetByID(ctx context.Context, id int64) (*domain.TimetableEvent, error)
-	List(ctx context.Context, params EventListParams, filters EventListFilters) ([]domain.TimetableEvent, int64, error)
+	List(ctx context.Context, params EventListParams, filters EventListFilters) (domain.Timetable, int64, error)
 	Save(ctx context.Context, event *domain.TimetableEvent) error
 	Delete(ctx context.Context, id int64) error
 
-	GetAll(ctx context.Context) ([]domain.TimetableEvent, error)
+	GetAll(ctx context.Context) (domain.Timetable, error)
 }

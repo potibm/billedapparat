@@ -16,6 +16,8 @@ type TimetableEvent struct {
 	Location    *Location `json:"location,omitempty"`
 }
 
+type Timetable []TimetableEvent
+
 type Category struct {
 	Name  string `json:"name"`
 	Color string `json:"color"`
