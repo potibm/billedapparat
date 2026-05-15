@@ -47,14 +47,14 @@ func stripHTML(content string) string {
 	return cleanBody
 }
 
-func mapToIngestRequest(status MastoStatus) contracts.IngestRequest {
-	req := contracts.IngestRequest{
+func mapToIngestRequest(status MastoStatus) contracts.IngestSlideRequest {
+	req := contracts.IngestSlideRequest{
 		Source:          mastodonCollectorName,
 		ExternalID:      status.ID,
 		Body:            stripHTML(status.Content),
 		Language:        status.Language,
 		OriginCreatedAt: status.CreatedAt,
-		Author: &contracts.IngestRequestAuthor{
+		Author: &contracts.IngestSlideRequestAuthor{
 			ExternalID:        status.Account.ID,
 			Username:          status.Account.Username,
 			DisplayName:       status.Account.DisplayName,
@@ -72,7 +72,7 @@ func mapToIngestRequest(status MastoStatus) contracts.IngestRequest {
 			mimeType = "video/mp4"
 		}
 
-		req.MediaURLs = append(req.MediaURLs, contracts.IngestRequestMediaURL{
+		req.MediaURLs = append(req.MediaURLs, contracts.IngestSlideRequestMediaURL{
 			ExternalURL: media.URL,
 			ContentType: mimeType,
 		})

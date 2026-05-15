@@ -64,11 +64,13 @@ func NewServeCmd() *cobra.Command {
 
 			// 5. Start the server
 			server, err := hub.NewServer(hub.Config{
-				Port:           Cfg.App.Port,
-				StaticFiles:    staticFiles,
-				SlideRepo:      dbStore.NewSlideRepository(),
-				FilterRuleRepo: dbStore.NewFilterRuleRepository(),
-				Cfg:            Cfg,
+				Port:               Cfg.App.Port,
+				StaticFiles:        staticFiles,
+				SlideRepo:          dbStore.NewSlideRepository(),
+				FilterRuleRepo:     dbStore.NewFilterRuleRepository(),
+				NewsRepo:           dbStore.NewNewsRepository(),
+				TimetableEventRepo: dbStore.NewTimetableEventRepository(),
+				Cfg:                Cfg,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to initialize server: %w", err)

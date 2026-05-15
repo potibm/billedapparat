@@ -114,13 +114,8 @@ func (r *newsRepository) applyFilters(query *gorm.DB, filters repository.NewsLis
 	return query
 }
 
-func (r *newsRepository) getOrderClause(sortField, order string) string {
-	var sortCols []string
-
-	switch sortField {
-	default:
-		sortCols = []string{"id"}
-	}
+func (r *newsRepository) getOrderClause(_, order string) string {
+	sortCols := []string{"id"}
 
 	orderDir := "ASC"
 	if strings.ToUpper(order) == "DESC" {

@@ -11,7 +11,7 @@ import (
 )
 
 func (s *Server) collectorIngestSlide(ctx *gin.Context) {
-	var req contracts.IngestRequest
+	var req contracts.IngestSlideRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		slog.Error("Failed to parse ingest request", "error", err)
 		respondWithFailedToParsePayloadProblem(ctx, err)
@@ -60,7 +60,7 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 	}
 
 	for _, mediaPos := range mediaPosList {
-		slide := mapIngestToDomain(req, mediaPos)
+		slide := mapSlideIngestToDomain(req, mediaPos)
 
 		exists, _ := s.slideRepo.SlideExists(slide.Source, slide.ExternalID, slide.ExternalSubID)
 		if exists {
@@ -105,7 +105,7 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{"status": "ingested", "processed_slides": len(createdSlideIDs)})
 }
 
-func (s *Server) evaluateModerationRules(ctx context.Context, req contracts.IngestRequest) domain.SlideStatus {
+func (s *Server) evaluateModerationRules(ctx context.Context, req contracts.IngestSlideRequest) domain.SlideStatus {
 	const maxRules = 1000
 
 	rules, _, err := s.filterRuleRepo.List(ctx, maxRules, 0)

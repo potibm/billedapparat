@@ -33,7 +33,7 @@ func New(baseURL, apiKey string, logger *slog.Logger) *HubClient {
 	}
 }
 
-func (c *HubClient) SendSlide(payload contracts.IngestRequest) error {
+func (c *HubClient) SendSlide(payload contracts.IngestSlideRequest) error {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("json marshal error: %w", err)

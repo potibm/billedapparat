@@ -1,21 +1,23 @@
 package hub
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
+	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
 	"github.com/potibm/billedapparat/internal/app/contracts"
 	"github.com/potibm/billedapparat/internal/app/domain"
 )
 
-func mapMediaURLToDomain(m contracts.IngestRequestMediaURL) domain.Media {
+func mapMediaURLToDomain(m contracts.IngestSlideRequestMediaURL) domain.Media {
 	return domain.Media{
 		OriginalURL: m.ExternalURL,
 		MimeType:    m.ContentType,
 	}
 }
 
-func mapAuthorToDomain(a contracts.IngestRequestAuthor) domain.Author {
+func mapAuthorToDomain(a contracts.IngestSlideRequestAuthor) domain.Author {
 	avatar := (*domain.Media)(nil)
 	if a.AvatarExternalURL != "" {
 		avatar = &domain.Media{
@@ -32,7 +34,7 @@ func mapAuthorToDomain(a contracts.IngestRequestAuthor) domain.Author {
 	}
 }
 
-func mapIngestToDomain(i contracts.IngestRequest, mediaPos int) domain.Slide {
+func mapSlideIngestToDomain(i contracts.IngestSlideRequest, mediaPos int) domain.Slide {
 	const maxLengthTitle = 30
 
 	hasMedia := len(i.MediaURLs) > 0
@@ -100,4 +102,25 @@ func smartTruncate(text string, limit int) string {
 	}
 
 	return strings.TrimSpace(subString[:lastSpace]) + "..."
+}
+
+func mapNewsIngestToDomain(i contracts.IngestNewsRequest, conv *converter.Converter) (domain.News, error) {
+	const maxLengthTitle = 100
+
+	body, err := conv.ConvertString(i.Body)
+	if err != nil {
+		return domain.News{}, fmt.Errorf("failed to convert markdown to text: %w", err)
+	}
+
+	news := domain.News{
+		Source:      i.Source,
+		ExternalID:  i.ExternalID,
+		Title:       smartTruncate(i.Title, maxLengthTitle),
+		Body:        body,
+		IsUrgent:    i.IsUrgent,
+		IsHidden:    i.IsHidden,
+		ExternalURL: i.ExternalURL,
+	}
+
+	return news, nil
 }

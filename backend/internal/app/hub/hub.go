@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
@@ -30,23 +31,28 @@ const (
 )
 
 type Config struct {
-	Port           int
-	StaticFiles    embed.FS
-	SlideRepo      repository.SlideRepository
-	FilterRuleRepo repository.FilterRuleRepository
-	Cfg            config.Config
+	Port               int
+	StaticFiles        embed.FS
+	SlideRepo          repository.SlideRepository
+	NewsRepo           repository.NewsRepository
+	TimetableEventRepo repository.TimetableEventRepository
+	FilterRuleRepo     repository.FilterRuleRepository
+	Cfg                config.Config
 }
 
 type Server struct {
-	port            int
-	staticFiles     embed.FS
-	slideRepo       repository.SlideRepository
-	filterRuleRepo  repository.FilterRuleRepository
-	cfg             config.Config
-	streamer        *Streamer
-	mediaProcessor  MediaProcessor
-	mediaDownloader *MediaDownloader
-	logger          *slog.Logger
+	port               int
+	staticFiles        embed.FS
+	slideRepo          repository.SlideRepository
+	filterRuleRepo     repository.FilterRuleRepository
+	newsRepo           repository.NewsRepository
+	timetableEventRepo repository.TimetableEventRepository
+	cfg                config.Config
+	streamer           *Streamer
+	mediaProcessor     MediaProcessor
+	mediaDownloader    *MediaDownloader
+	logger             *slog.Logger
+	markdownConverter  *converter.Converter
 }
 
 type MediaProcessor interface {
@@ -57,15 +63,20 @@ func NewServer(cfg Config) (*Server, error) {
 	logger := slog.Default()
 	streamer := NewStreamer(logger.With("component", "Streamer"))
 
+	markdownConverter := converter.NewConverter()
+
 	return &Server{
-		port:            cfg.Port,
-		staticFiles:     cfg.StaticFiles,
-		slideRepo:       cfg.SlideRepo,
-		filterRuleRepo:  cfg.FilterRuleRepo,
-		cfg:             cfg.Cfg,
-		streamer:        streamer,
-		mediaDownloader: NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader")),
-		logger:          logger.With("component", "HubServer"),
+		port:               cfg.Port,
+		staticFiles:        cfg.StaticFiles,
+		slideRepo:          cfg.SlideRepo,
+		filterRuleRepo:     cfg.FilterRuleRepo,
+		newsRepo:           cfg.NewsRepo,
+		timetableEventRepo: cfg.TimetableEventRepo,
+		cfg:                cfg.Cfg,
+		streamer:           streamer,
+		mediaDownloader:    NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader")),
+		logger:             logger.With("component", "HubServer"),
+		markdownConverter:  markdownConverter,
 	}, nil
 }
 

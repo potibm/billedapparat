@@ -15,11 +15,11 @@ type eventRepository struct {
 	db *gorm.DB
 }
 
-func (s *Store) NewEventRepository() repository.TimetableEventRepository {
-	return NewEventRepository(s.db)
+func (s *Store) NewTimetableEventRepository() repository.TimetableEventRepository {
+	return NewTimetableEventRepository(s.db)
 }
 
-func NewEventRepository(db *gorm.DB) repository.TimetableEventRepository {
+func NewTimetableEventRepository(db *gorm.DB) repository.TimetableEventRepository {
 	return &eventRepository{db: db}
 }
 
@@ -110,13 +110,8 @@ func (r *eventRepository) applyFilters(query *gorm.DB, filters repository.EventL
 	return query
 }
 
-func (r *eventRepository) getOrderClause(sortField, order string) string {
-	var sortCols []string
-
-	switch sortField {
-	default:
-		sortCols = []string{"id"}
-	}
+func (r *eventRepository) getOrderClause(_, order string) string {
+	sortCols := []string{"id"}
 
 	orderDir := "ASC"
 	if strings.ToUpper(order) == "DESC" {
