@@ -162,8 +162,11 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 
 	collectors := r.Group("/api/collectors")
 	collectors.Use(CollectorAuthMiddleware(s.cfg.Collectors))
-	collectors.POST("/ingest", s.collectorIngestSlide)
-	collectors.DELETE("/ingest/:source/:external_id", s.collectorDeleteSlide)
+	collectors.POST("/slides", s.collectorIngestSlide)
+	collectors.DELETE("/slides/:source/:external_id", s.collectorDeleteSlide)
+	collectors.POST("/news", s.collectorUpsertNews)
+	collectors.PUT("/news", s.collectorSyncNews)
+	collectors.DELETE("/news/:source/:external_id", s.collectorDeleteNews)
 
 	r.NoRoute(func(c *gin.Context) {
 		if !strings.HasPrefix(c.Request.RequestURI, "/api") && !strings.Contains(c.Request.RequestURI, ".") {

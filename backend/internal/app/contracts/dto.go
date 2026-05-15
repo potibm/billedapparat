@@ -34,7 +34,10 @@ type IngestNewsRequest struct {
 	IsHidden    bool   `json:"is_hidden"              binding:"required"`
 }
 
-type IngestNewsSyncRequest []IngestNewsRequest
+type IngestNewsSyncRequest struct {
+	Source string              `json:"source" binding:"required"`
+	Items  []IngestNewsRequest `json:"items"  binding:"required,dive"`
+}
 
 type IngestTimetableEventRequest struct {
 	Source          string    `json:"source"                     binding:"required"`
@@ -50,4 +53,7 @@ type IngestTimetableEventRequest struct {
 	IsHidden        bool      `json:"is_hidden"                  binding:"required"`
 }
 
-type IngestTimetableSyncRequest []IngestTimetableEventRequest
+type IngestTimetableSyncRequest struct {
+	Source string                        `json:"source" binding:"required"`
+	Items  []IngestTimetableEventRequest `json:"items"  binding:"required,dive"`
+}

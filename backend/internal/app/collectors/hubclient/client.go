@@ -39,7 +39,7 @@ func (c *HubClient) SendSlide(payload contracts.IngestSlideRequest) error {
 		return fmt.Errorf("json marshal error: %w", err)
 	}
 
-	u := fmt.Sprintf("%s/api/collectors/ingest", strings.TrimRight(c.BaseURL, "/"))
+	u := fmt.Sprintf("%s/api/collectors/slide", strings.TrimRight(c.BaseURL, "/"))
 	slog.Debug("Sending slide to hub", "url", u, "external_id", payload.ExternalID)
 
 	req, err := http.NewRequest(http.MethodPost, u, bytes.NewBuffer(jsonData))
@@ -71,7 +71,7 @@ func (c *HubClient) SendSlide(payload contracts.IngestSlideRequest) error {
 
 func (c *HubClient) DeleteSlide(source, externalID string) error {
 	endpoint := fmt.Sprintf(
-		"%s/api/collectors/ingest/%s/%s",
+		"%s/api/collectors/slide/%s/%s",
 		strings.TrimRight(c.BaseURL, "/"),
 		url.PathEscape(source),
 		url.PathEscape(externalID),

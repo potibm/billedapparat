@@ -124,3 +124,26 @@ func mapNewsIngestToDomain(i contracts.IngestNewsRequest, conv *converter.Conver
 
 	return news, nil
 }
+
+func mapNewsIngestListToDomain(
+	source string,
+	items []contracts.IngestNewsRequest,
+	conv *converter.Converter,
+) ([]domain.News, error) {
+	var newsList []domain.News
+
+	for _, item := range items {
+		if item.Source != source {
+			return nil, fmt.Errorf("source mismatch: expected %s, got %s", source, item.Source)
+		}
+
+		newsItem, err := mapNewsIngestToDomain(item, conv)
+		if err != nil {
+			return nil, fmt.Errorf("failed to map news ingest to domain: %w", err)
+		}
+
+		newsList = append(newsList, newsItem)
+	}
+
+	return newsList, nil
+}

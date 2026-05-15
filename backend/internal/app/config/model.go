@@ -3,12 +3,18 @@ package config
 
 import "github.com/potibm/billedapparat/internal/app/domain"
 
-type OrderType string
+type (
+	OrderType         string
+	CollectorDataType string
+)
 
 const (
-	OrderRandom OrderType = "random"
-	OrderAsc    OrderType = "asc"
-	OrderDesc   OrderType = "desc"
+	OrderRandom                OrderType         = "random"
+	OrderAsc                   OrderType         = "asc"
+	OrderDesc                  OrderType         = "desc"
+	CollectorDataTypeSlide     CollectorDataType = "slide"
+	CollectorDataTypeNews      CollectorDataType = "news"
+	CollectorDataTypeTimetable CollectorDataType = "timetable"
 )
 
 type PlaylistStep struct {
@@ -70,8 +76,9 @@ type APIConfig struct {
 }
 
 type CollectorConfig struct {
-	Enabled bool   `mapstructure:"enabled"`
-	APIKey  string `mapstructure:"api_key" validate:"required_if=Enabled true"`
+	Enabled bool              `mapstructure:"enabled"`
+	APIKey  string            `mapstructure:"api_key" validate:"required_if=Enabled true"`
+	Type    CollectorDataType `mapstructure:"type"    validate:"required_if=Enabled true,oneof=slide news timetable"`
 }
 
 type SyncConfig struct {

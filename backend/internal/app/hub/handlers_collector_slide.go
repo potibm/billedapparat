@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/potibm/billedapparat/internal/app/config"
 	"github.com/potibm/billedapparat/internal/app/contracts"
 	"github.com/potibm/billedapparat/internal/app/domain"
 )
@@ -19,11 +20,7 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 		return
 	}
 
-	collectorToken := ctx.GetString(collectorSourceKey)
-	if req.Source != collectorToken {
-		slog.Warn("Ingest request with invalid source token", "source", req.Source, "collector_token", collectorToken)
-		respondWithUnauthorizedProblem(ctx, "invalid source token")
-
+	if !s.validateCollectorAccess(ctx, req.Source, config.CollectorDataTypeSlide) {
 		return
 	}
 
@@ -142,11 +139,7 @@ func (s *Server) collectorDeleteSlide(ctx *gin.Context) {
 		return
 	}
 
-	collectorToken := ctx.GetString(collectorSourceKey)
-	if source != collectorToken {
-		slog.Warn("Delete request with invalid source token", "source", source, "collector_token", collectorToken)
-		respondWithUnauthorizedProblem(ctx, "invalid source token")
-
+	if !s.validateCollectorAccess(ctx, source, config.CollectorDataTypeSlide) {
 		return
 	}
 
