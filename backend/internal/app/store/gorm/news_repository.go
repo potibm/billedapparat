@@ -112,46 +112,92 @@ func (r *newsRepository) Sync(
 			return err
 		}
 
-		existingMap := make(map[string]domain.News)
-		for _, e := range existing {
-			existingMap[e.ExternalID] = e
+		toCreate, toUpdate, toDelete := diffNews(existing, incoming)
+
+		if err := r.insertNew(tx, toCreate, result); err != nil {
+			return err
 		}
 
-		incomingMap := make(map[string]bool)
-
-		for _, inc := range incoming {
-			incomingMap[inc.ExternalID] = true
-
-			if old, exists := existingMap[inc.ExternalID]; exists {
-				inc.ID = old.ID
-				if err := tx.Save(&inc).Error; err != nil {
-					return err
-				}
-
-				result.Updated = append(result.Updated, inc)
-			} else {
-				if err := tx.Create(&inc).Error; err != nil {
-					return err
-				}
-
-				result.Created = append(result.Created, inc)
-			}
+		if err := r.updateExisting(tx, toUpdate, result); err != nil {
+			return err
 		}
 
-		for _, ext := range existing {
-			if !incomingMap[ext.ExternalID] {
-				if err := tx.Delete(&ext).Error; err != nil {
-					return err
-				}
-
-				result.Deleted = append(result.Deleted, ext)
-			}
+		if err := r.deleteObsolete(tx, toDelete, result); err != nil {
+			return err
 		}
 
 		return nil
 	})
 
 	return result, err
+}
+
+func (r *newsRepository) insertNew(tx *gorm.DB, items []domain.News, res *repository.NewsSyncResult) error {
+	if len(items) == 0 {
+		return nil // Early return, wenn nichts zu tun ist
+	}
+
+	if err := tx.Create(&items).Error; err != nil {
+		return err
+	}
+
+	res.Created = items
+
+	return nil
+}
+
+func (r *newsRepository) updateExisting(tx *gorm.DB, items []domain.News, res *repository.NewsSyncResult) error {
+	for _, item := range items {
+		if err := tx.Save(&item).Error; err != nil {
+			return err
+		}
+
+		res.Updated = append(res.Updated, item)
+	}
+
+	return nil
+}
+
+func (r *newsRepository) deleteObsolete(tx *gorm.DB, items []domain.News, res *repository.NewsSyncResult) error {
+	if len(items) == 0 {
+		return nil // Early return
+	}
+
+	if err := tx.Delete(&items).Error; err != nil {
+		return err
+	}
+
+	res.Deleted = items
+
+	return nil
+}
+
+func diffNews(existing, incoming []domain.News) (toCreate, toUpdate, toDelete []domain.News) {
+	existingMap := make(map[string]domain.News)
+	for _, e := range existing {
+		existingMap[e.ExternalID] = e
+	}
+
+	incomingMap := make(map[string]bool)
+
+	for _, inc := range incoming {
+		incomingMap[inc.ExternalID] = true
+
+		if old, exists := existingMap[inc.ExternalID]; exists {
+			inc.ID = old.ID // Übernimm die alte ID für das Update
+			toUpdate = append(toUpdate, inc)
+		} else {
+			toCreate = append(toCreate, inc)
+		}
+	}
+
+	for _, ext := range existing {
+		if !incomingMap[ext.ExternalID] {
+			toDelete = append(toDelete, ext)
+		}
+	}
+
+	return toCreate, toUpdate, toDelete
 }
 
 func (r *newsRepository) applyFilters(query *gorm.DB, filters repository.NewsListFilters) *gorm.DB {
