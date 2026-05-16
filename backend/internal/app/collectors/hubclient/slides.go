@@ -1,77 +1,13 @@
 package hubclient
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"log/slog"
-	"net/http"
-	"net/url"
-	"strings"
-
 	"github.com/potibm/billedapparat/internal/app/contracts"
 )
 
 func (c *HubClient) SendSlide(payload contracts.IngestSlideRequest) error {
-	jsonData, err := json.Marshal(payload)
-	if err != nil {
-		return fmt.Errorf("json marshal error: %w", err)
-	}
-
-	u := fmt.Sprintf("%s/api/collectors/slide", strings.TrimRight(c.BaseURL, "/"))
-	slog.Debug("Sending slide to hub", "url", u, "external_id", payload.ExternalID)
-
-	req, err := http.NewRequest(http.MethodPost, u, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.APIKey)
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("network error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusCreated {
-		c.Logger.Info("Slide successfully created", "external_id", payload.ExternalID)
-
-		return nil
-	}
-
-	if resp.StatusCode == http.StatusOK {
-		return nil
-	}
-
-	return fmt.Errorf("hub returned status %d", resp.StatusCode)
+	return c.sendPostRequest("/api/collectors/slide", "slide", payload.ExternalID, payload)
 }
 
 func (c *HubClient) DeleteSlide(source, externalID string) error {
-	endpoint := fmt.Sprintf(
-		"%s/api/collectors/slide/%s/%s",
-		strings.TrimRight(c.BaseURL, "/"),
-		url.PathEscape(source),
-		url.PathEscape(externalID),
-	)
-
-	req, err := http.NewRequest(http.MethodDelete, endpoint, http.NoBody)
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+c.APIKey)
-
-	resp, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("error deleting slide from hub: %s", resp.Status)
-	}
-
-	return nil
+	return c.sendDeleteRequest("slide", source, externalID)
 }

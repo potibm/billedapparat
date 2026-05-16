@@ -29,25 +29,9 @@ func NewCollectorCmd() *cobra.Command {
 func runCollectorCommand(cmd *cobra.Command, args []string) error {
 	source := args[0]
 
-	// 1. Get config for the specified collector source (z.B. collectors.mastodon)
-	subViper := viper.Sub("collectors." + source)
-	if subViper == nil {
-		return fmt.Errorf("configuration for collector %s was not found", source)
-	}
-
-	if !subViper.GetBool("enabled") {
-		return fmt.Errorf("collector %s is not enabled", source)
-	}
-
-	// 2. Get the Hub-URL and API-Key from the main config
-	hubURL := viper.GetString("app.collector_url")
-	if hubURL == "" {
-		return fmt.Errorf("app.collector_url must be set in the configuration")
-	}
-
-	apiKey := subViper.GetString("api_key")
-	if apiKey == "" {
-		return fmt.Errorf("api_key missing for collector %s", source)
+	subViper, hubURL, apiKey, err := loadCollectorConfig(source)
+	if err != nil {
+		return err
 	}
 
 	client := hubclient.New(hubURL, apiKey, slog.Default())
@@ -74,6 +58,29 @@ func runCollectorCommand(cmd *cobra.Command, args []string) error {
 	slog.Info("Collector terminated", "source", source)
 
 	return nil
+}
+
+func loadCollectorConfig(source string) (subViper *viper.Viper, hubURL, apiKey string, err error) {
+	subViper = viper.Sub("collectors." + source)
+	if subViper == nil {
+		return nil, "", "", fmt.Errorf("configuration for collector %s was not found", source)
+	}
+
+	if !subViper.GetBool("enabled") {
+		return nil, "", "", fmt.Errorf("collector %s is not enabled", source)
+	}
+
+	hubURL = viper.GetString("app.collector_url")
+	if hubURL == "" {
+		return nil, "", "", fmt.Errorf("app.collector_url must be set in the configuration")
+	}
+
+	apiKey = subViper.GetString("api_key")
+	if apiKey == "" {
+		return nil, "", "", fmt.Errorf("api_key missing for collector %s", source)
+	}
+
+	return subViper, hubURL, apiKey, nil
 }
 
 func buildCollector(source string, subViper *viper.Viper, client *hubclient.HubClient) (collectors.Collector, error) {
