@@ -5,7 +5,7 @@ import (
 )
 
 func (c *HubClient) SendSlide(payload contracts.IngestSlideRequest) error {
-	return c.sendPostRequest("/api/collectors/slide", "slide", payload.ExternalID, payload)
+	return c.sendPostRequest("slide", "slide", payload.ExternalID, payload)
 }
 
 func (c *HubClient) DeleteSlide(source, externalID string) error {
