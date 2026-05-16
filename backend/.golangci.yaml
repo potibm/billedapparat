@@ -17,6 +17,7 @@ linters:
     - revive
     - gosec
     - gomodguard_v2
+    - gocognit
   disable:
     - wsl
     - testpackage
@@ -58,6 +59,8 @@ linters:
         - gorm
     cyclop:
       max-complexity: 15
+    gocognit:
+      min-complexity: 15
     sloglint:
       key-naming-case: snake
   exclusions:

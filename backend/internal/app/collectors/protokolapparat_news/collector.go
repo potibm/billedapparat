@@ -65,22 +65,17 @@ func (c *Collector) Run(ctx context.Context) error {
 
 	startID := "0"
 
-	// 1. Create Consumer Group
-	err := c.rdb.XGroupCreateMkStream(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, "0").Err()
-	if err != nil && !strings.Contains(err.Error(), "BUSYGROUP") {
-		// BUSYGROUP is not a real error, it means "Group already exists"
-		return fmt.Errorf("error while creating consumer group: %w", err)
+	if err := c.ensureConsumerGroup(ctx); err != nil {
+		return err
 	}
 
 	slog.Info("Started redis collector", "stream", c.cfg.StreamName, "group", c.cfg.ConsumerGroup)
 
 	for {
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			slog.Info("Collector terminates...")
 
 			return nil
-		default:
 		}
 
 		args := &redis.XReadGroupArgs{
@@ -93,66 +88,78 @@ func (c *Collector) Run(ctx context.Context) error {
 
 		streams, err := c.rdb.XReadGroup(ctx, args).Result()
 		if err != nil {
-			if errors.Is(err, redis.Nil) {
-				continue
-			}
-
-			if errors.Is(err, context.Canceled) {
+			if c.handleReadError(err) {
 				return nil
 			}
-
-			slog.Error("Error reading from Redis Stream", "err", err)
-			time.Sleep(1 * time.Second) // Short pause on real network errors (spam protection)
 
 			continue
 		}
 
 		if len(streams) == 0 || len(streams[0].Messages) == 0 {
-			// No messages
 			if startID == "0" {
 				slog.Debug("PEL is empty, starting with new messages (>)")
 
 				startID = ">"
-
-				continue
 			}
 
 			continue
 		}
 
-		// 4. Consume messages
-		for _, stream := range streams {
-			for _, message := range stream.Messages {
-				// a) Consume the message
-				newsEvent, err := c.parseRedisMessage(message)
-				if err != nil {
-					slog.Error("Could not parse message (Poison Pill) - discarding it", "id", message.ID, "err", err)
-					c.rdb.XAck(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, message.ID)
+		c.processStreams(ctx, streams)
+	}
+}
 
-					continue
-				}
+func (c *Collector) ensureConsumerGroup(ctx context.Context) error {
+	err := c.rdb.XGroupCreateMkStream(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, "0").Err()
+	if err != nil && !strings.Contains(err.Error(), "BUSYGROUP") {
+		return fmt.Errorf("error while creating consumer group: %w", err)
+	}
 
-				slog.Debug("Received message", "id", message.ID, "action", newsEvent.Action)
-				/*
-					                for _, payload := range newsEvent.Payload {
-										slog.Debug("News Entry", "id", payload.ID, "title", payload.Title)
-									}
-				*/
+	return nil
+}
 
-				// b) Send to hub
-				err = c.pushToHub(ctx, newsEvent)
-				if err != nil {
-					slog.Error("Error sending to hub, will retry later", "id", message.ID, "err", err)
+func (c *Collector) handleReadError(err error) bool {
+	if errors.Is(err, redis.Nil) {
+		return false // timeout
+	}
 
-					continue
-				}
+	if errors.Is(err, context.Canceled) {
+		return true // Graceful Shutdown
+	}
 
-				// c) Done! ACK the message to remove it from the stream
-				c.rdb.XAck(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, message.ID)
-				slog.Debug("Message processed", "id", message.ID)
-			}
+	slog.Error("Error reading from Redis Stream", "err", err)
+	time.Sleep(1 * time.Second) // spam protection
+
+	return false
+}
+
+func (c *Collector) processStreams(ctx context.Context, streams []redis.XStream) {
+	for _, stream := range streams {
+		for _, message := range stream.Messages {
+			c.processSingleMessage(ctx, message)
 		}
 	}
+}
+
+func (c *Collector) processSingleMessage(ctx context.Context, message redis.XMessage) {
+	newsEvent, err := c.parseRedisMessage(message)
+	if err != nil {
+		slog.Error("Could not parse message (Poison Pill) - discarding it", "id", message.ID, "err", err)
+		c.rdb.XAck(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, message.ID)
+
+		return
+	}
+
+	slog.Debug("Received message", "id", message.ID, "action", newsEvent.Action)
+
+	if err := c.pushToHub(ctx, newsEvent); err != nil {
+		slog.Error("Error sending to hub, will retry later", "id", message.ID, "err", err)
+
+		return
+	}
+
+	c.rdb.XAck(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, message.ID)
+	slog.Debug("Message processed", "id", message.ID)
 }
 
 func (c *Collector) pushToHub(ctx context.Context, event *common.Event[news.Entry]) error {

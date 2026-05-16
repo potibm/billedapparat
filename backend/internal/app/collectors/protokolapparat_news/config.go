@@ -1,8 +1,7 @@
 package protokolapparat_news
 
 import (
-	"encoding/json"
-
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/potibm/billedapparat/internal/app/config"
 )
 
@@ -36,8 +35,7 @@ func DefaultConfig(generatedAPIKey string) map[string]any {
 
 	var result map[string]any
 
-	data, _ := json.Marshal(configStruct)
-	_ = json.Unmarshal(data, &result)
+	_ = mapstructure.Decode(configStruct, &result)
 
 	return result
 }
