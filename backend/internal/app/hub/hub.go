@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
+	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
@@ -63,7 +65,14 @@ func NewServer(cfg Config) (*Server, error) {
 	logger := slog.Default()
 	streamer := NewStreamer(logger.With("component", "Streamer"))
 
-	markdownConverter := converter.NewConverter()
+	markdownConverter := converter.NewConverter(
+		converter.WithPlugins(
+			base.NewBasePlugin(),
+			commonmark.NewCommonmarkPlugin(
+				commonmark.WithStrongDelimiter("__"),
+			),
+		),
+	)
 
 	return &Server{
 		port:               cfg.Port,

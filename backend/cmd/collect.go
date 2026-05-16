@@ -1,12 +1,16 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
 	"github.com/potibm/billedapparat/internal/app/collectors"
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
 	"github.com/potibm/billedapparat/internal/app/collectors/mastodon"
+	"github.com/potibm/billedapparat/internal/app/collectors/protokolapparat_news"
+	"github.com/potibm/billedapparat/internal/app/config"
+	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -53,7 +57,18 @@ func NewCollectorCmd() *cobra.Command {
 
 				c = mastodon.NewCollector(cfg, client)
 
-			// case "bluesky": ...
+			case "protokolapparat-news":
+				var cfg protokolapparat_news.Config
+				if err := subViper.Unmarshal(&cfg); err != nil {
+					return fmt.Errorf("error parsing config for Protokolapparat News Collector: %w", err)
+				}
+
+				rdb, err := initializeRedisClient(cfg.RedisURL)
+				if err != nil {
+					return fmt.Errorf("error initializing Redis client: %w", err)
+				}
+
+				c = protokolapparat_news.NewCollector(cfg, client, rdb)
 
 			default:
 				return fmt.Errorf("unknown collector source: %s", source)
@@ -62,6 +77,13 @@ func NewCollectorCmd() *cobra.Command {
 			slog.Info("Starting Collector", "source", source)
 
 			ctx := cmd.Context()
+
+			defer func() {
+				if err := c.Close(); err != nil {
+					slog.Error("Failed to close collector", "err", err)
+				}
+			}()
+
 			if err := c.Run(ctx); err != nil {
 				return fmt.Errorf("collector error: %w", err)
 			}
@@ -73,4 +95,20 @@ func NewCollectorCmd() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func initializeRedisClient(redisURL config.RedisURL) (*redis.Client, error) {
+	options, err := redis.ParseURL(string(redisURL))
+	if err != nil {
+		return nil, fmt.Errorf("invalid Redis URL: %w", err)
+	}
+
+	rdb := redis.NewClient(options)
+
+	// Test connection
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		return nil, fmt.Errorf("could not connect to Redis: %w", err)
+	}
+
+	return rdb, nil
 }

@@ -13,9 +13,9 @@ type dbSlide struct {
 	Type   string `gorm:"index"` // sponsor, social, news
 	Status string `gorm:"index"` // active, pending, hidden
 
-	Source        *string `gorm:"uniqueIndex:idx_ext"`
-	ExternalID    *string `gorm:"uniqueIndex:idx_ext"`
-	ExternalSubID *int    `gorm:"uniqueIndex:idx_ext"`
+	Source        *string `gorm:"uniqueIndex:slide_idx_ext"`
+	ExternalID    *string `gorm:"uniqueIndex:slide_idx_ext"`
+	ExternalSubID *int    `gorm:"uniqueIndex:slide_idx_ext"`
 
 	AuthorUsername          string
 	AuthorDisplayName       string

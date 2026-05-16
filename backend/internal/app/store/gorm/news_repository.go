@@ -27,6 +27,7 @@ func (r *newsRepository) Save(ctx context.Context, news *domain.News) error {
 	dbObj := fromDomainNews(news)
 
 	err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "source"}, {Name: "external_id"}},
 		UpdateAll: true,
 	}).Create(dbObj).Error
 	if err == nil {

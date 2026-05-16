@@ -15,6 +15,18 @@ func (s *Server) validateCollectorAccess(
 	tokenSource := ctx.GetString(collectorSourceKey)
 	tokenType := ctx.GetString(collectorTypeKey)
 
+	slog.Debug(
+		"Validating collector access",
+		"token_source",
+		tokenSource,
+		"token_type",
+		tokenType,
+		"payload_source",
+		payloadSource,
+		"expected_type",
+		expectedType,
+	)
+
 	if tokenType != string(expectedType) {
 		slog.Warn("Ingest request with invalid type", "expected", expectedType, "got", tokenType)
 		respondWithUnauthorizedProblem(ctx, "invalid collector type")

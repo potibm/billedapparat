@@ -30,6 +30,10 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 	}
 }
 
+func (c *Collector) Close() error {
+	return nil
+}
+
 func (c *Collector) Run(ctx context.Context) error {
 	if err := c.verifyCredentials(); err != nil {
 		return err

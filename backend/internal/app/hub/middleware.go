@@ -63,7 +63,14 @@ func CollectorAuthMiddleware(collectors map[string]config.CollectorConfig) gin.H
 
 		// Store collector name in context for later use in handlers
 		c.Set(collectorSourceKey, authenticatedSource)
-		c.Set(collectorTypeKey, collectors[authenticatedSource].Type)
+		c.Set(collectorTypeKey, string(collectors[authenticatedSource].Type))
+		slog.Info(
+			"Authenticated collector access",
+			"source",
+			authenticatedSource,
+			"type",
+			string(collectors[authenticatedSource].Type),
+		)
 
 		c.Next()
 	}

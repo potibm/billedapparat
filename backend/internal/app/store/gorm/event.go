@@ -9,8 +9,8 @@ import (
 type dbTimetableEvent struct {
 	GormModel
 
-	Source     string `gorm:"uniqueIndex:idx_ext"`
-	ExternalID string `gorm:"uniqueIndex:idx_ext"`
+	Source     string `gorm:"uniqueIndex:tte_idx_ext"`
+	ExternalID string `gorm:"uniqueIndex:tte_idx_ext"`
 
 	Title       string
 	Description string

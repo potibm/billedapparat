@@ -29,9 +29,9 @@ type IngestNewsRequest struct {
 	ExternalID  string `json:"external_id"            binding:"required"`
 	Title       string `json:"title,omitempty"        binding:"required"`
 	Body        string `json:"body"                   binding:"required"`
-	IsUrgent    bool   `json:"is_urgent"              binding:"required"`
+	IsUrgent    bool   `json:"is_urgent"`
 	ExternalURL string `json:"external_url,omitempty"`
-	IsHidden    bool   `json:"is_hidden"              binding:"required"`
+	IsHidden    bool   `json:"is_hidden"`
 }
 
 type IngestNewsSyncRequest struct {
@@ -50,7 +50,7 @@ type IngestTimetableEventRequest struct {
 	LocationAddress string    `json:"location_address,omitempty"`
 	CategoryName    string    `json:"category,omitempty"`
 	CategoryColor   string    `json:"category_color,omitempty"`
-	IsHidden        bool      `json:"is_hidden"                  binding:"required"`
+	IsHidden        bool      `json:"is_hidden"`
 }
 
 type IngestTimetableSyncRequest struct {
