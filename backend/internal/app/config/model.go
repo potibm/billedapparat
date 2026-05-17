@@ -81,17 +81,6 @@ type CollectorConfig struct {
 	Type    CollectorDataType `mapstructure:"type"    validate:"required_if=Enabled true,oneof=slide news timetable"`
 }
 
-type SyncConfig struct {
-	RedisURL RedisURL         `mapstructure:"redis_url" validate:"url"`
-	News     SyncStreamConfig `mapstructure:"news"`
-	Event    SyncStreamConfig `mapstructure:"event"`
-}
-
-type SyncStreamConfig struct {
-	RedisURL   RedisURL `mapstructure:"redis_url"   validate:"url"`
-	StreamName string   `mapstructure:"stream_name" validate:"required"`
-}
-
 type Config struct {
 	App        AppConfig                  `mapstructure:"app"`
 	Format     FormatConfig               `mapstructure:"format"`
@@ -99,7 +88,6 @@ type Config struct {
 	API        APIConfig                  `mapstructure:"api"`
 	Collectors map[string]CollectorConfig `mapstructure:"collectors" validate:"dive"`
 	Playlists  []PlaylistConfig           `mapstructure:"playlists"`
-	Sync       SyncConfig                 `mapstructure:"sync"`
 }
 
 func (p *PlaylistStep) SetDefaults() {

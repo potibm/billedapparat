@@ -31,41 +31,9 @@ func (c *Config) Validate() error {
 		return err
 	}
 
-	if err := c.Sync.Validate(); err != nil {
-		return err
-	}
-
 	for i := range c.Playlists {
 		if err := c.Playlists[i].Validate(); err != nil {
 			return fmt.Errorf("playlist[%d] '%s' is invalid: %w", i, c.Playlists[i].Name, err)
-		}
-	}
-
-	return nil
-}
-
-func (s *SyncConfig) Validate() error {
-	if s.RedisURL != "" {
-		if err := s.RedisURL.Validate(); err != nil {
-			return fmt.Errorf("sync.redis_url is not a valid URL: %w", err)
-		}
-	}
-
-	if err := s.Event.Validate(); err != nil {
-		return fmt.Errorf("sync.event is invalid: %w", err)
-	}
-
-	if err := s.News.Validate(); err != nil {
-		return fmt.Errorf("sync.news is invalid: %w", err)
-	}
-
-	return nil
-}
-
-func (s *SyncStreamConfig) Validate() error {
-	if s.RedisURL != "" {
-		if err := s.RedisURL.Validate(); err != nil {
-			return fmt.Errorf("sync.redis_url is not a valid URL: %w", err)
 		}
 	}
 
