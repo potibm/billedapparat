@@ -107,10 +107,12 @@ func (r *newsRepository) Sync(
 	result := &repository.NewsSyncResult{}
 
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var existing []domain.News
-		if err := tx.Where("source = ?", source).Find(&existing).Error; err != nil {
+		var dbExisting []dbNews
+		if err := tx.Where("source = ?", source).Find(&dbExisting).Error; err != nil {
 			return err
 		}
+
+		existing := toDomainNewsList(dbExisting)
 
 		toCreate, toUpdate, toDelete := diffNews(existing, incoming)
 
@@ -134,11 +136,21 @@ func (r *newsRepository) Sync(
 
 func (r *newsRepository) insertNew(tx *gorm.DB, items []domain.News, res *repository.NewsSyncResult) error {
 	if len(items) == 0 {
-		return nil // Early return, wenn nichts zu tun ist
+		return nil // Early return
 	}
 
-	if err := tx.Create(&items).Error; err != nil {
+	dbItems := make([]*dbNews, 0, len(items))
+	for _, item := range items {
+		itemCopy := item
+		dbItems = append(dbItems, fromDomainNews(&itemCopy))
+	}
+
+	if err := tx.Create(&dbItems).Error; err != nil {
 		return err
+	}
+
+	for i, dbItem := range dbItems {
+		items[i].ID = dbItem.ID
 	}
 
 	res.Created = items
@@ -148,10 +160,14 @@ func (r *newsRepository) insertNew(tx *gorm.DB, items []domain.News, res *reposi
 
 func (r *newsRepository) updateExisting(tx *gorm.DB, items []domain.News, res *repository.NewsSyncResult) error {
 	for _, item := range items {
-		if err := tx.Save(&item).Error; err != nil {
+		itemCopy := item
+		dbObj := fromDomainNews(&itemCopy)
+
+		if err := tx.Save(dbObj).Error; err != nil {
 			return err
 		}
 
+		item.ID = dbObj.ID
 		res.Updated = append(res.Updated, item)
 	}
 
@@ -163,7 +179,13 @@ func (r *newsRepository) deleteObsolete(tx *gorm.DB, items []domain.News, res *r
 		return nil // Early return
 	}
 
-	if err := tx.Delete(&items).Error; err != nil {
+	dbItems := make([]*dbNews, 0, len(items))
+	for _, item := range items {
+		itemCopy := item
+		dbItems = append(dbItems, fromDomainNews(&itemCopy))
+	}
+
+	if err := tx.Delete(&dbItems).Error; err != nil {
 		return err
 	}
 
@@ -184,7 +206,7 @@ func diffNews(existing, incoming []domain.News) (toCreate, toUpdate, toDelete []
 		incomingMap[inc.ExternalID] = true
 
 		if old, exists := existingMap[inc.ExternalID]; exists {
-			inc.ID = old.ID // Übernimm die alte ID für das Update
+			inc.ID = old.ID // use the existing ID for updates
 			toUpdate = append(toUpdate, inc)
 		} else {
 			toCreate = append(toCreate, inc)
