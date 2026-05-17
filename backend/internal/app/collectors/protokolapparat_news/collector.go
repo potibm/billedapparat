@@ -34,7 +34,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient, rdb *redis.Client)
 	}
 
 	if cfg.ConsumerGroup == "" {
-		cfg.ConsumerGroup = defaultConsumerGroup + "2"
+		cfg.ConsumerGroup = defaultConsumerGroup
 	}
 
 	if cfg.ConsumerName == "" {
