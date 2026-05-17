@@ -27,7 +27,7 @@ type IngestSlideRequest struct {
 type IngestNewsRequest struct {
 	Source      string `json:"source"                 binding:"required"`
 	ExternalID  string `json:"external_id"            binding:"required"`
-	Title       string `json:"title"        		  binding:"required"`
+	Title       string `json:"title"                  binding:"required"`
 	Body        string `json:"body"                   binding:"required"`
 	IsUrgent    bool   `json:"is_urgent"`
 	ExternalURL string `json:"external_url,omitempty"`
