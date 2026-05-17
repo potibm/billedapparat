@@ -100,7 +100,8 @@ func (r *eventRepository) List(
 
 func (r *eventRepository) applyFilters(query *gorm.DB, filters repository.EventListFilters) *gorm.DB {
 	if filters.Query != nil {
-		query = query.Where("title ILIKE ?", "%"+*filters.Query+"%")
+		likeQuery := fmt.Sprintf("%%%s%%", *filters.Query)
+		query = query.Where("title LIKE ?", likeQuery)
 	}
 
 	if filters.IsHidden != nil {

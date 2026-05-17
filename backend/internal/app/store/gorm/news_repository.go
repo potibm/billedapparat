@@ -224,7 +224,8 @@ func diffNews(existing, incoming []domain.News) (toCreate, toUpdate, toDelete []
 
 func (r *newsRepository) applyFilters(query *gorm.DB, filters repository.NewsListFilters) *gorm.DB {
 	if filters.Query != nil {
-		query = query.Where("title ILIKE ?", "%"+*filters.Query+"%")
+		likeQuery := fmt.Sprintf("%%%s%%", *filters.Query)
+		query = query.Where("title LIKE ?", likeQuery)
 	}
 
 	if filters.IsUrgent != nil {
