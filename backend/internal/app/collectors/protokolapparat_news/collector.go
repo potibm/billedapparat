@@ -176,7 +176,7 @@ func (c *Collector) pushToHub(ctx context.Context, event *common.Event[news.Entr
 				IsHidden:    payload.IsHidden,
 			}
 
-			if err := c.hubClient.SendNews(ingestReq); err != nil {
+			if err := c.hubClient.SendNews(ctx, ingestReq); err != nil {
 				return fmt.Errorf("error sending news to hub: %w", err)
 			}
 		}
@@ -203,13 +203,17 @@ func (c *Collector) pushToHub(ctx context.Context, event *common.Event[news.Entr
 
 		c.logger.Info("Sending news sync to hub", "count", len(items))
 
-		if err := c.hubClient.SendNewsSync(syncReq); err != nil {
+		if err := c.hubClient.SendNewsSync(ctx, syncReq); err != nil {
 			return fmt.Errorf("error sending news sync to hub: %w", err)
 		}
 
 	case common.ActionDelete:
 		for _, payload := range event.Payload {
-			if err := c.hubClient.DeleteNews(protokolapparatNewsCollector, fmt.Sprintf("%d", payload.ID)); err != nil {
+			if err := c.hubClient.DeleteNews(
+				ctx,
+				protokolapparatNewsCollector,
+				fmt.Sprintf("%d", payload.ID),
+			); err != nil {
 				return fmt.Errorf("error deleting news from hub: %w", err)
 			}
 		}

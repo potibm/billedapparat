@@ -38,7 +38,7 @@ func New(baseURL, apiKey string, logger *slog.Logger) *HubClient {
 	}
 }
 
-func (c *HubClient) sendPostRequest(entityType, entityName, externalID string, payload any) error {
+func (c *HubClient) sendPostRequest(ctx context.Context, entityType, entityName, externalID string, payload any) error {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf(errFmtMarshal, err)
@@ -48,7 +48,7 @@ func (c *HubClient) sendPostRequest(entityType, entityName, externalID string, p
 
 	c.Logger.Debug(fmt.Sprintf("Sending %s to hub", entityName), "url", u, "external_id", externalID)
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, u, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf(errFmtNetwork, err)
 	}
@@ -74,7 +74,7 @@ func (c *HubClient) sendPostRequest(entityType, entityName, externalID string, p
 	return fmt.Errorf(errFmtHubStatus, resp.StatusCode)
 }
 
-func (c *HubClient) sendDeleteRequest(entityType, source, externalID string) error {
+func (c *HubClient) sendDeleteRequest(ctx context.Context, entityType, source, externalID string) error {
 	endpoint := fmt.Sprintf(
 		"%s/%s/%s",
 		c.getURL(entityType),
@@ -92,7 +92,7 @@ func (c *HubClient) sendDeleteRequest(entityType, source, externalID string) err
 		externalID,
 	)
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodDelete, endpoint, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, endpoint, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (c *HubClient) sendDeleteRequest(entityType, source, externalID string) err
 	return fmt.Errorf(errFmtHubStatus, resp.StatusCode)
 }
 
-func (c *HubClient) sendPutRequest(entityType, entityName string, payload any) error {
+func (c *HubClient) sendPutRequest(ctx context.Context, entityType, entityName string, payload any) error {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf(errFmtMarshal, err)
@@ -124,7 +124,7 @@ func (c *HubClient) sendPutRequest(entityType, entityName string, payload any) e
 
 	c.Logger.Debug(fmt.Sprintf("Syncing %s to hub", entityName), "url", u)
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPut, u, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, u, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf(errFmtNetwork, err)
 	}

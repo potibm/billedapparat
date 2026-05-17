@@ -1,13 +1,15 @@
 package hubclient
 
 import (
+	"context"
+
 	"github.com/potibm/billedapparat/internal/app/contracts"
 )
 
-func (c *HubClient) SendSlide(payload contracts.IngestSlideRequest) error {
-	return c.sendPostRequest("slide", "slide", payload.ExternalID, payload)
+func (c *HubClient) SendSlide(ctx context.Context, payload contracts.IngestSlideRequest) error {
+	return c.sendPostRequest(ctx, "slide", "slide", payload.ExternalID, payload)
 }
 
-func (c *HubClient) DeleteSlide(source, externalID string) error {
-	return c.sendDeleteRequest("slide", source, externalID)
+func (c *HubClient) DeleteSlide(ctx context.Context, source, externalID string) error {
+	return c.sendDeleteRequest(ctx, "slide", source, externalID)
 }
