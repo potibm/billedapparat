@@ -16,6 +16,7 @@ func TestConfig_PlaylistDefaultsAndValidation(t *testing.T) {
 			DbFilename:   "test.db",
 			FrontendURL:  "http://localhost:3000",
 			CollectorURL: "http://localhost:8080",
+			Port:         8080,
 		},
 		Format: FormatConfig{
 			Date: DateFormatConfig{
