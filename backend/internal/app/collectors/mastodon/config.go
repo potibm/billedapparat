@@ -17,7 +17,7 @@ func DefaultConfig(generatedAPIKey string) map[string]any {
 	configStruct := Config{
 		CollectorConfig: config.CollectorConfig{
 			Enabled: false,
-			Type:    config.CollectorDataTypeNews,
+			Type:    config.CollectorDataTypeSlide,
 			APIKey:  generatedAPIKey,
 		},
 		Host:        "mastodon.social",
