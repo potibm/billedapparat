@@ -18,7 +18,7 @@ func NewImportCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().
-		IntVarP(&importPort, portFlagName, "p", config.DefaultPort, "Set the port number where the server to listens on")
+		IntVarP(&importPort, portFlagName, "p", config.DefaultPort, "Set the port number where the server listens on")
 	_ = viper.BindPFlag("app.port", cmd.Flags().Lookup(portFlagName))
 
 	return cmd

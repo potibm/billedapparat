@@ -23,7 +23,7 @@ const (
 )
 
 var (
-	port         int
+	servePort    int
 	otelEndpoint string
 )
 
@@ -80,7 +80,8 @@ func NewServeCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntVarP(&port, portFlagName, "p", config.DefaultPort, "Set the port number for the server to listen on")
+	cmd.Flags().
+		IntVarP(&servePort, portFlagName, "p", config.DefaultPort, "Set the port number for the server listens on")
 	_ = viper.BindPFlag("app.port", cmd.Flags().Lookup(portFlagName))
 
 	cmd.Flags().
