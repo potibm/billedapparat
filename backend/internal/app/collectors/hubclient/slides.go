@@ -7,9 +7,9 @@ import (
 )
 
 func (c *HubClient) SendSlide(ctx context.Context, payload contracts.IngestSlideRequest) error {
-	return c.sendPostRequest(ctx, "slide", "slide", payload.ExternalID, payload)
+	return c.sendPostRequest(ctx, "slides", "slide", payload.ExternalID, payload)
 }
 
 func (c *HubClient) DeleteSlide(ctx context.Context, source, externalID string) error {
-	return c.sendDeleteRequest(ctx, "slide", source, externalID)
+	return c.sendDeleteRequest(ctx, "slides", source, externalID)
 }
