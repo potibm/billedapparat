@@ -30,7 +30,7 @@ func (dbTimetableEvent) TableName() string {
 	return "timetable_events"
 }
 
-func fromDomainEvent(e *domain.TimetableEvent) *dbTimetableEvent {
+func fromDomainTimetableEvent(e *domain.TimetableEvent) *dbTimetableEvent {
 	db := &dbTimetableEvent{
 		GormModel: GormModel{ID: e.ID},
 
@@ -90,7 +90,7 @@ func (n *dbTimetableEvent) toDomain() *domain.TimetableEvent {
 	return result
 }
 
-func toDomainTimetable(events []dbTimetableEvent) domain.Timetable {
+func toDomainTimetableEventList(events []dbTimetableEvent) domain.Timetable {
 	result := make(domain.Timetable, len(events))
 	for i, e := range events {
 		result[i] = *e.toDomain()

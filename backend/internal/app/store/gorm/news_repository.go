@@ -99,6 +99,7 @@ func (r *newsRepository) List(
 	return newsList, count, nil
 }
 
+//nolint:dupl // some code is similar to timetable repository but the domain models are different enough.
 func (r *newsRepository) Sync(
 	ctx context.Context,
 	source string,

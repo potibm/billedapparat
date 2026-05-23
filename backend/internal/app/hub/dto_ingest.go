@@ -147,3 +147,53 @@ func mapNewsIngestListToDomain(
 
 	return newsList, nil
 }
+
+func mapTimetableIngestToDomain(i contracts.IngestTimetableEventRequest) domain.TimetableEvent {
+	var location *domain.Location
+	if i.LocationName != "" || i.LocationAddress != "" {
+		location = &domain.Location{
+			Name:    i.LocationName,
+			Address: i.LocationAddress,
+		}
+	}
+
+	var category *domain.Category
+	if i.CategoryName != "" || i.CategoryColor != "" {
+		category = &domain.Category{
+			Name:  i.CategoryName,
+			Color: i.CategoryColor,
+		}
+	}
+
+	timetableEvent := domain.TimetableEvent{
+		Source:      i.Source,
+		ExternalID:  i.ExternalID,
+		Title:       i.Title,
+		Description: i.Description,
+		StartTime:   i.StartTime,
+		EndTime:     i.EndTime,
+		IsHidden:    i.IsHidden,
+		Location:    location,
+		Category:    category,
+	}
+
+	return timetableEvent
+}
+
+func mapTimetableIngestListToDomain(
+	source string,
+	items []contracts.IngestTimetableEventRequest,
+) ([]domain.TimetableEvent, error) {
+	var timetableEvents []domain.TimetableEvent
+
+	for _, item := range items {
+		if item.Source != source {
+			return nil, fmt.Errorf("source mismatch: expected %s, got %s", source, item.Source)
+		}
+
+		timetableEvent := mapTimetableIngestToDomain(item)
+		timetableEvents = append(timetableEvents, timetableEvent)
+	}
+
+	return timetableEvents, nil
+}

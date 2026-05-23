@@ -9,6 +9,7 @@ import (
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
 	"github.com/potibm/billedapparat/internal/app/collectors/mastodon"
 	"github.com/potibm/billedapparat/internal/app/collectors/protokolapparat_news"
+	"github.com/potibm/billedapparat/internal/app/collectors/protokolapparat_timetable"
 	"github.com/potibm/billedapparat/internal/app/config"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cobra"
@@ -105,6 +106,19 @@ func buildCollector(source string, subViper *viper.Viper, client *hubclient.HubC
 		}
 
 		return protokolapparat_news.NewCollector(cfg, client, rdb), nil
+
+	case "protokolapparat-timetable":
+		var cfg protokolapparat_timetable.Config
+		if err := subViper.Unmarshal(&cfg); err != nil {
+			return nil, fmt.Errorf("error parsing config for Protokolapparat Timetable Collector: %w", err)
+		}
+
+		rdb, err := initializeRedisClient(cfg.RedisURL)
+		if err != nil {
+			return nil, fmt.Errorf("error initializing Redis client: %w", err)
+		}
+
+		return protokolapparat_timetable.NewCollector(cfg, client, rdb), nil
 
 	default:
 		return nil, fmt.Errorf("unknown collector source: %s", source)

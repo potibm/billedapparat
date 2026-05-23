@@ -81,6 +81,7 @@ func NewServer(cfg Config) (*Server, error) {
 		streamer,
 		logger.With("component", "GeneratorEngine"),
 		generator.NewNewsGenerator(cfg.NewsRepo, logger.With("component", "NewsGenerator")),
+		generator.NewTimetableGenerator(cfg.TimetableEventRepo, logger.With("component", "TimetableGenerator")),
 	)
 
 	return &Server{
@@ -193,6 +194,9 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	collectors.POST("/news", s.collectorUpsertNews)
 	collectors.PUT("/news", s.collectorSyncNews)
 	collectors.DELETE("/news/:source/:external_id", s.collectorDeleteNews)
+	collectors.POST("/timetable", s.collectorUpsertTimetable)
+	collectors.PUT("/timetable", s.collectorSyncTimetable)
+	collectors.DELETE("/timetable/:source/:external_id", s.collectorDeleteTimetable)
 
 	r.NoRoute(func(c *gin.Context) {
 		if !strings.HasPrefix(c.Request.RequestURI, "/api") && !strings.Contains(c.Request.RequestURI, ".") {
