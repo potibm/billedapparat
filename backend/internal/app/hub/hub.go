@@ -115,6 +115,8 @@ func (s *Server) Run(ctx context.Context) error {
 	s.StartMediaGarbageCollector(ctx)
 	s.StartCollectorTextGarbageCollector(ctx)
 
+	serverErr := make(chan error, 1)
+
 	// Start generator engine in Goroutine
 	go func() {
 		if err := s.generatorEngine.Run(ctx); err != nil {
@@ -124,20 +126,31 @@ func (s *Server) Run(ctx context.Context) error {
 
 	// Start server in Goroutine
 	go func() {
+		s.logger.Info("Starting server...", "port", s.port)
+
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			s.logger.Error("listen", "error", err)
+			serverErr <- err
 		}
 	}()
 
-	s.logger.Info("Server is up", "port", s.port)
+	select {
+	case err := <-serverErr:
+		return fmt.Errorf("http server failed to start: %w", err)
 
-	<-ctx.Done()
-	s.logger.Info("Shutting down server gracefully...")
+	case <-ctx.Done():
+		s.logger.Info("Shutting down server gracefully...")
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), defaultShutdownTimeout)
-	defer cancel()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), defaultShutdownTimeout)
+		defer cancel()
 
-	return srv.Shutdown(shutdownCtx)
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			return fmt.Errorf("server shutdown failed: %w", err)
+		}
+
+		s.logger.Info("Server stopped cleanly")
+
+		return nil
+	}
 }
 
 func (s *Server) setupRouter() (*gin.Engine, error) {

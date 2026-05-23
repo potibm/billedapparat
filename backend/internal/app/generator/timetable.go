@@ -108,6 +108,7 @@ func (g *timetableGenerator) timetableToSlide(
 		Content: domain.Content{
 			Title: title,
 			Body:  body,
+			Type:  domain.TypeTimetable,
 		},
 	}
 
