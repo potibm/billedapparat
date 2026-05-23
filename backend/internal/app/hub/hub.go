@@ -18,6 +18,7 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/potibm/billedapparat/internal/app/config"
+	"github.com/potibm/billedapparat/internal/app/generator"
 	"github.com/potibm/billedapparat/internal/app/repository"
 	sloggin "github.com/samber/slog-gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -55,6 +56,7 @@ type Server struct {
 	mediaDownloader    *MediaDownloader
 	logger             *slog.Logger
 	markdownConverter  *converter.Converter
+	generatorEngine    *generator.Engine
 }
 
 type MediaProcessor interface {
@@ -74,6 +76,13 @@ func NewServer(cfg Config) (*Server, error) {
 		),
 	)
 
+	engine := generator.NewEngine(
+		cfg.SlideRepo,
+		streamer,
+		logger.With("component", "GeneratorEngine"),
+		generator.NewNewsGenerator(cfg.NewsRepo, logger.With("component", "NewsGenerator")),
+	)
+
 	return &Server{
 		port:               cfg.Port,
 		staticFiles:        cfg.StaticFiles,
@@ -86,6 +95,7 @@ func NewServer(cfg Config) (*Server, error) {
 		mediaDownloader:    NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader")),
 		logger:             logger.With("component", "HubServer"),
 		markdownConverter:  markdownConverter,
+		generatorEngine:    engine,
 	}, nil
 }
 
@@ -104,17 +114,24 @@ func (s *Server) Run(ctx context.Context) error {
 	s.StartMediaGarbageCollector(ctx)
 	s.StartCollectorTextGarbageCollector(ctx)
 
-	// Start server in Goroutine
+	// Start generator engine in Goroutine
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("listen", "error", err)
+		if err := s.generatorEngine.Run(ctx); err != nil {
+			s.logger.Error("Generator engine stopped with error", "error", err)
 		}
 	}()
 
-	slog.Info("Server is up", "port", s.port)
+	// Start server in Goroutine
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			s.logger.Error("listen", "error", err)
+		}
+	}()
+
+	s.logger.Info("Server is up", "port", s.port)
 
 	<-ctx.Done()
-	slog.Info("Shutting down server gracefully...")
+	s.logger.Info("Shutting down server gracefully...")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), defaultShutdownTimeout)
 	defer cancel()

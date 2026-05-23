@@ -3,6 +3,7 @@ package gorm
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -25,7 +26,7 @@ func NewSlideRepository(db *gorm.DB) repository.SlideRepository {
 }
 
 func (r *slideRepository) Save(ctx context.Context, slide *domain.Slide) error {
-	dbObj := fromDomain(slide)
+	dbObj := fromDomainSlide(slide)
 
 	err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		UpdateAll: true,
@@ -180,6 +181,52 @@ func (r *slideRepository) FindExpiredSlidesByType(
 	return slides, nil
 }
 
+func (r *slideRepository) Sync(
+	ctx context.Context,
+	source string,
+	incoming []domain.Slide,
+) (*repository.SlideSyncResult, error) {
+	result := &repository.SlideSyncResult{}
+
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var dbExisting []dbSlide
+		if err := tx.Where("source = ?", source).Find(&dbExisting).Error; err != nil {
+			return err
+		}
+
+		slog.Info("Existing slides fetched from DB", "count", len(dbExisting), "source", source)
+
+		existing := toDomainSlideList(dbExisting)
+
+		toCreate, toUpdate, toDelete := diffSlides(existing, incoming)
+		slog.Info(
+			"Sync diff calculated",
+			"to_create",
+			len(toCreate),
+			"to_update",
+			len(toUpdate),
+			"to_delete",
+			len(toDelete),
+		)
+
+		if err := r.insertNew(tx, toCreate, result); err != nil {
+			return err
+		}
+
+		if err := r.updateExisting(tx, toUpdate, result); err != nil {
+			return err
+		}
+
+		if err := r.deleteObsolete(tx, toDelete, result); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return result, err
+}
+
 func (r *slideRepository) getOrderClause(sortField, order string) string {
 	var sortCols []string
 
@@ -240,4 +287,91 @@ func (r *slideRepository) applyFilters(query *gorm.DB, filters repository.SlideL
 	}
 
 	return query
+}
+
+func diffSlides(existing, incoming []domain.Slide) (toCreate, toUpdate, toDelete []domain.Slide) {
+	existingMap := make(map[string]domain.Slide)
+	for _, e := range existing {
+		existingMap[e.SyncKey()] = e
+	}
+
+	incomingMap := make(map[string]bool)
+
+	for _, inc := range incoming {
+		key := inc.SyncKey()
+		incomingMap[key] = true
+
+		if old, exists := existingMap[key]; exists {
+			if old.HasChanged(inc) {
+				inc.ID = old.ID
+				toUpdate = append(toUpdate, inc)
+			}
+		} else {
+			toCreate = append(toCreate, inc)
+		}
+	}
+
+	for _, ext := range existing {
+		if !incomingMap[ext.SyncKey()] {
+			toDelete = append(toDelete, ext)
+		}
+	}
+
+	return toCreate, toUpdate, toDelete
+}
+
+func (r *slideRepository) insertNew(tx *gorm.DB, items []domain.Slide, res *repository.SlideSyncResult) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	dbItems := fromDomainSlideList(items)
+
+	if err := tx.Create(&dbItems).Error; err != nil {
+		return err
+	}
+
+	for i, dbItem := range dbItems {
+		items[i].ID = dbItem.ID
+	}
+
+	res.Created = items
+
+	return nil
+}
+
+func (r *slideRepository) updateExisting(tx *gorm.DB, items []domain.Slide, res *repository.SlideSyncResult) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	for _, item := range items {
+		itemCopy := item
+		dbObj := fromDomainSlide(&itemCopy)
+
+		if err := tx.Save(dbObj).Error; err != nil {
+			return err
+		}
+
+		item.ID = dbObj.ID
+		res.Updated = append(res.Updated, item)
+	}
+
+	return nil
+}
+
+func (r *slideRepository) deleteObsolete(tx *gorm.DB, items []domain.Slide, res *repository.SlideSyncResult) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	dbItems := fromDomainSlideList(items)
+
+	if err := tx.Delete(&dbItems).Error; err != nil {
+		return err
+	}
+
+	res.Deleted = items
+
+	return nil
 }

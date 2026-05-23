@@ -51,7 +51,7 @@ func TestSlideMapping(t *testing.T) {
 		}
 
 		// To DB
-		dbModel := fromDomain(original)
+		dbModel := fromDomainSlide(original)
 		assert.Equal(t, int64(100), dbModel.ID)
 		assert.Equal(t, extID, *dbModel.ExternalID)
 		assert.Equal(t, source, *dbModel.Source)
@@ -83,7 +83,7 @@ func TestSlideMapping(t *testing.T) {
 			},
 		}
 
-		dbModel := fromDomain(minDomain)
+		dbModel := fromDomainSlide(minDomain)
 		assert.Nil(t, dbModel.ExternalID)
 		assert.Nil(t, dbModel.Source)
 		assert.Empty(t, dbModel.AuthorUsername)

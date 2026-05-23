@@ -45,7 +45,7 @@ func (dbSlide) TableName() string {
 	return "slides"
 }
 
-func fromDomain(s *domain.Slide) *dbSlide {
+func fromDomainSlide(s *domain.Slide) *dbSlide {
 	db := &dbSlide{
 		GormModel: GormModel{ID: s.ID},
 
@@ -152,4 +152,14 @@ func toDomainSlideList(dbSlides []dbSlide) []domain.Slide {
 	}
 
 	return slides
+}
+
+func fromDomainSlideList(items []domain.Slide) []*dbSlide {
+	dbItems := make([]*dbSlide, 0, len(items))
+	for _, item := range items {
+		itemCopy := item
+		dbItems = append(dbItems, fromDomainSlide(&itemCopy))
+	}
+
+	return dbItems
 }

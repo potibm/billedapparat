@@ -28,6 +28,12 @@ type SlideListParams struct {
 	Type domain.SlideType
 }
 
+type SlideSyncResult struct {
+	Created []domain.Slide
+	Updated []domain.Slide
+	Deleted []domain.Slide
+}
+
 type SlideRepository interface {
 	Save(ctx context.Context, slide *domain.Slide) error
 	GetActive(ctx context.Context) ([]domain.Slide, error)
@@ -39,4 +45,5 @@ type SlideRepository interface {
 	FindLocalURLByOriginalURL(ctx context.Context, originalURL string) (string, bool)
 	MarkAsDeleted(ctx context.Context, source, externalID string) error
 	FindExpiredSlidesByType(ctx context.Context, slideType string, cutoff time.Time) ([]domain.Slide, error)
+	Sync(ctx context.Context, source string, newSlides []domain.Slide) (*SlideSyncResult, error)
 }

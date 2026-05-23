@@ -69,7 +69,7 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 		if err := s.slideRepo.Save(ctx, &slide); err == nil {
 			createdSlideIDs = append(createdSlideIDs, slide.ID)
 
-			s.streamer.Broadcast(EventCreate, slide)
+			s.streamer.Broadcast(domain.EventCreate, slide)
 		}
 	}
 

@@ -9,6 +9,10 @@ import (
 	"github.com/potibm/billedapparat/internal/app/contracts"
 )
 
+const (
+	newsGeneratorEngine = "news-generator"
+)
+
 func (s *Server) collectorUpsertNews(ctx *gin.Context) {
 	var req contracts.IngestNewsRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -37,7 +41,7 @@ func (s *Server) collectorUpsertNews(ctx *gin.Context) {
 		return
 	}
 
-	// @TODO trigger SlideService asynchronously to update slides related to the news items
+	s.generatorEngine.Trigger(newsGeneratorEngine)
 
 	slog.Info("News item upserted successfully", "id", news.ID, "source", news.Source)
 	ctx.JSON(http.StatusOK, gin.H{"id": news.ID})
@@ -72,7 +76,9 @@ func (s *Server) collectorSyncNews(ctx *gin.Context) {
 		return
 	}
 
-	// @TODO trigger SlideService asynchronously to update slides related to the news items
+	if len(syncResult.Created) > 0 || len(syncResult.Updated) > 0 || len(syncResult.Deleted) > 0 {
+		s.generatorEngine.Trigger(newsGeneratorEngine)
+	}
 
 	slog.Info(
 		"Finished news sync",
@@ -114,7 +120,7 @@ func (s *Server) collectorDeleteNews(ctx *gin.Context) {
 		return
 	}
 
-	// @TODO trigger SlideService asynchronously to update slides related to the news items
+	s.generatorEngine.Trigger(newsGeneratorEngine)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "deleted",

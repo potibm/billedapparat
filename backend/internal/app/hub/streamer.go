@@ -3,14 +3,8 @@ package hub
 import (
 	"log/slog"
 	"sync"
-)
 
-type StreamEvent string
-
-const (
-	EventCreate StreamEvent = "CREATE"
-	EventUpdate StreamEvent = "UPDATE"
-	EventDelete StreamEvent = "DELETE"
+	"github.com/potibm/billedapparat/internal/app/domain"
 )
 
 type SSEMessage struct {
@@ -31,7 +25,7 @@ func NewStreamer(logger *slog.Logger) *Streamer {
 	}
 }
 
-func (s *Streamer) Broadcast(event StreamEvent, payload interface{}) {
+func (s *Streamer) Broadcast(event domain.StreamEvent, payload interface{}) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

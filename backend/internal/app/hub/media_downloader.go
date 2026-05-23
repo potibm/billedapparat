@@ -87,7 +87,7 @@ func (m *MediaDownloader) ProcessSlideMedia(slideID int64) {
 	if err := m.slideRepo.Save(ctx, slide); err != nil {
 		m.logger.Error("Unable to save", "slide_id", slideID, "error", err)
 	} else {
-		m.streamer.Broadcast(EventUpdate, slide)
+		m.streamer.Broadcast(domain.EventUpdate, slide)
 		m.logger.Info("Successfully processed slide", "slide_id", slideID, "has_errors", hasErrors)
 	}
 }
