@@ -155,11 +155,7 @@ func (s *Server) adminUpdateSlide(c *gin.Context) {
 		return
 	}
 
-	if slide.Content.Type.IsReadonly() {
-		respondWithBadRequestProblem(c, "Cannot change type of news or timetable slide")
-
-		return
-	}
+	_, _ = s.ensureSlideIsNotReadonly(c, id)
 
 	slide.ID = id
 
@@ -174,6 +170,23 @@ func (s *Server) adminUpdateSlide(c *gin.Context) {
 	c.JSON(http.StatusOK, slide)
 }
 
+func (s *Server) ensureSlideIsNotReadonly(c *gin.Context, id int64) (*domain.Slide, bool) {
+	slide, err := s.slideRepo.GetByID(c.Request.Context(), id)
+	if err != nil {
+		respondWithNotFoundProblem(c, "Slide with ID "+strconv.FormatInt(id, 10)+" not found")
+
+		return nil, false
+	}
+
+	if slide.Content.Type.IsReadonly() {
+		respondWithBadRequestProblem(c, "Cannot modify news or timetable slide")
+
+		return nil, false
+	}
+
+	return slide, true
+}
+
 func (s *Server) adminDeleteSlide(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
@@ -182,18 +195,7 @@ func (s *Server) adminDeleteSlide(c *gin.Context) {
 		return
 	}
 
-	record, err := s.slideRepo.GetByID(c.Request.Context(), id)
-	if err != nil {
-		respondWithNotFoundProblem(c, "Slide with ID "+strconv.FormatInt(id, 10)+" not found")
-
-		return
-	}
-
-	if record.Content.Type.IsReadonly() {
-		respondWithBadRequestProblem(c, "Cannot delete news or timetable slide")
-
-		return
-	}
+	_, _ = s.ensureSlideIsNotReadonly(c, id)
 
 	if err := s.slideRepo.Delete(c.Request.Context(), id); err != nil {
 		respondWithInternalServerProblem(c, "Failed to delete slide: "+err.Error())

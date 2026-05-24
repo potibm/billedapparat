@@ -4,7 +4,7 @@
 set -e 
 
 if [[ "$1" == "--clean" ]]; then
-  echo "🧹 Peforming cleanup..."
+  echo "🧹 Performing cleanup..."
   
   if [ -e .overmind.sock ]; then
     echo "Deleting .overmind.sock..."
