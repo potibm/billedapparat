@@ -17,7 +17,7 @@ export const MarkdownField = ({
   const theme = useTheme();
   const colorMode = theme.palette.mode;
 
-  if (!record || !source) return null;
+  if (record == null || source == null) return null;
 
   const value = source
     .split(".")
@@ -39,7 +39,7 @@ export const MarkdownField = ({
     >
       <Box mb={1}>
         <Typography variant="caption" color="text.secondary">
-          {label !== undefined ? label : source}
+          {label ?? source}
         </Typography>
       </Box>
 
@@ -92,7 +92,7 @@ export const MarkdownField = ({
 };
 
 MarkdownField.defaultProps = {
-  addLabel: true,
+  showRaw: false,
 };
 
 export default MarkdownField;

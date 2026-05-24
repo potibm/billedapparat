@@ -25,16 +25,20 @@ import (
 )
 
 const (
-	defaultShutdownTimeout   = 5 * time.Second
-	defaultReadHeaderTimeout = 3 * time.Second
-	pathSlides               = "/slides"
-	pathSlidesWithID         = "/slides/:id"
-	pathFilterRules          = "/filter-rules"
-	pathFilterRulesWithID    = "/filter-rules/:id"
-	pathNews                 = "/news"
-	pathNewsWithID           = "/news/:id"
-	timeTablePath            = "/timetable"
-	timeTablePathWithID      = "/timetable/:id"
+	defaultShutdownTimeout    = 5 * time.Second
+	defaultReadHeaderTimeout  = 3 * time.Second
+	pathSlides                = "/slides"
+	pathSlidesWithID          = "/slides/:id"
+	pathFilterRules           = "/filter-rules"
+	pathFilterRulesWithID     = "/filter-rules/:id"
+	pathNews                  = "/news"
+	pathNewsWithID            = "/news/:id"
+	timeTablePath             = "/timetable"
+	timeTablePathWithID       = "/timetable/:id"
+	collectorSlidesPath       = "/slides"
+	collectorNewsPath         = "/news"
+	collectorTimeTablePath    = "/timetable"
+	collectorPathWithIDSuffix = ":source/:external_id"
 )
 
 type Config struct {
@@ -212,14 +216,14 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 
 	collectors := r.Group("/api/collectors")
 	collectors.Use(CollectorAuthMiddleware(s.cfg.Collectors))
-	collectors.POST("/slides", s.collectorIngestSlide)
-	collectors.DELETE("/slides/:source/:external_id", s.collectorDeleteSlide)
-	collectors.POST("/news", s.collectorUpsertNews)
-	collectors.PUT("/news", s.collectorSyncNews)
-	collectors.DELETE("/news/:source/:external_id", s.collectorDeleteNews)
-	collectors.POST("/timetable", s.collectorUpsertTimetable)
-	collectors.PUT("/timetable", s.collectorSyncTimetable)
-	collectors.DELETE("/timetable/:source/:external_id", s.collectorDeleteTimetable)
+	collectors.POST(collectorSlidesPath, s.collectorIngestSlide)
+	collectors.DELETE(collectorSlidesPath+collectorPathWithIDSuffix, s.collectorDeleteSlide)
+	collectors.POST(collectorNewsPath, s.collectorUpsertNews)
+	collectors.PUT(collectorNewsPath, s.collectorSyncNews)
+	collectors.DELETE(collectorNewsPath+collectorPathWithIDSuffix, s.collectorDeleteNews)
+	collectors.POST(collectorTimeTablePath, s.collectorUpsertTimetable)
+	collectors.PUT(collectorTimeTablePath, s.collectorSyncTimetable)
+	collectors.DELETE(collectorTimeTablePath+collectorPathWithIDSuffix, s.collectorDeleteTimetable)
 
 	r.NoRoute(func(c *gin.Context) {
 		if !strings.HasPrefix(c.Request.RequestURI, "/api") && !strings.Contains(c.Request.RequestURI, ".") {
