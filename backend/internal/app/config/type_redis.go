@@ -51,7 +51,10 @@ func (ru RedisURL) RedisOptions() *redis.Options {
 		db = 0
 	}
 
-	password, _ := u.User.Password()
+	var password string
+	if u.User != nil {
+		password, _ = u.User.Password()
+	}
 
 	return &redis.Options{
 		Addr:     u.Host,

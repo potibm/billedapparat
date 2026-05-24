@@ -264,6 +264,10 @@ func (r *eventRepository) applyFilters(query *gorm.DB, filters repository.Timeta
 		query = query.Where("is_hidden = ?", *filters.IsHidden)
 	}
 
+	if filters.Source != nil {
+		query = query.Where("source = ?", *filters.Source)
+	}
+
 	return query
 }
 
