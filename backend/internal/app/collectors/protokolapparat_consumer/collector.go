@@ -52,54 +52,81 @@ func (c *Consumer[T]) Close() error {
 }
 
 func (c *Consumer[T]) Run(ctx context.Context) error {
-	const (
-		batchSize   = 50
-		pollTimeout = 2 * time.Second
-	)
-
-	startID := "0"
-
 	if err := c.ensureConsumerGroup(ctx); err != nil {
 		return err
 	}
 
 	c.logger.Info("Started redis collector", "stream", c.cfg.StreamName, "group", c.cfg.ConsumerGroup)
 
-	for {
-		if ctx.Err() != nil {
-			c.logger.Info("Collector terminates...")
+	startID := "0" // Always start by clearing the Pending Entries List (PEL)
 
-			return nil
+	// Keep looping as long as the context is active
+	for ctx.Err() == nil {
+		var terminate bool
+
+		startID, terminate = c.processNextBatch(ctx, startID)
+		if terminate {
+			break
+		}
+	}
+
+	c.logger.Info("Collector terminates...")
+
+	return nil
+}
+
+func (c *Consumer[T]) processNextBatch(ctx context.Context, startID string) (nextID string, terminate bool) {
+	const (
+		batchSize   = 50
+		pollTimeout = 2 * time.Second
+	)
+
+	args := &redis.XReadGroupArgs{
+		Group:    c.cfg.ConsumerGroup,
+		Consumer: c.cfg.ConsumerName,
+		Streams:  []string{c.cfg.StreamName, startID},
+		Count:    batchSize,
+		Block:    pollTimeout,
+	}
+
+	streams, err := c.rdb.XReadGroup(ctx, args).Result()
+	if err != nil {
+		return startID, c.handleReadError(err)
+	}
+
+	if len(streams) == 0 || len(streams[0].Messages) == 0 {
+		if startID == "0" {
+			c.logger.Debug("PEL is empty, starting with new messages (>)")
+
+			return ">", false
 		}
 
-		args := &redis.XReadGroupArgs{
-			Group:    c.cfg.ConsumerGroup,
-			Consumer: c.cfg.ConsumerName,
-			Streams:  []string{c.cfg.StreamName, startID},
-			Count:    batchSize,
-			Block:    pollTimeout,
-		}
+		return startID, false
+	}
 
-		streams, err := c.rdb.XReadGroup(ctx, args).Result()
-		if err != nil {
-			if c.handleReadError(err) {
-				return nil
-			}
+	hadFailures := c.processStreams(ctx, streams)
 
-			continue
-		}
+	return c.handleBatchResult(ctx, startID, hadFailures)
+}
 
-		if len(streams) == 0 || len(streams[0].Messages) == 0 {
-			if startID == "0" {
-				c.logger.Debug("PEL is empty, starting with new messages (>)")
+func (c *Consumer[T]) handleBatchResult(
+	ctx context.Context,
+	startID string,
+	hadFailures bool,
+) (nextID string, terminate bool) {
+	// If everything succeeded, or if we are already reading the PEL, no backoff is needed
+	if !hadFailures || startID == "0" {
+		return startID, false
+	}
 
-				startID = ">"
-			}
+	c.logger.Info("Message processing failed, falling back to PEL (0) for retries")
 
-			continue
-		}
-
-		c.processStreams(ctx, streams)
+	// Context-aware backoff to prevent a tight loop on persistently failing messages
+	select {
+	case <-ctx.Done():
+		return "0", true
+	case <-time.After(1 * time.Second):
+		return "0", false
 	}
 }
 
@@ -127,21 +154,35 @@ func (c *Consumer[T]) handleReadError(err error) bool {
 	return false
 }
 
-func (c *Consumer[T]) processStreams(ctx context.Context, streams []redis.XStream) {
+// processStreams now returns true if ANY message in the batch failed to process or ACK.
+func (c *Consumer[T]) processStreams(ctx context.Context, streams []redis.XStream) bool {
+	hadFailures := false
+
 	for _, stream := range streams {
 		for _, message := range stream.Messages {
-			c.processSingleMessage(ctx, message)
+			success := c.processSingleMessage(ctx, message)
+			if !success {
+				hadFailures = true
+			}
 		}
 	}
+
+	return hadFailures
 }
 
-func (c *Consumer[T]) processSingleMessage(ctx context.Context, message redis.XMessage) {
+// processSingleMessage now returns a boolean indicating success (true) or failure (false).
+func (c *Consumer[T]) processSingleMessage(ctx context.Context, message redis.XMessage) bool {
 	event, err := c.parseRedisMessage(message)
 	if err != nil {
 		c.logger.Error("Could not parse message (Poison Pill) - discarding it", "id", message.ID, "err", err)
-		c.rdb.XAck(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, message.ID)
 
-		return
+		// Added .Err() check for XAck
+		if ackErr := c.rdb.XAck(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, message.ID).Err(); ackErr != nil {
+			c.logger.Error("Failed to ACK poison pill message", "id", message.ID, "err", ackErr)
+		}
+
+		// Return true because a poison pill is intentionally discarded, so we don't want to retry it.
+		return true
 	}
 
 	c.logger.Debug("Received message", "id", message.ID, "action", event.Action)
@@ -149,11 +190,19 @@ func (c *Consumer[T]) processSingleMessage(ctx context.Context, message redis.XM
 	if err := c.pushHandler(ctx, event); err != nil {
 		c.logger.Error("Error processing message, will retry later", "id", message.ID, "err", err)
 
-		return
+		return false // Processing failed, trigger PEL retry
 	}
 
-	c.rdb.XAck(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, message.ID)
+	// Added .Err() check for XAck
+	if ackErr := c.rdb.XAck(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, message.ID).Err(); ackErr != nil {
+		c.logger.Error("Failed to ACK processed message", "id", message.ID, "err", ackErr)
+		// Assuming at-least-once delivery semantics (idempotency), an ACK failure should trigger a retry.
+		return false
+	}
+
 	c.logger.Debug("Message processed", "id", message.ID)
+
+	return true
 }
 
 func (c *Consumer[T]) parseRedisMessage(message redis.XMessage) (*common.Event[T], error) {

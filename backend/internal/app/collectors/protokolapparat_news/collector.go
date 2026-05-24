@@ -22,7 +22,7 @@ const (
 type Collector struct {
 	hubClient *hubclient.HubClient
 	logger    *slog.Logger
-	consumer  *redisconsumer.Consumer[news.Entry] // Der generische Consumer
+	consumer  *redisconsumer.Consumer[news.Entry] 
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient, rdb *redis.Client) *Collector {
