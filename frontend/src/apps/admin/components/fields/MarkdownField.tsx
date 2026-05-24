@@ -33,7 +33,7 @@ export const MarkdownField = ({
 
   return (
     <Box
-      margin="normal"
+      sx={{ my: 2 }}
       className={`ra-field-markdown ${className || ""}`}
       {...props}
     >
