@@ -19,7 +19,7 @@ const MenuGroup = ({ title }: { title: string }) => (
 );
 
 const MenuExternalLink = ({ href, label }: { href: string; label: string }) => (
-  <MenuItem component="a" href={href} target="_blank" sx={{ pl: 2 }}>
+  <MenuItem component="a" href={href} target="_blank" rel="noopener noreferrer" sx={{ pl: 2 }}>
     <ListItemIcon>
       <LaunchIcon fontSize="small" />
     </ListItemIcon>
