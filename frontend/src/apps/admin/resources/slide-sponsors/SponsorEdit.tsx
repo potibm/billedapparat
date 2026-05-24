@@ -1,7 +1,7 @@
 import { ImageEditPreviewField } from "@admin/components/fields/ImageEditPreviewField";
-import { ImageUploadInput } from "@admin/components/fields/ImageUploadInput";
-import { PriorityInput } from "@admin/components/fields/PriorityInput";
-import { StatusSelectInput } from "@admin/components/fields/StatusSelectInput";
+import { ImageUploadInput } from "@admin/components/inputs/ImageUploadInput";
+import { PriorityInput } from "@admin/components/inputs/PriorityInput";
+import { StatusSelectInput } from "@admin/components/inputs/StatusSelectInput";
 import {
   Edit,
   SimpleForm,

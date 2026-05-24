@@ -1,9 +1,10 @@
 import { Admin, Resource } from "react-admin";
-import sponsors from "./resources/sponsors";
-import news from "./resources/news";
-import socialMedia from "./resources/social-media";
-import socialText from "./resources/social-text";
+import sponsors from "./resources/slide-sponsors";
+import slideNews from "./resources/slide-news";
+import socialMedia from "./resources/slide-social-media";
+import socialText from "./resources/slide-social-text";
 import filterRules from "./resources/filter-rules";
+import slideTimetable from "./resources/slide-timetable";
 import { MyTheme, MyDarkTheme } from "./theme/MyTheme";
 import { MyLayout } from "./theme/MyLayout";
 import { dataProvider } from "./providers/dataProvider";
@@ -17,10 +18,11 @@ export const AdminApp = () => (
     layout={MyLayout}
     title="Billedapparat Admin"
   >
-    <Resource name="sponsors" {...sponsors} />
-    <Resource name="news" {...news} />
-    <Resource name="social-media" {...socialMedia} />
-    <Resource name="social-text" {...socialText} />
+    <Resource name="sponsor-slides" {...sponsors} />
+    <Resource name="social-medias-slides" {...socialMedia} />
+    <Resource name="social-text-slides" {...socialText} />
+    <Resource name="news-slides" {...slideNews} />
+    <Resource name="timetable-slides" {...slideTimetable} />
     <Resource name="filter-rules" {...filterRules} />
   </Admin>
 );
