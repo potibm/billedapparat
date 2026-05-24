@@ -2,11 +2,8 @@ package protokolapparat_timetable
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
@@ -14,6 +11,8 @@ import (
 	"github.com/potibm/protokolapparat/pkg/common"
 	"github.com/potibm/protokolapparat/pkg/schedule"
 	"github.com/redis/go-redis/v9"
+
+	redisconsumer "github.com/potibm/billedapparat/internal/app/collectors/protokolapparat_consumer"
 )
 
 const (
@@ -22,10 +21,9 @@ const (
 )
 
 type Collector struct {
-	cfg       Config
-	rdb       *redis.Client
 	hubClient *hubclient.HubClient
 	logger    *slog.Logger
+	consumer  *redisconsumer.Consumer[schedule.Entry]
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient, rdb *redis.Client) *Collector {
@@ -41,125 +39,34 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient, rdb *redis.Client)
 		cfg.ConsumerName = defaultConsumerName
 	}
 
-	return &Collector{
-		cfg:       cfg,
+	logger := slog.Default().With("component", "collector_protokolapparat_timetable")
+
+	c := &Collector{
 		hubClient: hubClient,
-		rdb:       rdb,
-		logger:    slog.Default().With("component", "collector_protokolapparat_timetable"),
+		logger:    logger,
 	}
+
+	c.consumer = redisconsumer.New(
+		redisconsumer.Config{
+			StreamName:    cfg.StreamName,
+			ConsumerGroup: cfg.ConsumerGroup,
+			ConsumerName:  cfg.ConsumerName,
+		},
+		rdb,
+		logger,
+		protokolapparatVersion,
+		c.pushToHub,
+	)
+
+	return c
 }
 
 func (c *Collector) Close() error {
-	if c.rdb != nil {
-		return c.rdb.Close()
-	}
-
-	return nil
+	return c.consumer.Close()
 }
 
 func (c *Collector) Run(ctx context.Context) error {
-	const (
-		batchSize   = 50
-		pollTimeout = 2 * time.Second
-	)
-
-	startID := "0"
-
-	if err := c.ensureConsumerGroup(ctx); err != nil {
-		return err
-	}
-
-	slog.Info("Started redis collector", "stream", c.cfg.StreamName, "group", c.cfg.ConsumerGroup)
-
-	for {
-		if ctx.Err() != nil {
-			slog.Info("Collector terminates...")
-
-			return nil
-		}
-
-		args := &redis.XReadGroupArgs{
-			Group:    c.cfg.ConsumerGroup,
-			Consumer: c.cfg.ConsumerName,
-			Streams:  []string{c.cfg.StreamName, startID},
-			Count:    batchSize,
-			Block:    pollTimeout,
-		}
-
-		streams, err := c.rdb.XReadGroup(ctx, args).Result()
-		if err != nil {
-			if c.handleReadError(err) {
-				return nil
-			}
-
-			continue
-		}
-
-		if len(streams) == 0 || len(streams[0].Messages) == 0 {
-			if startID == "0" {
-				slog.Debug("PEL is empty, starting with new messages (>)")
-
-				startID = ">"
-			}
-
-			continue
-		}
-
-		c.processStreams(ctx, streams)
-	}
-}
-
-func (c *Collector) ensureConsumerGroup(ctx context.Context) error {
-	err := c.rdb.XGroupCreateMkStream(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, "0").Err()
-	if err != nil && !strings.Contains(err.Error(), "BUSYGROUP") {
-		return fmt.Errorf("error while creating consumer group: %w", err)
-	}
-
-	return nil
-}
-
-func (c *Collector) handleReadError(err error) bool {
-	if errors.Is(err, redis.Nil) {
-		return false // timeout
-	}
-
-	if errors.Is(err, context.Canceled) {
-		return true // Graceful Shutdown
-	}
-
-	slog.Error("Error reading from Redis Stream", "err", err)
-	time.Sleep(1 * time.Second) // spam protection
-
-	return false
-}
-
-func (c *Collector) processStreams(ctx context.Context, streams []redis.XStream) {
-	for _, stream := range streams {
-		for _, message := range stream.Messages {
-			c.processSingleMessage(ctx, message)
-		}
-	}
-}
-
-func (c *Collector) processSingleMessage(ctx context.Context, message redis.XMessage) {
-	timetableScheduleEvent, err := c.parseRedisMessage(message)
-	if err != nil {
-		slog.Error("Could not parse message (Poison Pill) - discarding it", "id", message.ID, "err", err)
-		c.rdb.XAck(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, message.ID)
-
-		return
-	}
-
-	slog.Debug("Received message", "id", message.ID, "action", timetableScheduleEvent.Action)
-
-	if err := c.pushToHub(ctx, timetableScheduleEvent); err != nil {
-		slog.Error("Error sending to hub, will retry later", "id", message.ID, "err", err)
-
-		return
-	}
-
-	c.rdb.XAck(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, message.ID)
-	slog.Debug("Message processed", "id", message.ID)
+	return c.consumer.Run(ctx)
 }
 
 func (c *Collector) pushToHub(ctx context.Context, event *common.Event[schedule.Entry]) error {
@@ -270,23 +177,4 @@ func mapPayload(payload schedule.Entry) (contracts.IngestTimetableEventRequest, 
 		CategoryColor:   CategoryColor,
 		IsHidden:        payload.IsHidden,
 	}, nil
-}
-
-func (c *Collector) parseRedisMessage(message redis.XMessage) (*common.Event[schedule.Entry], error) {
-	rawStr, ok := message.Values["data"].(string)
-	if !ok {
-		return nil, fmt.Errorf("expected key 'data' missing or not a string")
-	}
-
-	var event common.Event[schedule.Entry]
-
-	if err := json.Unmarshal([]byte(rawStr), &event); err != nil {
-		return nil, fmt.Errorf("error parsing message ID %s: %w", message.ID, err)
-	}
-
-	if event.Version != protokolapparatVersion {
-		return nil, fmt.Errorf("unsupported schema version: %d", event.Version)
-	}
-
-	return &event, nil
 }
