@@ -237,11 +237,32 @@ func (r *newsRepository) applyFilters(query *gorm.DB, filters repository.NewsLis
 		query = query.Where("is_hidden = ?", *filters.IsHidden)
 	}
 
+	if filters.ExternalID != nil {
+		query = query.Where("external_id = ?", *filters.ExternalID)
+	}
+
 	return query
 }
 
-func (r *newsRepository) getOrderClause(_, order string) string {
-	sortCols := []string{"id"}
+func (r *newsRepository) getOrderClause(sortField, order string) string {
+	var sortCols []string
+
+	switch sortField {
+	case "id":
+		sortCols = []string{"id"}
+	case "source":
+		sortCols = []string{"source", "external_id"}
+	case "external_id":
+		sortCols = []string{"external_id"}
+	case "title":
+		sortCols = []string{"title", "id"}
+	case "is_urgent":
+		sortCols = []string{"is_urgent", "id"}
+	case "is_hidden":
+		sortCols = []string{"is_hidden", "id"}
+	default:
+		sortCols = []string{"is_urgent", "id"}
+	}
 
 	orderDir := "ASC"
 	if strings.ToUpper(order) == "DESC" {

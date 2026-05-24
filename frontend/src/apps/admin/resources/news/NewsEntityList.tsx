@@ -6,12 +6,12 @@ import {
   NumberField,
   BooleanField,
 } from "react-admin";
-import { DefaultFilters } from "@admin/components/filters/DefaultFilters";
+import { ExternalDataFiltersWithUrgent } from "@admin/components/filters/ExternalDataFilters";
 
 export const NewsEntityList = () => (
   <List
     title="News Entities"
-    filters={DefaultFilters}
+    filters={ExternalDataFiltersWithUrgent}
     sort={{ field: "id", order: "DESC" }}
   >
     <Datagrid rowClick="show" bulkActionButtons={false}>

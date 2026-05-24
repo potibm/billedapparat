@@ -268,11 +268,34 @@ func (r *eventRepository) applyFilters(query *gorm.DB, filters repository.Timeta
 		query = query.Where("source = ?", *filters.Source)
 	}
 
+	if filters.ExternalID != nil {
+		query = query.Where("external_id = ?", *filters.ExternalID)
+	}
+
 	return query
 }
 
-func (r *eventRepository) getOrderClause(_, order string) string {
-	sortCols := []string{"id"}
+func (r *eventRepository) getOrderClause(sortField, order string) string {
+	var sortCols []string
+
+	switch sortField {
+	case "id":
+		sortCols = []string{"id"}
+	case "source":
+		sortCols = []string{"source", "external_id"}
+	case "external_id":
+		sortCols = []string{"external_id"}
+	case "title":
+		sortCols = []string{"title", "start_time", "end_time", "id"}
+	case "start_time":
+		sortCols = []string{"start_time", "end_time", "id"}
+	case "end_time":
+		sortCols = []string{"end_time", "id"}
+	case "is_hidden":
+		sortCols = []string{"is_hidden", "start_time", "end_time", "id"}
+	default:
+		sortCols = []string{"start_time", "end_time", "id"}
+	}
 
 	orderDir := "ASC"
 	if strings.ToUpper(order) == "DESC" {

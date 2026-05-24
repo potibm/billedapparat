@@ -11,9 +11,10 @@ type TimetableEventListParams struct {
 }
 
 type TimetableEventListFilters struct {
-	Query    *string
-	Source   *string
-	IsHidden *bool
+	Query      *string
+	Source     *string
+	IsHidden   *bool
+	ExternalID *string
 }
 
 type TimetableEventSyncResult struct {

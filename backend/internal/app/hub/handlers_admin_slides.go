@@ -13,29 +13,30 @@ import (
 )
 
 func (s *Server) adminListSlides(c *gin.Context) {
-	start, _ := strconv.Atoi(c.DefaultQuery("_start", "0"))
-	end, _ := strconv.Atoi(c.DefaultQuery("_end", "20"))
-	sort := c.DefaultQuery("_sort", "id")
-	order := c.DefaultQuery("_order", "DESC")
 	slideType := domain.SlideType(c.Query("type"))
 
 	params := repository.SlideListParams{
-		ListParams: repository.ListParams{
-			Offset: max(start, 0),
-			Limit:  max(end-start, 0),
-			Sort:   sort,
-			Order:  order,
-		},
-		Type: slideType,
+		ListParams: s.getListParams(c),
+		Type:       slideType,
 	}
 
-	filters := repository.SlideListFilters{
-		Query:    nil,
-		Status:   nil,
-		Priority: nil,
-		Source:   nil,
-		ID:       nil,
+	filters := newSlideListFiltersFromContext(c)
+
+	slides, total, err := s.slideRepo.AdminList(c.Request.Context(), params, filters)
+	if err != nil {
+		respondWithInternalServerProblem(c, "Failed to list slides: "+err.Error())
+
+		return
 	}
+
+	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
+
+	c.JSON(http.StatusOK, slides)
+}
+
+func newSlideListFiltersFromContext(c *gin.Context) repository.SlideListFilters {
+	filters := repository.SlideListFilters{}
+
 	if c.Query("q") != "" {
 		query := c.Query("q")
 		filters.Query = &query
@@ -77,16 +78,7 @@ func (s *Server) adminListSlides(c *gin.Context) {
 		filters.Source = &source
 	}
 
-	slides, total, err := s.slideRepo.AdminList(c.Request.Context(), params, filters)
-	if err != nil {
-		respondWithInternalServerProblem(c, "Failed to list slides: "+err.Error())
-
-		return
-	}
-
-	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
-
-	c.JSON(http.StatusOK, slides)
+	return filters
 }
 
 func (s *Server) adminGetSlide(c *gin.Context) {

@@ -9,43 +9,11 @@ import (
 )
 
 func (s *Server) adminListNews(c *gin.Context) {
-	start, _ := strconv.Atoi(c.DefaultQuery("_start", "0"))
-	end, _ := strconv.Atoi(c.DefaultQuery("_end", "20"))
-	sort := c.DefaultQuery("_sort", "id")
-	order := c.DefaultQuery("_order", "DESC")
-
 	params := repository.NewsListParams{
-		ListParams: repository.ListParams{
-			Offset: max(start, 0),
-			Limit:  max(end-start, 0),
-			Sort:   sort,
-			Order:  order,
-		},
+		ListParams: s.getListParams(c),
 	}
 
-	filters := repository.NewsListFilters{
-		Query:    nil,
-		IsUrgent: nil,
-		IsHidden: nil,
-	}
-	if c.Query("q") != "" {
-		query := c.Query("q")
-		filters.Query = &query
-	}
-
-	if c.Query("is_urgent") != "" {
-		isUrgent, err := strconv.ParseBool(c.Query("is_urgent"))
-		if err == nil {
-			filters.IsUrgent = &isUrgent
-		}
-	}
-
-	if c.Query("is_hidden") != "" {
-		isHidden, err := strconv.ParseBool(c.Query("is_hidden"))
-		if err == nil {
-			filters.IsHidden = &isHidden
-		}
-	}
+	filters := newNewsListFiltersFromContext(c)
 
 	slides, total, err := s.newsRepo.List(c.Request.Context(), params, filters)
 	if err != nil {
@@ -57,6 +25,37 @@ func (s *Server) adminListNews(c *gin.Context) {
 	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
 
 	c.JSON(http.StatusOK, slides)
+}
+
+func newNewsListFiltersFromContext(c *gin.Context) repository.NewsListFilters {
+	filters := repository.NewsListFilters{}
+
+	if q := c.Query("q"); q != "" {
+		filters.Query = &q
+	}
+
+	if c.Query("hidden_yes") == "true" {
+		isHidden := true
+		filters.IsHidden = &isHidden
+	} else if c.Query("hidden_no") == "true" {
+		isHidden := false
+		filters.IsHidden = &isHidden
+	}
+
+	if c.Query("urgent_yes") == "true" {
+		isUrgent := true
+		filters.IsUrgent = &isUrgent
+	} else if c.Query("urgent_no") == "true" {
+		isUrgent := false
+		filters.IsUrgent = &isUrgent
+	}
+
+	if c.Query("external_id") != "" {
+		externalID := c.Query("external_id")
+		filters.ExternalID = &externalID
+	}
+
+	return filters
 }
 
 func (s *Server) adminGetNews(c *gin.Context) {

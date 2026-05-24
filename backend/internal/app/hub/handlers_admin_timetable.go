@@ -9,41 +9,11 @@ import (
 )
 
 func (s *Server) adminListTimetable(c *gin.Context) {
-	start, _ := strconv.Atoi(c.DefaultQuery("_start", "0"))
-	end, _ := strconv.Atoi(c.DefaultQuery("_end", "20"))
-	sort := c.DefaultQuery("_sort", "id")
-	order := c.DefaultQuery("_order", "DESC")
-
 	params := repository.TimetableEventListParams{
-		ListParams: repository.ListParams{
-			Offset: max(start, 0),
-			Limit:  max(end-start, 0),
-			Sort:   sort,
-			Order:  order,
-		},
+		ListParams: s.getListParams(c),
 	}
 
-	filters := repository.TimetableEventListFilters{
-		Query:    nil,
-		Source:   nil,
-		IsHidden: nil,
-	}
-	if c.Query("q") != "" {
-		query := c.Query("q")
-		filters.Query = &query
-	}
-
-	if c.Query("source") != "" {
-		source := c.Query("source")
-		filters.Source = &source
-	}
-
-	if c.Query("is_hidden") != "" {
-		isHidden, err := strconv.ParseBool(c.Query("is_hidden"))
-		if err == nil {
-			filters.IsHidden = &isHidden
-		}
-	}
+	filters := newTimetableEventListFiltersFromContext(c)
 
 	slides, total, err := s.timetableEventRepo.List(c.Request.Context(), params, filters)
 	if err != nil {
@@ -55,6 +25,39 @@ func (s *Server) adminListTimetable(c *gin.Context) {
 	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
 
 	c.JSON(http.StatusOK, slides)
+}
+
+func newTimetableEventListFiltersFromContext(c *gin.Context) repository.TimetableEventListFilters {
+	filters := repository.TimetableEventListFilters{
+		Query:      nil,
+		Source:     nil,
+		IsHidden:   nil,
+		ExternalID: nil,
+	}
+	if c.Query("q") != "" {
+		query := c.Query("q")
+		filters.Query = &query
+	}
+
+	if c.Query("source") != "" {
+		source := c.Query("source")
+		filters.Source = &source
+	}
+
+	if c.Query("hidden_yes") == "true" {
+		isHidden := true
+		filters.IsHidden = &isHidden
+	} else if c.Query("hidden_no") == "true" {
+		isHidden := false
+		filters.IsHidden = &isHidden
+	}
+
+	if c.Query("external_id") != "" {
+		externalID := c.Query("external_id")
+		filters.ExternalID = &externalID
+	}
+
+	return filters
 }
 
 func (s *Server) adminGetTimetable(c *gin.Context) {

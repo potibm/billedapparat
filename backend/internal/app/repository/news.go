@@ -11,9 +11,10 @@ type NewsListParams struct {
 }
 
 type NewsListFilters struct {
-	Query    *string
-	IsUrgent *bool
-	IsHidden *bool
+	Query      *string
+	IsUrgent   *bool
+	IsHidden   *bool
+	ExternalID *string
 }
 
 type NewsSyncResult struct {

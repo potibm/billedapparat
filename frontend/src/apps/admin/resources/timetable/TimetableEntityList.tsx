@@ -7,12 +7,12 @@ import {
   BooleanField,
   DateField,
 } from "react-admin";
-import { DefaultFilters } from "@admin/components/filters/DefaultFilters";
+import { ExternalDataFilters } from "@admin/components/filters/ExternalDataFilters";
 
 export const TimetableEntityList = () => (
   <List
     title="Timetable Entities"
-    filters={DefaultFilters}
+    filters={ExternalDataFilters}
     sort={{ field: "id", order: "DESC" }}
   >
     <Datagrid rowClick="show" bulkActionButtons={false}>
