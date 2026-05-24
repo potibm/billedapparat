@@ -84,8 +84,8 @@ func (r *eventRepository) GetByID(ctx context.Context, id int64) (*domain.Timeta
 
 func (r *eventRepository) List(
 	ctx context.Context,
-	params repository.EventListParams,
-	filters repository.EventListFilters,
+	params repository.TimetableEventListParams,
+	filters repository.TimetableEventListFilters,
 ) (domain.Timetable, int64, error) {
 	var (
 		dbTimetableEvents []dbTimetableEvent
@@ -254,7 +254,7 @@ func diffTimetableEvents(
 	return toCreate, toUpdate, toDelete
 }
 
-func (r *eventRepository) applyFilters(query *gorm.DB, filters repository.EventListFilters) *gorm.DB {
+func (r *eventRepository) applyFilters(query *gorm.DB, filters repository.TimetableEventListFilters) *gorm.DB {
 	if filters.Query != nil {
 		likeQuery := fmt.Sprintf("%%%s%%", *filters.Query)
 		query = query.Where("title LIKE ?", likeQuery)

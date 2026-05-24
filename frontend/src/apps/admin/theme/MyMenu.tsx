@@ -50,15 +50,15 @@ export const MyMenu = () => {
       {/* --- GROUP: TIMETABLE --- */}
       <MenuGroup title="Timetable" />
       {timetableURL && <MenuExternalLink href={timetableURL} label="Edit" />}
-      <Menu.ResourceItem name="timetable" />
       <Menu.ResourceItem name="timetable-slides" />
+      <Menu.ResourceItem name="timetable" />
       <MenuDiv />
 
       {/* --- GROUP: NEWS --- */}
       <MenuGroup title="News" />
       {newsURL && <MenuExternalLink href={newsURL} label="Edit" />}
-      <Menu.ResourceItem name="news" />
       <Menu.ResourceItem name="news-slides" />
+      <Menu.ResourceItem name="news" />
       <MenuDiv />
     </Menu>
   );

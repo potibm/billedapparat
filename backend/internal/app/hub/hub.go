@@ -31,6 +31,10 @@ const (
 	pathSlidesWithID         = "/slides/:id"
 	pathFilterRules          = "/filter-rules"
 	pathFilterRulesWithID    = "/filter-rules/:id"
+	pathNews                 = "/news"
+	pathNewsWithID           = "/news/:id"
+	timeTablePath            = "/timetable"
+	timeTablePathWithID      = "/timetable/:id"
 )
 
 type Config struct {
@@ -193,6 +197,12 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	admin.GET(pathFilterRulesWithID, s.adminGetFilterRule)
 	admin.PUT(pathFilterRulesWithID, s.adminUpdateFilterRule)
 	admin.DELETE(pathFilterRulesWithID, s.adminDeleteFilterRule)
+
+	admin.GET(pathNews, s.adminListNews)
+	admin.GET(pathNewsWithID, s.adminGetNews)
+
+	admin.GET(timeTablePath, s.adminListTimetable)
+	admin.GET(timeTablePathWithID, s.adminGetTimetable)
 
 	admin.GET("/sources", s.adminListSources)
 
