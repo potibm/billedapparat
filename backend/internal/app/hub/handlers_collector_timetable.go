@@ -55,7 +55,7 @@ func (s *Server) collectorSyncTimetable(ctx *gin.Context) {
 	}
 
 	timetableList, err := mapTimetableIngestListToDomain(req.Source, req.Items)
-	if len(timetableList) == 0 {
+	if err != nil {
 		slog.Error("Failed to map ingest timetable list to domain model", "error", err)
 		respondWithInternalServerProblem(ctx, "failed to process timetable items")
 

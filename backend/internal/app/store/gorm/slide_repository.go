@@ -194,12 +194,12 @@ func (r *slideRepository) Sync(
 			return err
 		}
 
-		slog.Info("Existing slides fetched from DB", "count", len(dbExisting), "source", source)
+		slog.Debug("Existing slides fetched from DB", "count", len(dbExisting), "source", source)
 
 		existing := toDomainSlideList(dbExisting)
 
 		toCreate, toUpdate, toDelete := diffSlides(existing, incoming)
-		slog.Info(
+		slog.Debug(
 			"Sync diff calculated",
 			"to_create",
 			len(toCreate),
