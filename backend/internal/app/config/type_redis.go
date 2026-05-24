@@ -65,6 +65,10 @@ func (ru RedisURL) Redacted() RedisURL {
 }
 
 func (ru *RedisURL) Validate() error {
+	if ru == nil {
+		return nil
+	}
+
 	rString := string(*ru)
 
 	if !ru.IsValid() {
