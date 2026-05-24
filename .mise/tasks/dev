@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#MISE description="Start development environment with hot reload for backend and frontend"
+
+set -e 
+
+if [[ "$1" == "--clean" ]]; then
+  echo "🧹 Performing cleanup..."
+  
+  if [ -e .overmind.sock ]; then
+    echo "Deleting .overmind.sock..."
+    rm -f .overmind.sock
+  fi
+
+  for port in 3100 3101; do
+    pids=$(lsof -ti:$port || true)
+    if [ -n "$pids" ]; then
+      echo "Killing process(es) on port $port (PIDs: $pids)..."
+      echo "$pids" | xargs kill -9
+    fi
+  done
+  
+  echo "Cleanup completed."
+  echo "---"
+fi
+
+echo "🚀 Starting overmind..."
+exec overmind s

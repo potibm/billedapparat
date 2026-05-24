@@ -1,15 +1,23 @@
 package domain
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
 type (
+	StreamEvent string
 	SlideType   string
 	SlideStatus string
 )
 
 const (
+	EventCreate StreamEvent = "CREATE"
+	EventUpdate StreamEvent = "UPDATE"
+	EventDelete StreamEvent = "DELETE"
+
 	TypeSocialMedia SlideType = "social.media"
 	TypeSocialText  SlideType = "social.text"
 	TypeSponsor     SlideType = "sponsor"
@@ -71,4 +79,41 @@ type DisplayOptions struct {
 	AllowSocialOverlay bool `json:"allow_social_overlay"`
 	Priority           int  `json:"priority"`
 	IsUrgent           bool `json:"is_urgent"`
+}
+
+func (t SlideType) IsReadonly() bool {
+	switch t {
+	case TypeNews, TypeTimetable:
+		return true
+	default:
+		return false
+	}
+}
+
+func (s Slide) HasChanged(newSlide Slide) bool {
+	if s.Status != newSlide.Status {
+		return true
+	}
+
+	type visualState struct {
+		Content        Content
+		DisplayOptions DisplayOptions
+	}
+
+	oldState, errOld := json.Marshal(visualState{s.Content, s.DisplayOptions})
+	newState, errNew := json.Marshal(visualState{newSlide.Content, newSlide.DisplayOptions})
+
+	if errOld != nil || errNew != nil {
+		return true
+	}
+
+	return !bytes.Equal(oldState, newState)
+}
+
+func (s Slide) SyncKey() string {
+	if s.ExternalSubID != nil {
+		return fmt.Sprintf("%s|%d", s.ExternalID, *s.ExternalSubID)
+	}
+
+	return s.ExternalID + "|"
 }

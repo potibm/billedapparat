@@ -1,19 +1,33 @@
 package mastodon
 
+import (
+	"github.com/go-viper/mapstructure/v2"
+	"github.com/potibm/billedapparat/internal/app/config"
+)
+
 type Config struct {
-	Enabled     bool   `mapstructure:"enabled"`
-	APIKey      string `mapstructure:"api_key"`
+	config.CollectorConfig
+
 	Host        string `mapstructure:"host"`
 	AccessToken string `mapstructure:"access_token"`
 	Tag         string `mapstructure:"tag"`
 }
 
 func DefaultConfig(generatedAPIKey string) map[string]any {
-	return map[string]any{
-		"enabled":      false,
-		"api_key":      generatedAPIKey,
-		"host":         "mastodon.social",
-		"access_token": "",
-		"tag":          "demoscene",
+	configStruct := Config{
+		CollectorConfig: config.CollectorConfig{
+			Enabled: false,
+			Type:    config.CollectorDataTypeSlide,
+			APIKey:  generatedAPIKey,
+		},
+		Host:        "mastodon.social",
+		AccessToken: "",
+		Tag:         "demoscene",
 	}
+
+	var result map[string]any
+
+	_ = mapstructure.Decode(configStruct, &result)
+
+	return result
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/potibm/billedapparat/internal/app/domain"
 )
 
 func (s *Server) StartCollectorTextGarbageCollector(ctx context.Context) {
@@ -52,6 +54,6 @@ func (s *Server) runCollectorTextGarbageCollectionCycle() {
 
 		// 3. Signal to frontend that the slide has been deleted
 		payload := fmt.Sprintf("%d", slide.ID)
-		s.streamer.Broadcast(EventDelete, []byte(payload))
+		s.streamer.Broadcast(domain.EventDelete, []byte(payload))
 	}
 }

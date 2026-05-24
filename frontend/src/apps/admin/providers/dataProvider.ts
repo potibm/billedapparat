@@ -7,11 +7,11 @@ const baseProvider = jsonServerProvider("/api/admin");
 const BASE_RESOURCE = "slides";
 
 const slideResourceMap: Record<string, string> = {
-  sponsors: "sponsor",
-  news: "news",
-  timetable: "timetable",
-  "social-media": "social.media",
-  "social-text": "social.text",
+  "sponsor-slides": "sponsor",
+  "news-slides": "news",
+  "timetable-slides": "timetable",
+  "social-medias-slides": "social.media",
+  "social-text-slides": "social.text",
 };
 
 interface SlideFormData {

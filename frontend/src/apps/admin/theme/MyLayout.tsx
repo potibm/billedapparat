@@ -7,6 +7,7 @@ import {
 } from "react-admin";
 import { Typography, Box } from "@mui/material";
 import { Logo } from "@core/logo/Logo";
+import { MyMenu } from "./MyMenu";
 
 export const MyAppBar = (props: AppBarProps) => (
   <AppBar {...props} color="secondary">
@@ -37,5 +38,5 @@ export const MyAppBar = (props: AppBarProps) => (
 );
 
 export const MyLayout = (props: LayoutProps) => (
-  <Layout {...props} appBar={MyAppBar} />
+  <Layout {...props} appBar={MyAppBar} menu={MyMenu} />
 );

@@ -2,6 +2,7 @@ package hubclient
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -9,8 +10,12 @@ import (
 	"net/url"
 	"strings"
 	"time"
+)
 
-	"github.com/potibm/billedapparat/internal/app/contracts"
+const (
+	errFmtNetwork   = "network error: %w"
+	errFmtMarshal   = "json marshal error: %w"
+	errFmtHubStatus = "hub returned status %d"
 )
 
 type HubClient struct {
@@ -33,31 +38,31 @@ func New(baseURL, apiKey string, logger *slog.Logger) *HubClient {
 	}
 }
 
-func (c *HubClient) SendSlide(payload contracts.IngestRequest) error {
+func (c *HubClient) sendPostRequest(ctx context.Context, entityType, entityName, externalID string, payload any) error {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		return fmt.Errorf("json marshal error: %w", err)
+		return fmt.Errorf(errFmtMarshal, err)
 	}
 
-	u := fmt.Sprintf("%s/api/collectors/ingest", strings.TrimRight(c.BaseURL, "/"))
-	slog.Debug("Sending slide to hub", "url", u, "external_id", payload.ExternalID)
+	u := c.getURL(entityType)
 
-	req, err := http.NewRequest(http.MethodPost, u, bytes.NewBuffer(jsonData))
+	c.Logger.Debug(fmt.Sprintf("Sending %s to hub", entityName), "url", u, "external_id", externalID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return err
+		return fmt.Errorf(errFmtNetwork, err)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.APIKey)
+	c.setHeaders(req, true)
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("network error: %w", err)
+		return fmt.Errorf(errFmtNetwork, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusCreated {
-		c.Logger.Info("Slide successfully created", "external_id", payload.ExternalID)
+		c.Logger.Info(fmt.Sprintf("Successfully created %s", entityName), "external_id", externalID)
 
 		return nil
 	}
@@ -66,33 +71,89 @@ func (c *HubClient) SendSlide(payload contracts.IngestRequest) error {
 		return nil
 	}
 
-	return fmt.Errorf("hub returned status %d", resp.StatusCode)
+	return fmt.Errorf(errFmtHubStatus, resp.StatusCode)
 }
 
-func (c *HubClient) DeleteSlide(source, externalID string) error {
+func (c *HubClient) sendDeleteRequest(ctx context.Context, entityType, source, externalID string) error {
 	endpoint := fmt.Sprintf(
-		"%s/api/collectors/ingest/%s/%s",
-		strings.TrimRight(c.BaseURL, "/"),
+		"%s/%s/%s",
+		c.getURL(entityType),
 		url.PathEscape(source),
 		url.PathEscape(externalID),
 	)
 
-	req, err := http.NewRequest(http.MethodDelete, endpoint, http.NoBody)
+	c.Logger.Debug(
+		fmt.Sprintf("Deleting %s from hub", entityType),
+		"url",
+		endpoint,
+		"source",
+		source,
+		"external_id",
+		externalID,
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, endpoint, http.NoBody)
 	if err != nil {
 		return err
 	}
 
-	req.Header.Set("Authorization", "Bearer "+c.APIKey)
+	c.setHeaders(req, false)
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf(errFmtNetwork, err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("error deleting slide from hub: %s", resp.Status)
+	if resp.StatusCode == http.StatusOK {
+		c.Logger.Info(fmt.Sprintf("Successfully deleted %s", entityType), "source", source, "external_id", externalID)
+
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf(errFmtHubStatus, resp.StatusCode)
+}
+
+func (c *HubClient) sendPutRequest(ctx context.Context, entityType, entityName string, payload any) error {
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf(errFmtMarshal, err)
+	}
+
+	u := c.getURL(entityType)
+
+	c.Logger.Debug(fmt.Sprintf("Syncing %s to hub", entityName), "url", u)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, u, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf(errFmtNetwork, err)
+	}
+
+	c.setHeaders(req, true)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return fmt.Errorf(errFmtNetwork, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		c.Logger.Info(fmt.Sprintf("Successfully synced %s", entityName))
+
+		return nil
+	}
+
+	return fmt.Errorf(errFmtHubStatus, resp.StatusCode)
+}
+
+func (c *HubClient) getURL(entityType string) string {
+	return fmt.Sprintf("%s/api/collectors/%s", strings.TrimRight(c.BaseURL, "/"), entityType)
+}
+
+func (c *HubClient) setHeaders(req *http.Request, isJSONPayload bool) {
+	req.Header.Set("Authorization", "Bearer "+c.APIKey)
+
+	if isJSONPayload {
+		req.Header.Set("Content-Type", "application/json")
+	}
 }

@@ -14,39 +14,55 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/potibm/billedapparat/internal/app/config"
+	"github.com/potibm/billedapparat/internal/app/generator"
 	"github.com/potibm/billedapparat/internal/app/repository"
 	sloggin "github.com/samber/slog-gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 const (
-	defaultShutdownTimeout   = 5 * time.Second
-	defaultReadHeaderTimeout = 3 * time.Second
-	pathSlides               = "/slides"
-	pathSlidesWithID         = "/slides/:id"
-	pathFilterRules          = "/filter-rules"
-	pathFilterRulesWithID    = "/filter-rules/:id"
+	defaultShutdownTimeout    = 5 * time.Second
+	defaultReadHeaderTimeout  = 3 * time.Second
+	pathSlides                = "/slides"
+	pathSlidesWithID          = "/slides/:id"
+	pathFilterRules           = "/filter-rules"
+	pathFilterRulesWithID     = "/filter-rules/:id"
+	pathNews                  = "/news"
+	pathNewsWithID            = "/news/:id"
+	timeTablePath             = "/timetable"
+	timeTablePathWithID       = "/timetable/:id"
+	collectorSlidesPath       = "/slides"
+	collectorNewsPath         = "/news"
+	collectorTimeTablePath    = "/timetable"
+	collectorPathWithIDSuffix = "/:source/:external_id"
 )
 
 type Config struct {
-	Port           int
-	StaticFiles    embed.FS
-	SlideRepo      repository.SlideRepository
-	FilterRuleRepo repository.FilterRuleRepository
-	Cfg            config.Config
+	Port               int
+	StaticFiles        embed.FS
+	SlideRepo          repository.SlideRepository
+	NewsRepo           repository.NewsRepository
+	TimetableEventRepo repository.TimetableEventRepository
+	FilterRuleRepo     repository.FilterRuleRepository
+	Cfg                config.Config
 }
 
 type Server struct {
-	port            int
-	staticFiles     embed.FS
-	slideRepo       repository.SlideRepository
-	filterRuleRepo  repository.FilterRuleRepository
-	cfg             config.Config
-	streamer        *Streamer
-	mediaProcessor  MediaProcessor
-	mediaDownloader *MediaDownloader
-	logger          *slog.Logger
+	port               int
+	staticFiles        embed.FS
+	slideRepo          repository.SlideRepository
+	filterRuleRepo     repository.FilterRuleRepository
+	newsRepo           repository.NewsRepository
+	timetableEventRepo repository.TimetableEventRepository
+	cfg                config.Config
+	streamer           *Streamer
+	mediaProcessor     MediaProcessor
+	mediaDownloader    *MediaDownloader
+	logger             *slog.Logger
+	sanitizer          *bluemonday.Policy
+	generatorEngine    *generator.Engine
 }
 
 type MediaProcessor interface {
@@ -57,15 +73,33 @@ func NewServer(cfg Config) (*Server, error) {
 	logger := slog.Default()
 	streamer := NewStreamer(logger.With("component", "Streamer"))
 
+	engine := generator.NewEngine(
+		cfg.SlideRepo,
+		streamer,
+		logger.With("component", "GeneratorEngine"),
+		generator.NewNewsGenerator(cfg.NewsRepo, logger.With("component", "NewsGenerator")),
+		generator.NewTimetableGenerator(cfg.TimetableEventRepo, logger.With("component", "TimetableGenerator")),
+	)
+
+	mediaDownloader := NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader"))
+	mediaProcessor := &LocalDiskMediaProcessor{}
+
+	sanitizer := bluemonday.StrictPolicy()
+
 	return &Server{
-		port:            cfg.Port,
-		staticFiles:     cfg.StaticFiles,
-		slideRepo:       cfg.SlideRepo,
-		filterRuleRepo:  cfg.FilterRuleRepo,
-		cfg:             cfg.Cfg,
-		streamer:        streamer,
-		mediaDownloader: NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader")),
-		logger:          logger.With("component", "HubServer"),
+		port:               cfg.Port,
+		staticFiles:        cfg.StaticFiles,
+		slideRepo:          cfg.SlideRepo,
+		filterRuleRepo:     cfg.FilterRuleRepo,
+		newsRepo:           cfg.NewsRepo,
+		timetableEventRepo: cfg.TimetableEventRepo,
+		cfg:                cfg.Cfg,
+		streamer:           streamer,
+		mediaDownloader:    mediaDownloader,
+		mediaProcessor:     mediaProcessor,
+		logger:             logger.With("component", "HubServer"),
+		sanitizer:          sanitizer,
+		generatorEngine:    engine,
 	}, nil
 }
 
@@ -84,22 +118,42 @@ func (s *Server) Run(ctx context.Context) error {
 	s.StartMediaGarbageCollector(ctx)
 	s.StartCollectorTextGarbageCollector(ctx)
 
-	// Start server in Goroutine
+	serverErr := make(chan error, 1)
+
+	// Start generator engine in Goroutine
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error("listen", "error", err)
+		if err := s.generatorEngine.Run(ctx); err != nil {
+			s.logger.Error("Generator engine stopped with error", "error", err)
 		}
 	}()
 
-	slog.Info("Server is up", "port", s.port)
+	// Start server in Goroutine
+	go func() {
+		s.logger.Info("Starting server...", "port", s.port)
 
-	<-ctx.Done()
-	slog.Info("Shutting down server gracefully...")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			serverErr <- err
+		}
+	}()
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), defaultShutdownTimeout)
-	defer cancel()
+	select {
+	case err := <-serverErr:
+		return fmt.Errorf("http server failed to start: %w", err)
 
-	return srv.Shutdown(shutdownCtx)
+	case <-ctx.Done():
+		s.logger.Info("Shutting down server gracefully...")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), defaultShutdownTimeout)
+		defer cancel()
+
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			return fmt.Errorf("server shutdown failed: %w", err)
+		}
+
+		s.logger.Info("Server stopped cleanly")
+
+		return nil
+	}
 }
 
 func (s *Server) setupRouter() (*gin.Engine, error) {
@@ -143,6 +197,12 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	admin.PUT(pathFilterRulesWithID, s.adminUpdateFilterRule)
 	admin.DELETE(pathFilterRulesWithID, s.adminDeleteFilterRule)
 
+	admin.GET(pathNews, s.adminListNews)
+	admin.GET(pathNewsWithID, s.adminGetNews)
+
+	admin.GET(timeTablePath, s.adminListTimetable)
+	admin.GET(timeTablePathWithID, s.adminGetTimetable)
+
 	admin.GET("/sources", s.adminListSources)
 
 	internal := r.Group("/api/internal")
@@ -151,8 +211,14 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 
 	collectors := r.Group("/api/collectors")
 	collectors.Use(CollectorAuthMiddleware(s.cfg.Collectors))
-	collectors.POST("/ingest", s.collectorIngestSlide)
-	collectors.DELETE("/ingest/:source/:external_id", s.collectorDeleteSlide)
+	collectors.POST(collectorSlidesPath, s.collectorIngestSlide)
+	collectors.DELETE(collectorSlidesPath+collectorPathWithIDSuffix, s.collectorDeleteSlide)
+	collectors.POST(collectorNewsPath, s.collectorUpsertNews)
+	collectors.PUT(collectorNewsPath, s.collectorSyncNews)
+	collectors.DELETE(collectorNewsPath+collectorPathWithIDSuffix, s.collectorDeleteNews)
+	collectors.POST(collectorTimeTablePath, s.collectorUpsertTimetable)
+	collectors.PUT(collectorTimeTablePath, s.collectorSyncTimetable)
+	collectors.DELETE(collectorTimeTablePath+collectorPathWithIDSuffix, s.collectorDeleteTimetable)
 
 	r.NoRoute(func(c *gin.Context) {
 		if !strings.HasPrefix(c.Request.RequestURI, "/api") && !strings.Contains(c.Request.RequestURI, ".") {

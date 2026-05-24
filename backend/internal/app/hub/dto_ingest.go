@@ -1,21 +1,23 @@
 package hub
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/potibm/billedapparat/internal/app/contracts"
 	"github.com/potibm/billedapparat/internal/app/domain"
 )
 
-func mapMediaURLToDomain(m contracts.IngestRequestMediaURL) domain.Media {
+func mapMediaURLToDomain(m contracts.IngestSlideRequestMediaURL) domain.Media {
 	return domain.Media{
 		OriginalURL: m.ExternalURL,
 		MimeType:    m.ContentType,
 	}
 }
 
-func mapAuthorToDomain(a contracts.IngestRequestAuthor) domain.Author {
+func mapAuthorToDomain(a contracts.IngestSlideRequestAuthor) domain.Author {
 	avatar := (*domain.Media)(nil)
 	if a.AvatarExternalURL != "" {
 		avatar = &domain.Media{
@@ -32,7 +34,7 @@ func mapAuthorToDomain(a contracts.IngestRequestAuthor) domain.Author {
 	}
 }
 
-func mapIngestToDomain(i contracts.IngestRequest, mediaPos int) domain.Slide {
+func mapSlideIngestToDomain(i contracts.IngestSlideRequest, mediaPos int) domain.Slide {
 	const maxLengthTitle = 30
 
 	hasMedia := len(i.MediaURLs) > 0
@@ -100,4 +102,95 @@ func smartTruncate(text string, limit int) string {
 	}
 
 	return strings.TrimSpace(subString[:lastSpace]) + "..."
+}
+
+func mapNewsIngestToDomain(i contracts.IngestNewsRequest, sanitizer *bluemonday.Policy) (domain.News, error) {
+	const maxLengthTitle = 100
+
+	safeBody := sanitizer.Sanitize(i.Body)
+
+	news := domain.News{
+		Source:      i.Source,
+		ExternalID:  i.ExternalID,
+		Title:       smartTruncate(i.Title, maxLengthTitle),
+		Body:        safeBody,
+		IsUrgent:    i.IsUrgent,
+		IsHidden:    i.IsHidden,
+		ExternalURL: i.ExternalURL,
+	}
+
+	return news, nil
+}
+
+func mapNewsIngestListToDomain(
+	source string,
+	items []contracts.IngestNewsRequest,
+	sanitizer *bluemonday.Policy,
+) ([]domain.News, error) {
+	var newsList []domain.News
+
+	for _, item := range items {
+		if item.Source != source {
+			return nil, fmt.Errorf("source mismatch: expected %s, got %s", source, item.Source)
+		}
+
+		newsItem, err := mapNewsIngestToDomain(item, sanitizer)
+		if err != nil {
+			return nil, fmt.Errorf("failed to map news ingest to domain: %w", err)
+		}
+
+		newsList = append(newsList, newsItem)
+	}
+
+	return newsList, nil
+}
+
+func mapTimetableIngestToDomain(i contracts.IngestTimetableEventRequest) domain.TimetableEvent {
+	var location *domain.Location
+	if i.LocationName != "" || i.LocationAddress != "" {
+		location = &domain.Location{
+			Name:    i.LocationName,
+			Address: i.LocationAddress,
+		}
+	}
+
+	var category *domain.Category
+	if i.CategoryName != "" || i.CategoryColor != "" {
+		category = &domain.Category{
+			Name:  i.CategoryName,
+			Color: i.CategoryColor,
+		}
+	}
+
+	timetableEvent := domain.TimetableEvent{
+		Source:      i.Source,
+		ExternalID:  i.ExternalID,
+		Title:       i.Title,
+		Description: i.Description,
+		StartTime:   i.StartTime,
+		EndTime:     i.EndTime,
+		IsHidden:    i.IsHidden,
+		Location:    location,
+		Category:    category,
+	}
+
+	return timetableEvent
+}
+
+func mapTimetableIngestListToDomain(
+	source string,
+	items []contracts.IngestTimetableEventRequest,
+) ([]domain.TimetableEvent, error) {
+	var timetableEvents []domain.TimetableEvent
+
+	for _, item := range items {
+		if item.Source != source {
+			return nil, fmt.Errorf("source mismatch: expected %s, got %s", source, item.Source)
+		}
+
+		timetableEvent := mapTimetableIngestToDomain(item)
+		timetableEvents = append(timetableEvents, timetableEvent)
+	}
+
+	return timetableEvents, nil
 }

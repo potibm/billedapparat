@@ -13,27 +13,30 @@ import (
 )
 
 func (s *Server) adminListSlides(c *gin.Context) {
-	start, _ := strconv.Atoi(c.DefaultQuery("_start", "0"))
-	end, _ := strconv.Atoi(c.DefaultQuery("_end", "20"))
-	sort := c.DefaultQuery("_sort", "id")
-	order := c.DefaultQuery("_order", "DESC")
 	slideType := domain.SlideType(c.Query("type"))
 
-	params := repository.AdminListParams{
-		Offset: start,
-		Limit:  end - start,
-		Sort:   sort,
-		Order:  order,
-		Type:   slideType,
+	params := repository.SlideListParams{
+		ListParams: s.getListParams(c),
+		Type:       slideType,
 	}
 
-	filters := repository.AdminListFilters{
-		Query:    nil,
-		Status:   nil,
-		Priority: nil,
-		Source:   nil,
-		ID:       nil,
+	filters := newSlideListFiltersFromContext(c)
+
+	slides, total, err := s.slideRepo.AdminList(c.Request.Context(), params, filters)
+	if err != nil {
+		respondWithInternalServerProblem(c, "Failed to list slides: "+err.Error())
+
+		return
 	}
+
+	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
+
+	c.JSON(http.StatusOK, slides)
+}
+
+func newSlideListFiltersFromContext(c *gin.Context) repository.SlideListFilters {
+	filters := repository.SlideListFilters{}
+
 	if c.Query("q") != "" {
 		query := c.Query("q")
 		filters.Query = &query
@@ -75,16 +78,7 @@ func (s *Server) adminListSlides(c *gin.Context) {
 		filters.Source = &source
 	}
 
-	slides, total, err := s.slideRepo.AdminList(c.Request.Context(), params, filters)
-	if err != nil {
-		respondWithInternalServerProblem(c, "Failed to list slides: "+err.Error())
-
-		return
-	}
-
-	c.Header("X-Total-Count", strconv.FormatInt(total, 10))
-
-	c.JSON(http.StatusOK, slides)
+	return filters
 }
 
 func (s *Server) adminGetSlide(c *gin.Context) {
@@ -114,14 +108,12 @@ func (s *Server) adminCreateSlide(c *gin.Context) {
 		respondWithFailedToParsePayloadProblem(c, err)
 
 		return
-	} else {
-		slog.Info(
-			"Admin Create Slide: Successfully parsed slide payload",
-			"title",
-			slide.Content.Title,
-			"type",
-			slide.Content.Type,
-		)
+	}
+
+	if slide.Content.Type.IsReadonly() {
+		respondWithBadRequestProblem(c, "Cannot create readonly type slides")
+
+		return
 	}
 
 	if err := s.slideRepo.Save(c.Request.Context(), slide); err != nil {
@@ -133,7 +125,7 @@ func (s *Server) adminCreateSlide(c *gin.Context) {
 		slog.Info("Admin Create Slide: Successfully created slide", "id", slide.ID)
 	}
 
-	s.streamer.Broadcast(EventCreate, slide)
+	s.streamer.Broadcast(domain.EventCreate, slide)
 
 	c.JSON(http.StatusCreated, slide)
 }
@@ -153,6 +145,10 @@ func (s *Server) adminUpdateSlide(c *gin.Context) {
 		return
 	}
 
+	if _, ok := s.ensureSlideIsNotReadonly(c, id); !ok {
+		return
+	}
+
 	slide.ID = id
 
 	if err := s.slideRepo.Save(c.Request.Context(), slide); err != nil {
@@ -161,9 +157,26 @@ func (s *Server) adminUpdateSlide(c *gin.Context) {
 		return
 	}
 
-	s.streamer.Broadcast(EventUpdate, slide)
+	s.streamer.Broadcast(domain.EventUpdate, slide)
 
 	c.JSON(http.StatusOK, slide)
+}
+
+func (s *Server) ensureSlideIsNotReadonly(c *gin.Context, id int64) (*domain.Slide, bool) {
+	slide, err := s.slideRepo.GetByID(c.Request.Context(), id)
+	if err != nil {
+		respondWithNotFoundProblem(c, "Slide with ID "+strconv.FormatInt(id, 10)+" not found")
+
+		return nil, false
+	}
+
+	if slide.Content.Type.IsReadonly() {
+		respondWithBadRequestProblem(c, "Cannot modify readonly type slides")
+
+		return nil, false
+	}
+
+	return slide, true
 }
 
 func (s *Server) adminDeleteSlide(c *gin.Context) {
@@ -174,13 +187,17 @@ func (s *Server) adminDeleteSlide(c *gin.Context) {
 		return
 	}
 
+	if _, ok := s.ensureSlideIsNotReadonly(c, id); !ok {
+		return
+	}
+
 	if err := s.slideRepo.Delete(c.Request.Context(), id); err != nil {
 		respondWithInternalServerProblem(c, "Failed to delete slide: "+err.Error())
 
 		return
 	}
 
-	s.streamer.Broadcast(EventDelete, id)
+	s.streamer.Broadcast(domain.EventDelete, id)
 
 	c.JSON(http.StatusOK, gin.H{"id": id})
 }

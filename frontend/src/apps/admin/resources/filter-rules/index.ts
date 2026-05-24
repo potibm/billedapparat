@@ -4,6 +4,7 @@ import { FilterRulesList } from "./FilterRulesList";
 import { FilterRulesEdit } from "./FilterRulesEdit";
 
 export default {
+  options: { label: "Filter Rules" },
   list: FilterRulesList,
   create: FilterRulesCreate,
   edit: FilterRulesEdit,

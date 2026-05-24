@@ -3,12 +3,18 @@ package config
 
 import "github.com/potibm/billedapparat/internal/app/domain"
 
-type OrderType string
+type (
+	OrderType         string
+	CollectorDataType string
+)
 
 const (
-	OrderRandom OrderType = "random"
-	OrderAsc    OrderType = "asc"
-	OrderDesc   OrderType = "desc"
+	OrderRandom                OrderType         = "random"
+	OrderAsc                   OrderType         = "asc"
+	OrderDesc                  OrderType         = "desc"
+	CollectorDataTypeSlide     CollectorDataType = "slide"
+	CollectorDataTypeNews      CollectorDataType = "news"
+	CollectorDataTypeTimetable CollectorDataType = "timetable"
 )
 
 type PlaylistStep struct {
@@ -47,6 +53,9 @@ type AppConfig struct {
 	CollectorURL       string                 `mapstructure:"collector_url"       validate:"required,http_url"`
 	CorsAllowOrigins   CorsAllowOriginsConfig `mapstructure:"cors_allow_origins"  validate:"dive,required"`
 	EnvironmentMessage string                 `mapstructure:"environment_message"`
+
+	OtelEndpoint string `mapstructure:"otel_endpoint" validate:"omitempty"`
+	Port         int    `mapstructure:"port"          validate:"required,gt=0,lte=65535"`
 }
 
 type FormatConfig struct {
@@ -67,8 +76,14 @@ type APIConfig struct {
 }
 
 type CollectorConfig struct {
-	Enabled bool   `mapstructure:"enabled"`
-	APIKey  string `mapstructure:"api_key" validate:"required_if=Enabled true"`
+	Enabled bool              `mapstructure:"enabled"`
+	APIKey  string            `mapstructure:"api_key" validate:"required_if=Enabled true"`
+	Type    CollectorDataType `mapstructure:"type"    validate:"required_if=Enabled true,oneof=slide news timetable"`
+}
+
+type ExternalAdminURLs struct {
+	Timetable string `json:"timetable" mapstructure:"timetable" validate:"omitempty,http_url"`
+	News      string `json:"news"      mapstructure:"news"      validate:"omitempty,http_url"`
 }
 
 type Config struct {
@@ -78,6 +93,7 @@ type Config struct {
 	API        APIConfig                  `mapstructure:"api"`
 	Collectors map[string]CollectorConfig `mapstructure:"collectors" validate:"dive"`
 	Playlists  []PlaylistConfig           `mapstructure:"playlists"`
+	AdminURLs  ExternalAdminURLs          `mapstructure:"admin_urls"`
 }
 
 func (p *PlaylistStep) SetDefaults() {

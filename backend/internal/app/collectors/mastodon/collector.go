@@ -30,6 +30,10 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 	}
 }
 
+func (c *Collector) Close() error {
+	return nil
+}
+
 func (c *Collector) Run(ctx context.Context) error {
 	if err := c.verifyCredentials(); err != nil {
 		return err
@@ -106,7 +110,7 @@ func (c *Collector) connectAndRead(ctx context.Context, streamURL string) error 
 			payload := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
 
 			if currentEvent != "" && payload != "" {
-				c.handleEvent(currentEvent, payload)
+				c.handleEvent(ctx, currentEvent, payload)
 			}
 		case line == "":
 			currentEvent = ""
@@ -114,7 +118,7 @@ func (c *Collector) connectAndRead(ctx context.Context, streamURL string) error 
 	}
 }
 
-func (c *Collector) handleEvent(eventType, payload string) {
+func (c *Collector) handleEvent(ctx context.Context, eventType, payload string) {
 	switch eventType {
 	case "update", "status.update":
 		var status MastoStatus
@@ -133,7 +137,7 @@ func (c *Collector) handleEvent(eventType, payload string) {
 
 		c.logger.Debug("Mapped post to ingest request", "request", req, "account", status.Account)
 
-		if err := c.hubClient.SendSlide(req); err != nil {
+		if err := c.hubClient.SendSlide(ctx, req); err != nil {
 			c.logger.Error("Error sending the post to the hub", "error", err)
 		}
 
@@ -141,7 +145,7 @@ func (c *Collector) handleEvent(eventType, payload string) {
 		statusID := string(payload)
 		c.logger.Info("Post was deleted", "id", statusID, "event_type", eventType)
 
-		if err := c.hubClient.DeleteSlide(mastodonCollectorName, statusID); err != nil {
+		if err := c.hubClient.DeleteSlide(ctx, mastodonCollectorName, statusID); err != nil {
 			c.logger.Error("Error sending delete request to the hub", "error", err)
 		}
 	default:

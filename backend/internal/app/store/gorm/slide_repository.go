@@ -3,6 +3,7 @@ package gorm
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -25,7 +26,7 @@ func NewSlideRepository(db *gorm.DB) repository.SlideRepository {
 }
 
 func (r *slideRepository) Save(ctx context.Context, slide *domain.Slide) error {
-	dbObj := fromDomain(slide)
+	dbObj := fromDomainSlide(slide)
 
 	err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		UpdateAll: true,
@@ -49,15 +50,15 @@ func (r *slideRepository) GetActive(ctx context.Context) ([]domain.Slide, error)
 		return nil, err
 	}
 
-	slides := toDomainSlice(dbSlides)
+	slides := toDomainSlideList(dbSlides)
 
 	return slides, nil
 }
 
 func (r *slideRepository) AdminList(
 	ctx context.Context,
-	p repository.AdminListParams,
-	filters repository.AdminListFilters,
+	p repository.SlideListParams,
+	filters repository.SlideListFilters,
 ) ([]domain.Slide, int64, error) {
 	var (
 		dbSlides []dbSlide
@@ -71,32 +72,7 @@ func (r *slideRepository) AdminList(
 		query = query.Where("type = ?", p.Type)
 	}
 
-	if filters.Query != nil {
-		likeQuery := fmt.Sprintf("%%%s%%", *filters.Query)
-		query = query.Where(
-			"content_title LIKE ? OR content_body LIKE ? OR author_display_name LIKE ? OR author_username LIKE ?",
-			likeQuery,
-			likeQuery,
-			likeQuery,
-			likeQuery,
-		)
-	}
-
-	if filters.Status != nil {
-		query = query.Where("status = ?", *filters.Status)
-	}
-
-	if filters.Priority != nil {
-		query = query.Where("priority = ?", *filters.Priority)
-	}
-
-	if filters.ID != nil {
-		query = query.Where("id = ?", *filters.ID)
-	}
-
-	if filters.Source != nil {
-		query = query.Where("source = ?", *filters.Source)
-	}
+	query = r.applyFilters(query, filters)
 
 	// determine count
 	if err := query.Count(&total).Error; err != nil {
@@ -104,7 +80,7 @@ func (r *slideRepository) AdminList(
 	}
 
 	// sorting
-	safeOrderClause := getOrderClause(p.Sort, p.Order)
+	safeOrderClause := r.getOrderClause(p.Sort, p.Order)
 
 	// perform query with pagination and sorting
 	err := query.Order(safeOrderClause).
@@ -115,40 +91,9 @@ func (r *slideRepository) AdminList(
 		return nil, 0, err
 	}
 
-	slides := toDomainSlice(dbSlides)
+	slides := toDomainSlideList(dbSlides)
 
 	return slides, total, nil
-}
-
-func getOrderClause(sortField, order string) string {
-	var sortCols []string
-
-	switch sortField {
-	case "content.title":
-		sortCols = []string{"content_title"}
-	case "display_options.priority":
-		sortCols = []string{"priority", "id"}
-	case "author.display_name":
-		sortCols = []string{"author_display_name", "id"}
-	case "source":
-		sortCols = []string{"source", "id"}
-	default:
-		sortCols = []string{"id"}
-	}
-
-	orderDir := "ASC"
-	if strings.ToUpper(order) == "DESC" {
-		orderDir = "DESC"
-	}
-
-	var orderClauses []string
-	for _, col := range sortCols {
-		orderClauses = append(orderClauses, fmt.Sprintf("%s %s", col, orderDir))
-	}
-
-	safeOrderClause := strings.Join(orderClauses, ", ")
-
-	return safeOrderClause
 }
 
 func (r *slideRepository) GetByID(ctx context.Context, id int64) (*domain.Slide, error) {
@@ -231,7 +176,202 @@ func (r *slideRepository) FindExpiredSlidesByType(
 		return nil, err
 	}
 
-	slides := toDomainSlice(dbSlides)
+	slides := toDomainSlideList(dbSlides)
 
 	return slides, nil
+}
+
+func (r *slideRepository) Sync(
+	ctx context.Context,
+	source string,
+	incoming []domain.Slide,
+) (*repository.SlideSyncResult, error) {
+	result := &repository.SlideSyncResult{}
+
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var dbExisting []dbSlide
+		if err := tx.Where("source = ?", source).Find(&dbExisting).Error; err != nil {
+			return err
+		}
+
+		slog.Debug("Existing slides fetched from DB", "count", len(dbExisting), "source", source)
+
+		existing := toDomainSlideList(dbExisting)
+
+		toCreate, toUpdate, toDelete := diffSlides(existing, incoming)
+		slog.Debug(
+			"Sync diff calculated",
+			"to_create",
+			len(toCreate),
+			"to_update",
+			len(toUpdate),
+			"to_delete",
+			len(toDelete),
+		)
+
+		if err := r.insertNew(tx, toCreate, result); err != nil {
+			return err
+		}
+
+		if err := r.updateExisting(tx, toUpdate, result); err != nil {
+			return err
+		}
+
+		if err := r.deleteObsolete(tx, toDelete, result); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return result, err
+}
+
+func (r *slideRepository) getOrderClause(sortField, order string) string {
+	var sortCols []string
+
+	switch sortField {
+	case "content.title":
+		sortCols = []string{"content_title"}
+	case "display_options.priority":
+		sortCols = []string{"priority", "id"}
+	case "author.display_name":
+		sortCols = []string{"author_display_name", "id"}
+	case "source":
+		sortCols = []string{"source", "id"}
+	default:
+		sortCols = []string{"id"}
+	}
+
+	orderDir := "ASC"
+	if strings.ToUpper(order) == "DESC" {
+		orderDir = "DESC"
+	}
+
+	var orderClauses []string
+	for _, col := range sortCols {
+		orderClauses = append(orderClauses, fmt.Sprintf("%s %s", col, orderDir))
+	}
+
+	safeOrderClause := strings.Join(orderClauses, ", ")
+
+	return safeOrderClause
+}
+
+func (r *slideRepository) applyFilters(query *gorm.DB, filters repository.SlideListFilters) *gorm.DB {
+	if filters.Query != nil {
+		likeQuery := fmt.Sprintf("%%%s%%", *filters.Query)
+		query = query.Where(
+			"content_title LIKE ? OR content_body LIKE ? OR author_display_name LIKE ? OR author_username LIKE ?",
+			likeQuery,
+			likeQuery,
+			likeQuery,
+			likeQuery,
+		)
+	}
+
+	if filters.Status != nil {
+		query = query.Where("status = ?", *filters.Status)
+	}
+
+	if filters.Priority != nil {
+		query = query.Where("priority = ?", *filters.Priority)
+	}
+
+	if filters.ID != nil {
+		query = query.Where("id = ?", *filters.ID)
+	}
+
+	if filters.Source != nil {
+		query = query.Where("source = ?", *filters.Source)
+	}
+
+	return query
+}
+
+func diffSlides(existing, incoming []domain.Slide) (toCreate, toUpdate, toDelete []domain.Slide) {
+	existingMap := make(map[string]domain.Slide)
+	for _, e := range existing {
+		existingMap[e.SyncKey()] = e
+	}
+
+	incomingMap := make(map[string]bool)
+
+	for _, inc := range incoming {
+		key := inc.SyncKey()
+		incomingMap[key] = true
+
+		if old, exists := existingMap[key]; exists {
+			if old.HasChanged(inc) {
+				inc.ID = old.ID
+				toUpdate = append(toUpdate, inc)
+			}
+		} else {
+			toCreate = append(toCreate, inc)
+		}
+	}
+
+	for _, ext := range existing {
+		if !incomingMap[ext.SyncKey()] {
+			toDelete = append(toDelete, ext)
+		}
+	}
+
+	return toCreate, toUpdate, toDelete
+}
+
+func (r *slideRepository) insertNew(tx *gorm.DB, items []domain.Slide, res *repository.SlideSyncResult) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	dbItems := fromDomainSlideList(items)
+
+	if err := tx.Create(&dbItems).Error; err != nil {
+		return err
+	}
+
+	for i, dbItem := range dbItems {
+		items[i].ID = dbItem.ID
+	}
+
+	res.Created = items
+
+	return nil
+}
+
+func (r *slideRepository) updateExisting(tx *gorm.DB, items []domain.Slide, res *repository.SlideSyncResult) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	for _, item := range items {
+		itemCopy := item
+		dbObj := fromDomainSlide(&itemCopy)
+
+		if err := tx.Save(dbObj).Error; err != nil {
+			return err
+		}
+
+		item.ID = dbObj.ID
+		res.Updated = append(res.Updated, item)
+	}
+
+	return nil
+}
+
+func (r *slideRepository) deleteObsolete(tx *gorm.DB, items []domain.Slide, res *repository.SlideSyncResult) error {
+	if len(items) == 0 {
+		return nil
+	}
+
+	dbItems := fromDomainSlideList(items)
+
+	if err := tx.Delete(&dbItems).Error; err != nil {
+		return err
+	}
+
+	res.Deleted = items
+
+	return nil
 }

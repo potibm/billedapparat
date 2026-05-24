@@ -64,7 +64,17 @@ var rootCmd = &cobra.Command{
 			return fmt.Errorf("error parsing the config: %w", err)
 		}
 
-		Cfg.App.CorsAllowOrigins = strings.Split(viper.GetString("app.cors_allow_origins"), ",")
+		if len(Cfg.App.CorsAllowOrigins) == 1 && strings.Contains(Cfg.App.CorsAllowOrigins[0], ",") {
+			rawOrigins := strings.Split(Cfg.App.CorsAllowOrigins[0], ",")
+
+			var cleanOrigins []string
+
+			for _, o := range rawOrigins {
+				cleanOrigins = append(cleanOrigins, strings.TrimSpace(o))
+			}
+
+			Cfg.App.CorsAllowOrigins = cleanOrigins
+		}
 
 		if err := Cfg.Validate(); err != nil {
 			if !skipConfigValidation(cmd) {
@@ -94,7 +104,7 @@ func Execute() error {
 	rootCmd.PersistentFlags().String(logFormatFlagName, "json", "Log Format (json, text)")
 	_ = viper.BindPFlag("app.log_format", rootCmd.PersistentFlags().Lookup(logFormatFlagName))
 
-	rootCmd.PersistentFlags().String(databaseFileFlagName, "billedapparat.db", "Dateiname der SQLite Datenbank")
+	rootCmd.PersistentFlags().String(databaseFileFlagName, "billedapparat.db", "Filename of the SQLite database")
 	_ = viper.BindPFlag("app.db_filename", rootCmd.PersistentFlags().Lookup(databaseFileFlagName))
 
 	rootCmd.AddCommand(NewServeCmd())

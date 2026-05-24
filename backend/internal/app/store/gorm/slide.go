@@ -13,9 +13,9 @@ type dbSlide struct {
 	Type   string `gorm:"index"` // sponsor, social, news
 	Status string `gorm:"index"` // active, pending, hidden
 
-	Source        *string `gorm:"uniqueIndex:idx_ext"`
-	ExternalID    *string `gorm:"uniqueIndex:idx_ext"`
-	ExternalSubID *int    `gorm:"uniqueIndex:idx_ext"`
+	Source        *string `gorm:"uniqueIndex:slide_idx_ext"`
+	ExternalID    *string `gorm:"uniqueIndex:slide_idx_ext"`
+	ExternalSubID *int    `gorm:"uniqueIndex:slide_idx_ext"`
 
 	AuthorUsername          string
 	AuthorDisplayName       string
@@ -45,7 +45,7 @@ func (dbSlide) TableName() string {
 	return "slides"
 }
 
-func fromDomain(s *domain.Slide) *dbSlide {
+func fromDomainSlide(s *domain.Slide) *dbSlide {
 	db := &dbSlide{
 		GormModel: GormModel{ID: s.ID},
 
@@ -145,11 +145,21 @@ func (s *dbSlide) toDomain() *domain.Slide {
 	return ds
 }
 
-func toDomainSlice(dbSlides []dbSlide) []domain.Slide {
+func toDomainSlideList(dbSlides []dbSlide) []domain.Slide {
 	slides := make([]domain.Slide, len(dbSlides))
 	for i, s := range dbSlides {
 		slides[i] = *s.toDomain()
 	}
 
 	return slides
+}
+
+func fromDomainSlideList(items []domain.Slide) []*dbSlide {
+	dbItems := make([]*dbSlide, 0, len(items))
+	for _, item := range items {
+		itemCopy := item
+		dbItems = append(dbItems, fromDomainSlide(&itemCopy))
+	}
+
+	return dbItems
 }
