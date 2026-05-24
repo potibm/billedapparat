@@ -26,7 +26,7 @@ func (s *Server) collectorUpsertNews(ctx *gin.Context) {
 		return
 	}
 
-	news, err := mapNewsIngestToDomain(req, s.markdownConverter)
+	news, err := mapNewsIngestToDomain(req, s.sanitizer)
 	if err != nil {
 		slog.Error("Failed to map ingest news to domain model", "error", err)
 		respondWithInternalServerProblem(ctx, "failed to process news item")
@@ -60,7 +60,7 @@ func (s *Server) collectorSyncNews(ctx *gin.Context) {
 		return
 	}
 
-	newsList, err := mapNewsIngestListToDomain(req.Source, req.Items, s.markdownConverter)
+	newsList, err := mapNewsIngestListToDomain(req.Source, req.Items, s.sanitizer)
 	if err != nil {
 		slog.Error("Failed to map ingest news list to domain model", "error", err)
 		respondWithInternalServerProblem(ctx, "failed to process news items")
@@ -115,7 +115,7 @@ func (s *Server) collectorDeleteNews(ctx *gin.Context) {
 			"source", source,
 			"external_id", externalID,
 		)
-		respondWithInternalServerProblem(ctx, "Failed to delete news item: "+err.Error())
+		respondWithInternalServerProblem(ctx, "Failed to delete news item")
 
 		return
 	}

@@ -150,7 +150,7 @@ func (s *Server) collectorDeleteSlide(ctx *gin.Context) {
 			"source", source,
 			"external_id", externalID,
 		)
-		respondWithInternalServerProblem(ctx, "Failed to delete slide: "+err.Error())
+		respondWithInternalServerProblem(ctx, "Failed to delete slide")
 
 		return
 	}

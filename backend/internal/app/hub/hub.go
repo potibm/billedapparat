@@ -10,13 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
-	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
-	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/potibm/billedapparat/internal/app/config"
 	"github.com/potibm/billedapparat/internal/app/generator"
 	"github.com/potibm/billedapparat/internal/app/repository"
@@ -63,7 +61,7 @@ type Server struct {
 	mediaProcessor     MediaProcessor
 	mediaDownloader    *MediaDownloader
 	logger             *slog.Logger
-	markdownConverter  *converter.Converter
+	sanitizer          *bluemonday.Policy
 	generatorEngine    *generator.Engine
 }
 
@@ -75,15 +73,6 @@ func NewServer(cfg Config) (*Server, error) {
 	logger := slog.Default()
 	streamer := NewStreamer(logger.With("component", "Streamer"))
 
-	markdownConverter := converter.NewConverter(
-		converter.WithPlugins(
-			base.NewBasePlugin(),
-			commonmark.NewCommonmarkPlugin(
-				commonmark.WithStrongDelimiter("__"),
-			),
-		),
-	)
-
 	engine := generator.NewEngine(
 		cfg.SlideRepo,
 		streamer,
@@ -94,6 +83,8 @@ func NewServer(cfg Config) (*Server, error) {
 
 	mediaDownloader := NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader"))
 	mediaProcessor := &LocalDiskMediaProcessor{}
+
+	sanitizer := bluemonday.StrictPolicy()
 
 	return &Server{
 		port:               cfg.Port,
@@ -107,7 +98,7 @@ func NewServer(cfg Config) (*Server, error) {
 		mediaDownloader:    mediaDownloader,
 		mediaProcessor:     mediaProcessor,
 		logger:             logger.With("component", "HubServer"),
-		markdownConverter:  markdownConverter,
+		sanitizer:          sanitizer,
 		generatorEngine:    engine,
 	}, nil
 }

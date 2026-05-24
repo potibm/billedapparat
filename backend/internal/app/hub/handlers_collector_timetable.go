@@ -109,7 +109,7 @@ func (s *Server) collectorDeleteTimetable(ctx *gin.Context) {
 			"source", source,
 			"external_id", externalID,
 		)
-		respondWithInternalServerProblem(ctx, "Failed to delete timetable item: "+err.Error())
+		respondWithInternalServerProblem(ctx, "Failed to delete timetable item")
 
 		return
 	}

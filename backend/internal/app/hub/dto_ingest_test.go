@@ -4,9 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
-	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/base"
-	"github.com/JohannesKaufmann/html-to-markdown/v2/plugin/commonmark"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/potibm/billedapparat/internal/app/contracts"
 	"github.com/potibm/billedapparat/internal/app/domain"
 	"github.com/stretchr/testify/assert"
@@ -264,17 +262,12 @@ func TestMapTimetableIngestListToDomain(t *testing.T) {
 	})
 }
 
-func newTestConverter() *converter.Converter {
-	return converter.NewConverter(
-		converter.WithPlugins(
-			base.NewBasePlugin(),
-			commonmark.NewCommonmarkPlugin(),
-		),
-	)
+func newSanitizer() *bluemonday.Policy {
+	return bluemonday.StrictPolicy()
 }
 
 func TestMapNewsIngestToDomain(t *testing.T) {
-	conv := newTestConverter()
+	sanitizer := newSanitizer()
 
 	req := contracts.IngestNewsRequest{
 		Source:      "test-source",
@@ -286,7 +279,7 @@ func TestMapNewsIngestToDomain(t *testing.T) {
 		ExternalURL: "https://example.com/news",
 	}
 
-	news, err := mapNewsIngestToDomain(req, conv)
+	news, err := mapNewsIngestToDomain(req, sanitizer)
 
 	require.NoError(t, err)
 	assert.Equal(t, "test-source", news.Source)
@@ -299,7 +292,7 @@ func TestMapNewsIngestToDomain(t *testing.T) {
 }
 
 func TestMapNewsIngestListToDomain(t *testing.T) {
-	conv := newTestConverter()
+	sanitizer := newSanitizer()
 
 	t.Run("all items match source", func(t *testing.T) {
 		items := []contracts.IngestNewsRequest{
@@ -307,7 +300,7 @@ func TestMapNewsIngestListToDomain(t *testing.T) {
 			{Source: "src", ExternalID: "n2", Title: "News 2", Body: "<p>Body 2</p>"},
 		}
 
-		newsList, err := mapNewsIngestListToDomain("src", items, conv)
+		newsList, err := mapNewsIngestListToDomain("src", items, sanitizer)
 
 		require.NoError(t, err)
 		assert.Len(t, newsList, 2)
@@ -319,7 +312,7 @@ func TestMapNewsIngestListToDomain(t *testing.T) {
 			{Source: "other", ExternalID: "n2", Title: "News 2", Body: "<p>Body 2</p>"},
 		}
 
-		newsList, err := mapNewsIngestListToDomain("src", items, conv)
+		newsList, err := mapNewsIngestListToDomain("src", items, sanitizer)
 
 		assert.Error(t, err)
 		assert.Nil(t, newsList)

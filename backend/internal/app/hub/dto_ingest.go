@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/JohannesKaufmann/html-to-markdown/v2/converter"
+	"github.com/microcosm-cc/bluemonday"
 	"github.com/potibm/billedapparat/internal/app/contracts"
 	"github.com/potibm/billedapparat/internal/app/domain"
 )
@@ -104,19 +104,16 @@ func smartTruncate(text string, limit int) string {
 	return strings.TrimSpace(subString[:lastSpace]) + "..."
 }
 
-func mapNewsIngestToDomain(i contracts.IngestNewsRequest, conv *converter.Converter) (domain.News, error) {
+func mapNewsIngestToDomain(i contracts.IngestNewsRequest, sanitizer *bluemonday.Policy) (domain.News, error) {
 	const maxLengthTitle = 100
 
-	body, err := conv.ConvertString(i.Body)
-	if err != nil {
-		return domain.News{}, fmt.Errorf("failed to convert markdown to text: %w", err)
-	}
+	safeBody := sanitizer.Sanitize(i.Body)
 
 	news := domain.News{
 		Source:      i.Source,
 		ExternalID:  i.ExternalID,
 		Title:       smartTruncate(i.Title, maxLengthTitle),
-		Body:        body,
+		Body:        safeBody,
 		IsUrgent:    i.IsUrgent,
 		IsHidden:    i.IsHidden,
 		ExternalURL: i.ExternalURL,
@@ -128,7 +125,7 @@ func mapNewsIngestToDomain(i contracts.IngestNewsRequest, conv *converter.Conver
 func mapNewsIngestListToDomain(
 	source string,
 	items []contracts.IngestNewsRequest,
-	conv *converter.Converter,
+	sanitizer *bluemonday.Policy,
 ) ([]domain.News, error) {
 	var newsList []domain.News
 
@@ -137,7 +134,7 @@ func mapNewsIngestListToDomain(
 			return nil, fmt.Errorf("source mismatch: expected %s, got %s", source, item.Source)
 		}
 
-		newsItem, err := mapNewsIngestToDomain(item, conv)
+		newsItem, err := mapNewsIngestToDomain(item, sanitizer)
 		if err != nil {
 			return nil, fmt.Errorf("failed to map news ingest to domain: %w", err)
 		}
