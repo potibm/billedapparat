@@ -16,8 +16,8 @@ func (s *Server) adminListTimetable(c *gin.Context) {
 
 	params := repository.TimetableEventListParams{
 		ListParams: repository.ListParams{
-			Offset: start,
-			Limit:  end - start,
+			Offset: max(start, 0),
+			Limit:  max(end-start, 0),
 			Sort:   sort,
 			Order:  order,
 		},

@@ -16,8 +16,8 @@ func (s *Server) adminListNews(c *gin.Context) {
 
 	params := repository.NewsListParams{
 		ListParams: repository.ListParams{
-			Offset: start,
-			Limit:  end - start,
+			Offset: max(start, 0),
+			Limit:  max(end-start, 0),
 			Sort:   sort,
 			Order:  order,
 		},
