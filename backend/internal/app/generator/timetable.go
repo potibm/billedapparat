@@ -36,10 +36,7 @@ func (g *timetableGenerator) Generate(ctx context.Context) ([]domain.Slide, erro
 		return nil, err
 	}
 
-	tt := domain.Timetable(events)
-	tt.Sort()
-
-	dailyGroups := tt.GroupByDate()
+	dailyGroups := domain.Timetable(events).GroupByDate()
 
 	var slides []domain.Slide
 
