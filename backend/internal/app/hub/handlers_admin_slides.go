@@ -155,6 +155,12 @@ func (s *Server) adminUpdateSlide(c *gin.Context) {
 		return
 	}
 
+	if slide.Content.Type.IsReadonly() {
+		respondWithBadRequestProblem(c, "Cannot change type of news or timetable slide")
+
+		return
+	}
+
 	slide.ID = id
 
 	if err := s.slideRepo.Save(c.Request.Context(), slide); err != nil {
@@ -172,6 +178,19 @@ func (s *Server) adminDeleteSlide(c *gin.Context) {
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		respondWithInvalidIDFormatProblem(c)
+
+		return
+	}
+
+	record, err := s.slideRepo.GetByID(c.Request.Context(), id)
+	if err != nil {
+		respondWithNotFoundProblem(c, "Slide with ID "+strconv.FormatInt(id, 10)+" not found")
+
+		return
+	}
+
+	if record.Content.Type.IsReadonly() {
+		respondWithBadRequestProblem(c, "Cannot delete news or timetable slide")
 
 		return
 	}

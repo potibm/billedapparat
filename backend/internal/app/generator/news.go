@@ -45,7 +45,7 @@ func (g *newsGenerator) Generate(ctx context.Context) ([]domain.Slide, error) {
 func (g *newsGenerator) newsToSlide(n domain.News) domain.Slide {
 	status := domain.StatusActive
 	if n.IsHidden {
-		status = domain.StatusDeleted
+		status = domain.StatusInactive
 	}
 
 	subID := 0

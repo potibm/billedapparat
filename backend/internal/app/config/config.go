@@ -62,6 +62,9 @@ func InitViper() {
 	viper.SetDefault("sentry.replay_session_sample_rate", DefaultReplaySessionSampleRate)
 	viper.SetDefault("sentry.replay_error_sample_rate", DefaultReplayErrorSampleRate)
 
+	viper.SetDefault("admin_urls.timetable", "")
+	viper.SetDefault("admin_urls.news", "")
+
 	viper.RegisterAlias("sentry.environment", "app.env")
 	viper.RegisterAlias("sentry.version", "app.version")
 

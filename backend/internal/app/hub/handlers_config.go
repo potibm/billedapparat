@@ -8,12 +8,13 @@ import (
 )
 
 type AppConfigPublic struct {
-	Version            string                  `json:"version"`
-	Environment        string                  `json:"environment"`
-	EnvironmentMessage string                  `json:"environment_message"`
-	Sentry             config.SentryConfig     `json:"sentry"`
-	Format             config.FormatConfig     `json:"format"`
-	Playlists          []config.PlaylistConfig `json:"playlists"`
+	Version            string                   `json:"version"`
+	Environment        string                   `json:"environment"`
+	EnvironmentMessage string                   `json:"environment_message"`
+	Sentry             config.SentryConfig      `json:"sentry"`
+	Format             config.FormatConfig      `json:"format"`
+	Playlists          []config.PlaylistConfig  `json:"playlists"`
+	AdminURLs          config.ExternalAdminURLs `json:"admin_urls"`
 }
 
 type SentryPublic struct {
@@ -36,5 +37,6 @@ func mapToPublicConfig(cfg *config.Config) AppConfigPublic {
 		Format:             cfg.Format,
 		Playlists:          cfg.Playlists,
 		Sentry:             cfg.Sentry,
+		AdminURLs:          cfg.AdminURLs,
 	}
 }

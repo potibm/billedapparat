@@ -81,6 +81,15 @@ type DisplayOptions struct {
 	IsUrgent           bool `json:"is_urgent"`
 }
 
+func (t SlideType) IsReadonly() bool {
+	switch t {
+	case TypeNews, TypeTimetable:
+		return true
+	default:
+		return false
+	}
+}
+
 func (s Slide) HasChanged(newSlide Slide) bool {
 	if s.Status != newSlide.Status {
 		return true

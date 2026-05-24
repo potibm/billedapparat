@@ -8,6 +8,7 @@ import {
   ListItemText,
 } from "@mui/material";
 import LaunchIcon from "@mui/icons-material/Launch";
+import { useAppConfig } from "@core/config/useConfig";
 
 const MenuGroup = ({ title }: { title: string }) => (
   <Box sx={{ mt: 2, mb: 1, pl: 2 }}>
@@ -29,6 +30,11 @@ const MenuExternalLink = ({ href, label }: { href: string; label: string }) => (
 const MenuDiv = () => <Divider sx={{ my: 1 }} />;
 
 export const MyMenu = () => {
+  const { admin_urls } = useAppConfig();
+
+  const timetableURL = admin_urls?.timetable || null;
+  const newsURL = admin_urls?.news || null;
+
   return (
     <Menu>
       <Menu.ResourceItem name="sponsor-slides" />
@@ -43,14 +49,14 @@ export const MyMenu = () => {
 
       {/* --- GROUP: TIMETABLE --- */}
       <MenuGroup title="Timetable" />
-      <MenuExternalLink href="https://dein-tidsapparat.url" label="Edit" />
+      {timetableURL && <MenuExternalLink href={timetableURL} label="Edit" />}
       <Menu.ResourceItem name="timetable" />
       <Menu.ResourceItem name="timetable-slides" />
       <MenuDiv />
 
       {/* --- GROUP: NEWS --- */}
       <MenuGroup title="News" />
-      <MenuExternalLink href="https://dein-protokolapparat.url" label="Edit" />
+      {newsURL && <MenuExternalLink href={newsURL} label="Edit" />}
       <Menu.ResourceItem name="news" />
       <Menu.ResourceItem name="news-slides" />
       <MenuDiv />

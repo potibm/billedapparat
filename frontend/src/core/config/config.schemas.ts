@@ -32,6 +32,11 @@ export const PlaylistSchema = z.object({
   steps: z.array(PlaylistStepSchema),
 });
 
+export const ExternalAdminURLsSchema = z.object({
+  timetable: z.url().or(z.literal("")).optional(),
+  news: z.url().or(z.literal("")).optional(),
+});
+
 export const AppConfigSchema = z.object({
   version: z.string(),
   environment: z.string(),
@@ -43,6 +48,7 @@ export const AppConfigSchema = z.object({
   playlists: z
     .array(PlaylistSchema)
     .min(1, "At least one playlist must be defined"),
+  admin_urls: ExternalAdminURLsSchema,
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;

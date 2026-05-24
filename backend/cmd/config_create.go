@@ -43,6 +43,9 @@ func NewConfigCreateCmd() *cobra.Command {
 				"day":      "numeric",
 			})
 
+			viper.Set("admin_urls.timetable", "http://tidsapparat.example.com/")
+			viper.Set("admin_urls.news", "http://funkapparat.example.com/")
+
 			mastodonCollectorAPIKey, err := generateSecureToken(defaultAPIKeyLength)
 			if err != nil {
 				return fmt.Errorf("failed to generate collector api key: %w", err)

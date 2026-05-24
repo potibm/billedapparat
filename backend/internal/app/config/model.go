@@ -81,6 +81,11 @@ type CollectorConfig struct {
 	Type    CollectorDataType `mapstructure:"type"    validate:"required_if=Enabled true,oneof=slide news timetable"`
 }
 
+type ExternalAdminURLs struct {
+	Timetable string `json:"timetable" mapstructure:"timetable" validate:"omitempty,http_url"`
+	News      string `json:"news"      mapstructure:"news"      validate:"omitempty,http_url"`
+}
+
 type Config struct {
 	App        AppConfig                  `mapstructure:"app"`
 	Format     FormatConfig               `mapstructure:"format"`
@@ -88,6 +93,7 @@ type Config struct {
 	API        APIConfig                  `mapstructure:"api"`
 	Collectors map[string]CollectorConfig `mapstructure:"collectors" validate:"dive"`
 	Playlists  []PlaylistConfig           `mapstructure:"playlists"`
+	AdminURLs  ExternalAdminURLs          `mapstructure:"admin_urls"`
 }
 
 func (p *PlaylistStep) SetDefaults() {
