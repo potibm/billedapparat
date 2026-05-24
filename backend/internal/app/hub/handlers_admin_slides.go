@@ -108,14 +108,12 @@ func (s *Server) adminCreateSlide(c *gin.Context) {
 		respondWithFailedToParsePayloadProblem(c, err)
 
 		return
-	} else {
-		slog.Info(
-			"Admin Create Slide: Successfully parsed slide payload",
-			"title",
-			slide.Content.Title,
-			"type",
-			slide.Content.Type,
-		)
+	}
+
+	if slide.Content.Type.IsReadonly() {
+		respondWithBadRequestProblem(c, "Cannot create readonly type slides")
+
+		return
 	}
 
 	if err := s.slideRepo.Save(c.Request.Context(), slide); err != nil {
@@ -147,7 +145,9 @@ func (s *Server) adminUpdateSlide(c *gin.Context) {
 		return
 	}
 
-	_, _ = s.ensureSlideIsNotReadonly(c, id)
+	if _, ok := s.ensureSlideIsNotReadonly(c, id); !ok {
+		return
+	}
 
 	slide.ID = id
 
@@ -171,7 +171,7 @@ func (s *Server) ensureSlideIsNotReadonly(c *gin.Context, id int64) (*domain.Sli
 	}
 
 	if slide.Content.Type.IsReadonly() {
-		respondWithBadRequestProblem(c, "Cannot modify news or timetable slide")
+		respondWithBadRequestProblem(c, "Cannot modify readonly type slides")
 
 		return nil, false
 	}
@@ -187,7 +187,9 @@ func (s *Server) adminDeleteSlide(c *gin.Context) {
 		return
 	}
 
-	_, _ = s.ensureSlideIsNotReadonly(c, id)
+	if _, ok := s.ensureSlideIsNotReadonly(c, id); !ok {
+		return
+	}
 
 	if err := s.slideRepo.Delete(c.Request.Context(), id); err != nil {
 		respondWithInternalServerProblem(c, "Failed to delete slide: "+err.Error())
