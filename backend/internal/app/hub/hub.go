@@ -92,6 +92,9 @@ func NewServer(cfg Config) (*Server, error) {
 		generator.NewTimetableGenerator(cfg.TimetableEventRepo, logger.With("component", "TimetableGenerator")),
 	)
 
+	mediaDownloader := NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader"))
+	mediaProcessor := &LocalDiskMediaProcessor{}
+
 	return &Server{
 		port:               cfg.Port,
 		staticFiles:        cfg.StaticFiles,
@@ -101,7 +104,8 @@ func NewServer(cfg Config) (*Server, error) {
 		timetableEventRepo: cfg.TimetableEventRepo,
 		cfg:                cfg.Cfg,
 		streamer:           streamer,
-		mediaDownloader:    NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader")),
+		mediaDownloader:    mediaDownloader,
+		mediaProcessor:     mediaProcessor,
 		logger:             logger.With("component", "HubServer"),
 		markdownConverter:  markdownConverter,
 		generatorEngine:    engine,
