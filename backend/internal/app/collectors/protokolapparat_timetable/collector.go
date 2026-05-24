@@ -165,51 +165,72 @@ func (c *Collector) processSingleMessage(ctx context.Context, message redis.XMes
 func (c *Collector) pushToHub(ctx context.Context, event *common.Event[schedule.Entry]) error {
 	switch event.Action {
 	case common.ActionCreate, common.ActionUpdate:
-		for _, payload := range event.Payload {
-			ingestReq := mapPayload(payload)
-
-			if err := c.hubClient.SendTimetableEvent(ctx, ingestReq); err != nil {
-				return fmt.Errorf("error sending timetable event to hub: %w", err)
-			}
-		}
-
+		return c.handleCreateOrUpdate(ctx, event.Payload)
 	case common.ActionSync:
-		var items []contracts.IngestTimetableEventRequest
-
-		for _, payload := range event.Payload {
-			items = append(items, mapPayload(payload))
-		}
-
-		syncReq := contracts.IngestTimetableSyncRequest{
-			Source: protokolapparatTimetableScheduleCollector,
-			Items:  items,
-		}
-
-		c.logger.Info("Sending timetable sync to hub", "count", len(items))
-
-		if err := c.hubClient.SendTimetableEventSync(ctx, syncReq); err != nil {
-			return fmt.Errorf("error sending timetable sync to hub: %w", err)
-		}
-
+		return c.handleSync(ctx, event.Payload)
 	case common.ActionDelete:
-		for _, payload := range event.Payload {
-			if err := c.hubClient.DeleteTimetableEvent(
-				ctx,
-				protokolapparatTimetableScheduleCollector,
-				fmt.Sprintf("%d", payload.ID),
-			); err != nil {
-				return fmt.Errorf("error deleting timetable event from hub: %w", err)
-			}
-		}
-
+		return c.handleDelete(ctx, event.Payload)
 	default:
 		return fmt.Errorf("unsupported action type: %s", event.Action)
+	}
+}
+
+func (c *Collector) handleCreateOrUpdate(ctx context.Context, payloads []schedule.Entry) error {
+	for _, payload := range payloads {
+		ingestReq, err := mapPayload(payload)
+		if err != nil {
+			return fmt.Errorf("error mapping payload: %w", err)
+		}
+
+		if err := c.hubClient.SendTimetableEvent(ctx, ingestReq); err != nil {
+			return fmt.Errorf("error sending timetable event to hub: %w", err)
+		}
 	}
 
 	return nil
 }
 
-func mapPayload(payload schedule.Entry) contracts.IngestTimetableEventRequest {
+func (c *Collector) handleSync(ctx context.Context, payloads []schedule.Entry) error {
+	var items []contracts.IngestTimetableEventRequest
+
+	for _, payload := range payloads {
+		ingestReq, err := mapPayload(payload)
+		if err != nil {
+			return fmt.Errorf("error mapping payload: %w", err)
+		}
+
+		items = append(items, ingestReq)
+	}
+
+	syncReq := contracts.IngestTimetableSyncRequest{
+		Source: protokolapparatTimetableScheduleCollector,
+		Items:  items,
+	}
+
+	c.logger.Info("Sending timetable sync to hub", "count", len(items))
+
+	if err := c.hubClient.SendTimetableEventSync(ctx, syncReq); err != nil {
+		return fmt.Errorf("error sending timetable sync to hub: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Collector) handleDelete(ctx context.Context, payloads []schedule.Entry) error {
+	for _, payload := range payloads {
+		if err := c.hubClient.DeleteTimetableEvent(
+			ctx,
+			protokolapparatTimetableScheduleCollector,
+			fmt.Sprintf("%d", payload.ID),
+		); err != nil {
+			return fmt.Errorf("error deleting timetable event from hub: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func mapPayload(payload schedule.Entry) (contracts.IngestTimetableEventRequest, error) {
 	LocationName := ""
 	LocationAddress := ""
 
@@ -228,12 +249,12 @@ func mapPayload(payload schedule.Entry) contracts.IngestTimetableEventRequest {
 
 	startTime, err := time.Parse(time.RFC3339, payload.StartTime)
 	if err != nil {
-		slog.Error("Invalid start_time format, using original string", "start_time", payload.StartTime, "error", err)
+		return contracts.IngestTimetableEventRequest{}, fmt.Errorf("invalid start_time %q: %w", payload.StartTime, err)
 	}
 
 	endTime, err := time.Parse(time.RFC3339, payload.EndTime)
 	if err != nil && payload.EndTime != "" {
-		slog.Error("Invalid end_time format, using original string", "end_time", payload.EndTime, "error", err)
+		return contracts.IngestTimetableEventRequest{}, fmt.Errorf("invalid end_time %q: %w", payload.EndTime, err)
 	}
 
 	return contracts.IngestTimetableEventRequest{
@@ -248,7 +269,7 @@ func mapPayload(payload schedule.Entry) contracts.IngestTimetableEventRequest {
 		CategoryName:    CategoryName,
 		CategoryColor:   CategoryColor,
 		IsHidden:        payload.IsHidden,
-	}
+	}, nil
 }
 
 func (c *Collector) parseRedisMessage(message redis.XMessage) (*common.Event[schedule.Entry], error) {
