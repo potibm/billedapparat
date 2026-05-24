@@ -91,8 +91,4 @@ export const MarkdownField = ({
   );
 };
 
-MarkdownField.defaultProps = {
-  showRaw: false,
-};
-
 export default MarkdownField;

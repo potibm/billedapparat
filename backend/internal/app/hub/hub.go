@@ -38,7 +38,7 @@ const (
 	collectorSlidesPath       = "/slides"
 	collectorNewsPath         = "/news"
 	collectorTimeTablePath    = "/timetable"
-	collectorPathWithIDSuffix = ":source/:external_id"
+	collectorPathWithIDSuffix = "/:source/:external_id"
 )
 
 type Config struct {
