@@ -19,7 +19,7 @@ type IngestSlideRequest struct {
 	ExternalID      string                       `json:"external_id"          binding:"required"`
 	Author          *IngestSlideRequestAuthor    `json:"author,omitempty"`
 	Body            string                       `json:"body,omitempty"`
-	MediaURLs       []IngestSlideRequestMediaURL `json:"media_urls,omitempty"`
+	MediaURLs       []IngestSlideRequestMediaURL `json:"media_urls,omitempty" binding:"omitempty,dive"`
 	Language        string                       `json:"language,omitempty"`
 	OriginCreatedAt time.Time                    `json:"origin_created_at"    binding:"required"`
 }

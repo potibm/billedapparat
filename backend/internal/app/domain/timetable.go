@@ -48,24 +48,26 @@ func (t Timetable) Sort() {
 }
 
 func (t Timetable) GroupByDate() []TimetableDay {
-	const hoursInDay = 24 * time.Hour
-
 	if len(t) == 0 {
 		return nil
 	}
+
+	sorted := append(Timetable(nil), t...)
+	sorted.Sort()
 
 	var (
 		days       []TimetableDay
 		currentDay *TimetableDay
 	)
 
-	for _, event := range t {
+	for _, event := range sorted {
 		dateStr := event.StartTime.Format(time.DateOnly)
 
 		if currentDay == nil || currentDay.DateStr != dateStr {
+			y, m, d := event.StartTime.Date()
 			days = append(days, TimetableDay{
 				DateStr: dateStr,
-				Date:    event.StartTime.Truncate(hoursInDay),
+				Date:    time.Date(y, m, d, 0, 0, 0, 0, event.StartTime.Location()),
 				Events:  Timetable{},
 			})
 			currentDay = &days[len(days)-1]
