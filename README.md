@@ -38,7 +38,7 @@ mise run setup
 # 3. Start the development server (hot-reload for backend & frontend)
 overmind s --timeout 10
 or
-./mise/task/dev 
+./mise/task/dev
 ```
 
 ## Documentation
