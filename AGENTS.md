@@ -25,7 +25,7 @@ Path aliases (vite + tsconfig): `@core`, `@splash`, `@admin`.
 
 Install mise tools once: `mise install`  
 Full setup (deps + infra): `mise run setup`  
-Dev (hot-reload both): `mise run dev` (uses Overmind / Procfile)
+Dev (hot-reload both): `overmind s --timeout 10` (uses Procfile)
 
 Backend only: `mise run be:dev` (Air, port 3101)  
 Frontend only: `mise run fe:dev` (Vite, port 3100, HTTPS, proxies `/api|media|style` → :3101)
