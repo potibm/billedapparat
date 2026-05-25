@@ -165,7 +165,7 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 		// middleware.ErrorHandlingMiddleware(),
 		gin.Recovery(),
 		sentrygin.New(sentrygin.Options{Repanic: false}),
-		sloggin.New(slog.Default()),
+		sloggin.New(s.logger),
 		otelgin.Middleware(config.OtelBackendServiceName),
 	)
 	s.registerCorsMiddleware(r)
@@ -236,10 +236,10 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 
 func (s *Server) registerCorsMiddleware(r *gin.Engine) {
 	if len(s.cfg.App.CorsAllowOrigins) > 0 {
-		slog.Info("CORS middleware enabled", "origins", s.cfg.App.CorsAllowOrigins)
+		s.logger.Info("CORS middleware enabled", "origins", s.cfg.App.CorsAllowOrigins)
 		r.Use(s.createCorsMiddleware())
 	} else {
-		slog.Info("CORS middleware disabled (no origins configured)")
+		s.logger.Info("CORS middleware disabled (no origins configured)")
 	}
 }
 
