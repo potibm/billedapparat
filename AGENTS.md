@@ -21,7 +21,7 @@ Path aliases (vite + tsconfig): `@core`, `@splash`, `@admin`.
 
 ---
 
-## Everyday commands (all via `mise`)
+## Everyday commands (mostly via `mise`)
 
 Install mise tools once: `mise install`  
 Full setup (deps + infra): `mise run setup`  

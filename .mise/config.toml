@@ -31,7 +31,7 @@ run = "go run ."
 [tasks."fe:dev"]
 description = "Start frontend in development mode with hot reload"
 dir="frontend"
-run = "npx vite"
+run = "exec npx vite"
 
 # ==========================================
 # 🐳 INFRASTRUCTURE
