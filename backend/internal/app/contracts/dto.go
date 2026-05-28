@@ -55,5 +55,5 @@ type IngestTimetableEventRequest struct {
 
 type IngestTimetableSyncRequest struct {
 	Source string                        `json:"source" binding:"required"`
-	Items  []IngestTimetableEventRequest `json:"items"  binding:"required,dive"`
+	Items  []IngestTimetableEventRequest `json:"items"  binding:"dive"`
 }

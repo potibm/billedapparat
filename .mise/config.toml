@@ -48,6 +48,15 @@ run = """
   mise run infra:up
 """
 
+[tasks."infra:exec:tidsapparat"]
+description = "Executes a command inside the running tidsapparat container (pass additional args to specify the command)"
+run = 'docker compose exec tidsapparat /app/tidsapparat "$@"'
+
+[tasks."infra:exec:funkapparat"]
+description = "Executes a command inside the running funkapparat container (pass additional args to specify the command)"
+run = 'docker compose exec funkapparat /app/funkapparat "$@"'
+
+
 # ==========================================
 # 🧪 TESTING
 # ==========================================
