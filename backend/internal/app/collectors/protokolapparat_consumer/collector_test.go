@@ -27,7 +27,7 @@ func TestCalculateBackoff(t *testing.T) {
 			expected:   1 * time.Second,
 		},
 		{
-			name:       "2. Error ()",
+			name:       "2. Error (2s Delay)",
 			errorCount: 2,
 			expected:   2 * time.Second,
 		},
@@ -44,6 +44,11 @@ func TestCalculateBackoff(t *testing.T) {
 		{
 			name:       "Max Delay Reached",
 			errorCount: 10, // 2^9 = 512 Seconds (> 5 Minuten)
+			expected:   5 * time.Minute,
+		},
+		{
+			name:       "Just before Max Shifts",
+			errorCount: 29,
 			expected:   5 * time.Minute,
 		},
 		{

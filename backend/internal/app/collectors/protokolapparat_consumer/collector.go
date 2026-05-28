@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"math"
 	"strings"
 	"time"
 
@@ -159,16 +158,22 @@ func calculateBackoff(errorCount int) time.Duration {
 	const (
 		baseDelay = 1 * time.Second
 		maxDelay  = 5 * time.Minute
-		exponent  = 2
+		maxShifts = 30
 	)
 
-	power := float64(errorCount - 1)
-	if power < 0 {
-		power = 0
+	if errorCount <= 1 {
+		return baseDelay
 	}
 
-	multiplier := math.Pow(exponent, power)
-	delay := time.Duration(float64(baseDelay) * multiplier)
+	shifts := errorCount - 1
+
+	if shifts > maxShifts {
+		return maxDelay
+	}
+
+	multiplier := 1 << shifts
+
+	delay := baseDelay * time.Duration(multiplier)
 
 	if delay > maxDelay {
 		return maxDelay
