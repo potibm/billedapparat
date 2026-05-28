@@ -13,6 +13,11 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const (
+	pelStartID    = "0"
+	newMessagesID = ">"
+)
+
 type Config struct {
 	StreamName    string
 	ConsumerGroup string
@@ -20,11 +25,12 @@ type Config struct {
 }
 
 type Consumer[T common.Validatable] struct {
-	cfg         Config
-	rdb         *redis.Client
-	logger      *slog.Logger
-	version     int
-	pushHandler func(ctx context.Context, event *common.Event[T]) error
+	cfg            Config
+	rdb            *redis.Client
+	logger         *slog.Logger
+	version        int
+	pushHandler    func(ctx context.Context, event *common.Event[T]) error
+	pushErrorCount int
 }
 
 func New[T common.Validatable](
@@ -35,11 +41,12 @@ func New[T common.Validatable](
 	pushHandler func(ctx context.Context, event *common.Event[T]) error,
 ) *Consumer[T] {
 	return &Consumer[T]{
-		cfg:         cfg,
-		rdb:         rdb,
-		logger:      logger,
-		version:     version,
-		pushHandler: pushHandler,
+		cfg:            cfg,
+		rdb:            rdb,
+		logger:         logger,
+		version:        version,
+		pushHandler:    pushHandler,
+		pushErrorCount: 0,
 	}
 }
 
@@ -58,7 +65,7 @@ func (c *Consumer[T]) Run(ctx context.Context) error {
 
 	c.logger.Info("Started redis collector", "stream", c.cfg.StreamName, "group", c.cfg.ConsumerGroup)
 
-	startID := "0" // Always start by clearing the Pending Entries List (PEL)
+	startID := pelStartID // Always start by clearing the Pending Entries List (PEL)
 
 	// Keep looping as long as the context is active
 	for ctx.Err() == nil {
@@ -95,10 +102,10 @@ func (c *Consumer[T]) processNextBatch(ctx context.Context, startID string) (nex
 	}
 
 	if len(streams) == 0 || len(streams[0].Messages) == 0 {
-		if startID == "0" {
+		if startID == pelStartID {
 			c.logger.Debug("PEL is empty, starting with new messages (>)")
 
-			return ">", false
+			return newMessagesID, false
 		}
 
 		return startID, false
@@ -114,29 +121,65 @@ func (c *Consumer[T]) handleBatchResult(
 	startID string,
 	hadFailures bool,
 ) (nextID string, terminate bool) {
-	// If everything succeeded, or if we are already reading the PEL, no backoff is needed
-	if !hadFailures || startID == "0" {
+	// If everything succeeded, we continue
+	if !hadFailures {
 		return startID, false
 	}
 
-	c.logger.Info("Message processing failed, falling back to PEL (0) for retries")
+	nextID = startID
+	if nextID != pelStartID {
+		c.logger.Info("Message processing failed, falling back to PEL (0) for retries")
+
+		nextID = pelStartID
+	}
+
+	backoffDelay := calculateBackoff(c.pushErrorCount)
+	c.logger.Info("Pausing message consumption due to errors", "backoff", backoffDelay, "errors", c.pushErrorCount)
 
 	// Context-aware backoff to prevent a tight loop on persistently failing messages
 	select {
 	case <-ctx.Done():
-		return "0", true
-	case <-time.After(1 * time.Second):
-		return "0", false
+		return pelStartID, true
+	case <-time.After(backoffDelay):
+		return nextID, false
 	}
 }
 
 func (c *Consumer[T]) ensureConsumerGroup(ctx context.Context) error {
-	err := c.rdb.XGroupCreateMkStream(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, "0").Err()
+	err := c.rdb.XGroupCreateMkStream(ctx, c.cfg.StreamName, c.cfg.ConsumerGroup, pelStartID).Err()
 	if err != nil && !strings.Contains(err.Error(), "BUSYGROUP") {
 		return fmt.Errorf("error while creating consumer group: %w", err)
 	}
 
 	return nil
+}
+
+func calculateBackoff(errorCount int) time.Duration {
+	const (
+		baseDelay = 1 * time.Second
+		maxDelay  = 5 * time.Minute
+		maxShifts = 30
+	)
+
+	if errorCount <= 1 {
+		return baseDelay
+	}
+
+	shifts := errorCount - 1
+
+	if shifts > maxShifts {
+		return maxDelay
+	}
+
+	multiplier := 1 << shifts
+
+	delay := baseDelay * time.Duration(multiplier)
+
+	if delay > maxDelay {
+		return maxDelay
+	}
+
+	return delay
 }
 
 func (c *Consumer[T]) handleReadError(err error) bool {
@@ -188,9 +231,20 @@ func (c *Consumer[T]) processSingleMessage(ctx context.Context, message redis.XM
 	c.logger.Debug("Received message", "id", message.ID, "action", event.Action)
 
 	if err := c.pushHandler(ctx, event); err != nil {
-		c.logger.Error("Error processing message, will retry later", "id", message.ID, "err", err)
+		c.pushErrorCount++
+		c.logger.Error(
+			"Error processing message, will retry later",
+			"id",
+			message.ID,
+			"err",
+			err,
+			"consecutive_errors",
+			c.pushErrorCount,
+		)
 
 		return false // Processing failed, trigger PEL retry
+	} else {
+		c.pushErrorCount = 0
 	}
 
 	// Added .Err() check for XAck
