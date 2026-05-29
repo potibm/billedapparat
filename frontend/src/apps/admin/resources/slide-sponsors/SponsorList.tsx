@@ -9,6 +9,7 @@ import {
 } from "react-admin";
 import { DefaultFilters } from "@admin/components/filters/DefaultFilters";
 import { ImagePreviewField } from "@admin/components/fields/ImagePreviewField";
+import { StatusToggleField } from "@admin/components/fields/StatusToggleField";
 
 export const SponsorList = () => (
   <List
@@ -31,7 +32,7 @@ export const SponsorList = () => (
 
       <NumberField source="display_options.priority" label="Priority" />
 
-      <StatusChipField source="status" />
+      <StatusToggleField source="status" inactiveValue="hidden" />
 
       <EditButton />
       <DeleteButton />
