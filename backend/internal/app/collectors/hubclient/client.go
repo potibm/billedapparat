@@ -38,6 +38,51 @@ func New(baseURL, apiKey string, logger *slog.Logger) *HubClient {
 	}
 }
 
+func (c *HubClient) WaitForServer(ctx context.Context, maxRetries int, initialDelay time.Duration) error {
+	delay := initialDelay
+
+	for i := 1; i <= maxRetries; i++ {
+		c.Logger.Info("Checking hub server reachability...", "attempt", i, "max_retries", maxRetries, "url", c.BaseURL)
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodHead, c.BaseURL, http.NoBody)
+		if err != nil {
+			return fmt.Errorf("failed to create reachability request: %w", err)
+		}
+
+		resp, err := c.HTTPClient.Do(req)
+		if err == nil {
+			resp.Body.Close()
+
+			if resp.StatusCode < http.StatusBadRequest {
+				c.Logger.Info("Hub server is reachable!", "url", c.BaseURL)
+
+				return nil
+			}
+
+			c.Logger.Debug("Hub server returned error status", "status", resp.StatusCode)
+		} else {
+			c.Logger.Debug("Network error during reachability check", "error", err.Error())
+		}
+
+		if i == maxRetries {
+			break
+		}
+
+		c.Logger.Info("Hub server not ready. Waiting before next attempt...", "delay", delay.String())
+
+		select {
+		case <-ctx.Done():
+			c.Logger.Warn("Reachability check cancelled by context")
+
+			return fmt.Errorf("context cancelled while waiting for hub server: %w", ctx.Err())
+		case <-time.After(delay):
+			delay *= 2
+		}
+	}
+
+	return fmt.Errorf("hub server at '%s' not reachable after %d attempts", c.BaseURL, maxRetries)
+}
+
 func (c *HubClient) sendPostRequest(ctx context.Context, entityType, entityName, externalID string, payload any) error {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {

@@ -20,6 +20,8 @@ import (
 	"github.com/potibm/billedapparat/internal/app/repository"
 	sloggin "github.com/samber/slog-gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
 )
 
 const (
@@ -37,6 +39,14 @@ const (
 	collectorNewsPath         = "/news"
 	collectorTimeTablePath    = "/timetable"
 	collectorPathWithIDSuffix = "/:source/:external_id"
+)
+
+var (
+	meter                      = otel.Meter(config.OtelMeterName)
+	receivedCollectorEvents, _ = meter.Int64Counter(
+		"billedapparat_hub_collector_events_rcvd",
+		metric.WithDescription("Received collector events"),
+	)
 )
 
 type Config struct {

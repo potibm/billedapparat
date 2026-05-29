@@ -24,8 +24,6 @@ format:
 
 party:
     default_address: Prins Jørgens Gård 5, 1218 København K, Denmark
-    start_date: "2026-05-22"
-    end_date: "2026-05-24"
     timezone: Europe/Copenhagen
 
 event_durations:

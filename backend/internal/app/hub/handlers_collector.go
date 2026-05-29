@@ -5,6 +5,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/potibm/billedapparat/internal/app/config"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+)
+
+type Action string
+
+const (
+	ActionUpsert Action = "upsert"
+	ActionSync   Action = "sync"
+	ActionDelete Action = "delete"
 )
 
 func (s *Server) validateCollectorAccess(
@@ -42,4 +52,17 @@ func (s *Server) validateCollectorAccess(
 	}
 
 	return true
+}
+
+func (s *Server) incrementReceivedCollectorEventsCounter(
+	ctx *gin.Context,
+	dataType config.CollectorDataType,
+	source string,
+	action Action,
+) {
+	receivedCollectorEvents.Add(ctx, 1, metric.WithAttributes(
+		attribute.String("type", string(dataType)),
+		attribute.String("source", source),
+		attribute.String("action", string(action)),
+	))
 }
