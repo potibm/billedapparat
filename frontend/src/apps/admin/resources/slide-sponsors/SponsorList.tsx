@@ -1,4 +1,3 @@
-import { StatusChipField } from "@admin/components/fields/StatusChipField";
 import {
   List,
   Datagrid,
