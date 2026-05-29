@@ -75,7 +75,9 @@ func InitTelemetry(ctx context.Context, endpoint, version string) (func(), error
 
 	// return cleanup function
 	return func() {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		const shutdownTimeout = 5 * time.Second
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
 
 		_ = tp.Shutdown(shutdownCtx)
