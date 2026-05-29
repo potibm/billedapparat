@@ -2,6 +2,8 @@ package initializer
 
 import (
 	"context"
+	"log/slog"
+	"time"
 
 	"github.com/potibm/billedapparat/internal/app/config"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -19,6 +21,8 @@ import (
 
 func InitTelemetry(ctx context.Context, endpoint, version string) (func(), error) {
 	if endpoint == "" {
+		slog.Warn("No OpenTelemetry endpoint configured, telemetry will be disabled")
+
 		return nil, nil // No tracing if no endpoint is provided
 	}
 
@@ -71,8 +75,11 @@ func InitTelemetry(ctx context.Context, endpoint, version string) (func(), error
 
 	// return cleanup function
 	return func() {
-		_ = tp.Shutdown(ctx)
-		_ = lp.Shutdown(ctx)
-		_ = mp.Shutdown(ctx)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		_ = tp.Shutdown(shutdownCtx)
+		_ = lp.Shutdown(shutdownCtx)
+		_ = mp.Shutdown(shutdownCtx)
 	}, nil
 }

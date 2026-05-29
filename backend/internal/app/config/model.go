@@ -15,6 +15,7 @@ const (
 	CollectorDataTypeSlide     CollectorDataType = "slide"
 	CollectorDataTypeNews      CollectorDataType = "news"
 	CollectorDataTypeTimetable CollectorDataType = "timetable"
+	OtelMeterName              string            = "github.com/potibm/billedapparat"
 )
 
 type PlaylistStep struct {

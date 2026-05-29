@@ -90,6 +90,8 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 		go s.mediaDownloader.ProcessSlideMedia(id)
 	}
 
+	s.incrementReceivedCollectorEventsCounter(ctx, config.CollectorDataTypeSlide, req.Source, ActionUpsert)
+
 	slog.Info(
 		"Ingest request processed",
 		"source",
@@ -154,6 +156,8 @@ func (s *Server) collectorDeleteSlide(ctx *gin.Context) {
 
 		return
 	}
+
+	s.incrementReceivedCollectorEventsCounter(ctx, config.CollectorDataTypeSlide, source, ActionDelete)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "deleted",

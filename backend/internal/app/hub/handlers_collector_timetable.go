@@ -37,6 +37,8 @@ func (s *Server) collectorUpsertTimetable(ctx *gin.Context) {
 
 	s.generatorEngine.Trigger(timetableGeneratorEngine)
 
+	s.incrementReceivedCollectorEventsCounter(ctx, config.CollectorDataTypeTimetable, req.Source, ActionUpsert)
+
 	slog.Info("Timetable item upserted successfully", "id", timetable.ID, "source", timetable.Source)
 	ctx.JSON(http.StatusOK, gin.H{"id": timetable.ID})
 }
@@ -73,6 +75,8 @@ func (s *Server) collectorSyncTimetable(ctx *gin.Context) {
 	if len(syncResult.Created) > 0 || len(syncResult.Updated) > 0 || len(syncResult.Deleted) > 0 {
 		s.generatorEngine.Trigger(timetableGeneratorEngine)
 	}
+
+	s.incrementReceivedCollectorEventsCounter(ctx, config.CollectorDataTypeTimetable, req.Source, ActionSync)
 
 	slog.Info(
 		"Finished timetable sync",
@@ -115,6 +119,8 @@ func (s *Server) collectorDeleteTimetable(ctx *gin.Context) {
 	}
 
 	s.generatorEngine.Trigger(timetableGeneratorEngine)
+
+	s.incrementReceivedCollectorEventsCounter(ctx, config.CollectorDataTypeTimetable, source, ActionDelete)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "deleted",
