@@ -1,21 +1,14 @@
 import { ConfigProvider } from "@core/config/ConfigProvider";
 import { Router } from "./router/Router";
-import * as Sentry from "@sentry/react";
+import SentryInitializer from "@core/monitoring/SentryInitializer";
 
 function App() {
   return (
     <div className="App">
       <ConfigProvider>
-        <Sentry.ErrorBoundary
-          fallback={
-            <p>
-              A serious error has occurred. Please restart the beamer
-              application.
-            </p>
-          }
-        >
+        <SentryInitializer>
           <Router />
-        </Sentry.ErrorBoundary>
+        </SentryInitializer>
       </ConfigProvider>
     </div>
   );
