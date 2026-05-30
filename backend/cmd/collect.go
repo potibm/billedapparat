@@ -9,6 +9,7 @@ import (
 	"github.com/potibm/billedapparat/internal/app/collectors"
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
 	"github.com/potibm/billedapparat/internal/app/collectors/mastodon"
+	"github.com/potibm/billedapparat/internal/app/collectors/pouet"
 	"github.com/potibm/billedapparat/internal/app/collectors/protokolapparat_news"
 	"github.com/potibm/billedapparat/internal/app/collectors/protokolapparat_timetable"
 	"github.com/potibm/billedapparat/internal/app/config"
@@ -137,6 +138,14 @@ func buildCollector(source string, subViper *viper.Viper, client *hubclient.HubC
 		}
 
 		return mastodon.NewCollector(cfg, client), nil
+
+	case "pouet":
+		var cfg pouet.Config
+		if err := subViper.Unmarshal(&cfg); err != nil {
+			return nil, fmt.Errorf("error parsing config for Pouet Collector: %w", err)
+		}
+
+		return pouet.NewCollector(cfg, client), nil
 
 	case "protokolapparat-news":
 		var cfg protokolapparat_news.Config
