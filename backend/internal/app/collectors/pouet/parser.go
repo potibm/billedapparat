@@ -22,8 +22,6 @@ func parse(logger *slog.Logger, reader io.Reader) ([]contracts.IngestSlideReques
 
 	doc.Find("#pouetbox_onelinerview li").Each(func(i int, s *goquery.Selection) {
 		if s.HasClass("day") {
-			logger.Warn("Skipping item with 'date' class, likely a date separator", "index", i)
-
 			return
 		}
 

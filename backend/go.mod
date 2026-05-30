@@ -6,6 +6,7 @@ toolchain go1.25.1
 
 require (
 	github.com/HugoSmits86/nativewebp v1.3.0
+	github.com/PuerkitoBio/goquery v1.12.0
 	github.com/brianvoe/gofakeit/v7 v7.15.0
 	github.com/getsentry/sentry-go v0.46.2
 	github.com/getsentry/sentry-go/gin v0.46.2
@@ -43,7 +44,6 @@ require (
 )
 
 require (
-	github.com/PuerkitoBio/goquery v1.12.0 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/bytedance/gopkg v0.1.4 // indirect
