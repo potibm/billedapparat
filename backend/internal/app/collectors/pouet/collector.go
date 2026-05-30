@@ -63,10 +63,32 @@ func (c *Collector) Run(ctx context.Context) error {
 func (c *Collector) collectAndSend(ctx context.Context) error {
 	c.logger.Info("Collecting data from Pouet")
 
+	slideRequests, err := fetch(ctx, c.logger, pouetOnelinerURL)
+	if err != nil {
+		return fmt.Errorf("error fetching data: %w", err)
+	}
+
+	c.logger.Info("Fetched data from Pouet", "num_items", len(slideRequests))
+
+	if len(c.cfg.Keywords) > 0 {
+		slideRequests = filterByKeywords(slideRequests, c.cfg.Keywords.Lower())
+		c.logger.Info("Filtered data by keywords", "num_items_after_filtering", len(slideRequests))
+	}
+
+	for _, req := range slideRequests {
+		if err := c.hubClient.SendSlide(ctx, req); err != nil {
+			c.logger.Error("Error ingesting slide to hub", "error", err, "external_id", req.ExternalID)
+
+			continue
+		}
+
+		c.logger.Info("Successfully ingested slide to hub", "external_id", req.ExternalID)
+	}
+
 	return nil
 }
 
-func fetch(ctx context.Context, url string) ([]contracts.IngestSlideRequest, error) {
+func fetch(ctx context.Context, logger *slog.Logger, url string) ([]contracts.IngestSlideRequest, error) {
 	// #nosec G107 -- url is passed as constant and not influenced by user input, so this is not vulnerable to SSRF
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
@@ -83,5 +105,5 @@ func fetch(ctx context.Context, url string) ([]contracts.IngestSlideRequest, err
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	return parse(resp.Body)
+	return parse(logger, resp.Body)
 }

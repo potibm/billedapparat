@@ -1,6 +1,7 @@
 package pouet
 
 import (
+	"log/slog"
 	"os"
 	"testing"
 
@@ -15,7 +16,7 @@ func TestParse_FromRealHTML(t *testing.T) {
 	}
 	defer file.Close()
 
-	result, err := parse(file)
+	result, err := parse(slog.Default(), file)
 	if err != nil {
 		t.Fatalf("Error parsing HTML: %v", err)
 	}
@@ -46,9 +47,8 @@ func TestParse_FromRealHTML(t *testing.T) {
 	expectedFirstWithHTML := contracts.IngestSlideRequest{
 		Source:     pouetCollectorName,
 		ExternalID: externalURLPrefix + "275596469a22cd65b23f854bef25dfb79fe1af030543be16454a4b634148dfc3",
-		Body: "Just a wonderful SID tune: <a href=\"https://deepsid.chordian.net/?file=/MUSICIANS/N" +
-			"/Nygaard_Richard/Thats_the_Wave_It_Is.sid\" rel=\"external\">https://deepsid.chordian.net/" +
-			"?file=/MUSICIANS/N/Nygaard_Richard/Thats_the_Wave_I t_Is.sid</a>",
+		Body: "Just a wonderful SID tune: https://deepsid.chordian.net/" +
+			"?file=/MUSICIANS/N/Nygaard_Richard/Thats_the_Wave_I t_Is.sid",
 		Language:        "en-EN",
 		MediaURLs:       nil,
 		OriginCreatedAt: result[0].OriginCreatedAt,

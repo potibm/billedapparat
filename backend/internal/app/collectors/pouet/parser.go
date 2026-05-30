@@ -12,7 +12,7 @@ import (
 	"github.com/potibm/billedapparat/internal/app/contracts"
 )
 
-func parse(reader io.Reader) ([]contracts.IngestSlideRequest, error) {
+func parse(logger *slog.Logger, reader io.Reader) ([]contracts.IngestSlideRequest, error) {
 	doc, err := goquery.NewDocumentFromReader(reader)
 	if err != nil {
 		return nil, err
@@ -22,28 +22,28 @@ func parse(reader io.Reader) ([]contracts.IngestSlideRequest, error) {
 
 	doc.Find("#pouetbox_onelinerview li").Each(func(i int, s *goquery.Selection) {
 		if s.HasClass("day") {
-			slog.Warn("Skipping item with 'date' class, likely a date separator", "index", i)
+			logger.Warn("Skipping item with 'date' class, likely a date separator", "index", i)
 
 			return
 		}
 
 		createdString := s.Find("time").AttrOr("datetime", "")
 		if createdString == "" {
-			slog.Warn("Missing datetime attribute in time element, skipping item")
+			logger.Warn("Missing datetime attribute in time element, skipping item", "index", i)
 
 			return
 		}
 
 		created, err := time.Parse(time.DateTime, createdString)
 		if err != nil {
-			slog.Warn("Invalid datetime format in time element, skipping item")
+			logger.Warn("Invalid datetime format in time element, skipping item", "index", i)
 
 			return
 		}
 
 		userTag := s.Find("a.usera")
 		if userTag.Length() == 0 {
-			slog.Warn("Missing user link element, skipping item")
+			logger.Warn("Missing user link element, skipping item", "index", i)
 
 			return
 		}
@@ -72,14 +72,7 @@ func getMessageHTML(s *goquery.Selection) string {
 	s.Find("time").Remove()
 	s.Find("a.usera").Remove()
 
-	content, err := s.Html()
-	if err != nil {
-		slog.Warn("Error extracting HTML content, falling back to text", "error", err)
-
-		content = s.Text()
-	}
-
-	return strings.TrimSpace(content)
+	return strings.TrimSpace(s.Text())
 }
 
 func getAuthor(s *goquery.Selection) *contracts.IngestSlideRequestAuthor {
