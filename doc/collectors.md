@@ -36,3 +36,17 @@ collectors:
             - ovolo
             - zvokz
 ````
+
+## Bluesky
+
+````
+collectors:
+    pouet:
+        api_key: 123***redacted**xyz
+        enabled: true
+        type: slide
+        hashtags:
+            - #evoke
+            - #demoscene
+            - #demoparty
+````
