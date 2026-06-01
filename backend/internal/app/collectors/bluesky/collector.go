@@ -92,8 +92,6 @@ func (c *Collector) Close() error {
 }
 
 func (c *Collector) Run(ctx context.Context) error {
-	go c.processEvents(ctx)
-
 	c.wg.Add(1)
 	go func() {
 		defer c.wg.Done()
@@ -103,7 +101,6 @@ func (c *Collector) Run(ctx context.Context) error {
 
 	for ctx.Err() == nil {
 		// before reconnecting, check if we should stop (z.B. STRG+C)
-
 		err := c.connectAndRead(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
