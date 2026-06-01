@@ -2,7 +2,6 @@ package bluesky
 
 import (
 	"context"
-	"log/slog"
 	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -20,13 +19,13 @@ func (c *Collector) handleCreate(ctx context.Context, event *JetstreamEvent) {
 
 	profile, err := c.getProfile(context.Background(), event.Did)
 	if err != nil {
-		slog.Error("Failed to fetch profile", "did", event.Did, "error", err)
+		c.logger.Error("Failed to fetch profile", "did", event.Did, "error", err)
 
 		return
 	}
 
 	// send event to hub
-	slog.Info(
+	c.logger.Info(
 		"Post upserted",
 		"rkey",
 		event.Commit.Rkey,
@@ -54,13 +53,13 @@ func (c *Collector) handleUpdate(ctx context.Context, event *JetstreamEvent) {
 	if hasHashtag {
 		profile, err := c.getProfile(context.Background(), event.Did)
 		if err != nil {
-			slog.Error("Failed to fetch profile", "did", event.Did, "error", err)
+			c.logger.Error("Failed to fetch profile", "did", event.Did, "error", err)
 
 			return
 		}
 
 		// send event to hub
-		slog.Info(
+		c.logger.Info(
 			"Post upserted",
 			"rkey",
 			event.Commit.Rkey,
@@ -77,7 +76,7 @@ func (c *Collector) handleUpdate(ctx context.Context, event *JetstreamEvent) {
 		))
 	} else if isKnown && !hasHashtag {
 		// send event to hub
-		slog.Info("Post deleted (hashtag removed)", "rkey", event.Commit.Rkey)
+		c.logger.Info("Post deleted (hashtag removed)", "rkey", event.Commit.Rkey)
 
 		c.knownPosts.Remove(event.Commit.Rkey)
 
@@ -90,7 +89,7 @@ func (c *Collector) handleUpdate(ctx context.Context, event *JetstreamEvent) {
 func (c *Collector) handleDelete(ctx context.Context, event *JetstreamEvent) {
 	if c.knownPosts.Contains(event.Commit.Rkey) {
 		// send event to hub
-		slog.Info("Post deleted", "rkey", event.Commit.Rkey)
+		c.logger.Info("Post deleted", "rkey", event.Commit.Rkey)
 
 		c.postsMatched.Add(ctx, 1, metric.WithAttributes(
 			attribute.String("operation", "delete"),
@@ -103,6 +102,7 @@ func (c *Collector) handleDelete(ctx context.Context, event *JetstreamEvent) {
 func (c *Collector) hasRelevantHashtag(text string) bool {
 	textLower := strings.ToLower(text)
 	for _, hashtag := range c.cfg.Hashtags.Lower() {
+		// @todo check that hashtag is not part of a longer word, e.g. "#demoscene" should not match "#demoscenery"
 		if strings.Contains(textLower, hashtag) {
 			return true
 		}
