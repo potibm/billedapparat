@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sync"
+	"time"
 )
 
 type ProfileList struct {
@@ -66,9 +68,15 @@ func (c Collector) getProfile(ctx context.Context, did string) (*ProfileResponse
 }
 
 func fetchProfile(ctx context.Context, did string) (*ProfileResponse, error) {
-	apiURL := fmt.Sprintf("https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=%s", did)
+	apiURL := fmt.Sprintf("https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=%s", url.QueryEscape(did))
 
-	resp, err := http.Get(apiURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

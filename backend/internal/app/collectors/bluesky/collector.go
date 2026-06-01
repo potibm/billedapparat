@@ -19,6 +19,7 @@ const (
 	blueskyCollectorName = "bluesky"
 	jetstreamURL         = "wss://jetstream1.us-east.bsky.network/subscribe"
 	metricNamespace      = "billedapparat_collector_bluesky_"
+	eventBufferSize      = 1000
 )
 
 type Collector struct {
@@ -50,7 +51,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 		logger:         slog.Default().With("component", "collector_bluesky"),
 		knownPosts:     NewRKeyList(),
 		profiles:       NewProfileList(),
-		eventsChan:     make(chan *JetstreamEvent, 1000),
+		eventsChan:     make(chan *JetstreamEvent, eventBufferSize),
 		eventsReceived: eventsReceived,
 		reconnects:     reconnects,
 		postsMatched:   postsMatched,

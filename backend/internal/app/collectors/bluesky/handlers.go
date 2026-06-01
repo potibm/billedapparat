@@ -70,6 +70,8 @@ func (c *Collector) handleUpdate(ctx context.Context, event *JetstreamEvent) {
 			profile.Handle,
 		)
 
+		c.knownPosts.Add(event.Commit.Rkey)
+
 		c.postsMatched.Add(ctx, 1, metric.WithAttributes(
 			attribute.String("operation", "update"),
 		))
@@ -77,14 +79,12 @@ func (c *Collector) handleUpdate(ctx context.Context, event *JetstreamEvent) {
 		// send event to hub
 		slog.Info("Post deleted (hashtag removed)", "rkey", event.Commit.Rkey)
 
+		c.knownPosts.Remove(event.Commit.Rkey)
+
 		c.postsMatched.Add(ctx, 1, metric.WithAttributes(
 			attribute.String("operation", "delete"),
 		))
-
-		c.knownPosts.Remove(event.Commit.Rkey)
 	}
-
-	c.knownPosts.Add(event.Commit.Rkey)
 }
 
 func (c *Collector) handleDelete(ctx context.Context, event *JetstreamEvent) {
