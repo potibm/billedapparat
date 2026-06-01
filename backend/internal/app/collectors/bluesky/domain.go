@@ -1,6 +1,9 @@
 package bluesky
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type JetstreamEvent struct {
 	Kind   string           `json:"kind"`
@@ -16,10 +19,21 @@ type JetstreamCommit struct {
 }
 
 type PostRecord struct {
-	Type  string     `json:"$type"`
-	Text  string     `json:"text"`
-	Langs []string   `json:"langs,omitempty"`
-	Embed *PostEmbed `json:"embed,omitempty"`
+	Type      string     `json:"$type"`
+	Text      string     `json:"text"`
+	CreatedAt string     `json:"createdAt"`
+	Langs     []string   `json:"langs,omitempty"`
+	Embed     *PostEmbed `json:"embed,omitempty"`
+	Facets    []Facet    `json:"facets,omitempty"`
+}
+
+type Facet struct {
+	Features []FacetFeature `json:"features"`
+}
+
+type FacetFeature struct {
+	Type string `json:"$type"`
+	Tag  string `json:"tag,omitempty"`
 }
 
 type PostEmbed struct {
@@ -47,6 +61,14 @@ type ProfileResponse struct {
 	Avatar      string `json:"avatar"`
 }
 
+func (p *PostRecord) FirstLanguage() string {
+	if len(p.Langs) > 0 {
+		return p.Langs[0]
+	}
+
+	return ""
+}
+
 func (e *JetstreamEvent) ExtractImageURLs() []string {
 	var urls []string
 
@@ -67,4 +89,40 @@ func (e *JetstreamEvent) ExtractImageURLs() []string {
 	}
 
 	return urls
+}
+
+func (e *JetstreamEvent) ExtractVideoURLs() (streamURL, thumbnailURL string, hasVideo bool) {
+	if e.Commit == nil || e.Commit.Record == nil || e.Commit.Record.Embed == nil {
+		return "", "", false
+	}
+
+	if e.Commit.Record.Embed.Type != "app.bsky.embed.video" || e.Commit.Record.Embed.Video == nil {
+		return "", "", false
+	}
+
+	cid := e.Commit.Record.Embed.Video.Ref.Link
+	if cid == "" {
+		return "", "", false
+	}
+
+	baseURL := fmt.Sprintf("https://video.bsky.app/watch/%s/%s", e.Did, cid)
+
+	streamURL = fmt.Sprintf("%s/playlist.m3u8", baseURL)
+	thumbnailURL = fmt.Sprintf("%s/thumbnail.jpg", baseURL)
+
+	return streamURL, thumbnailURL, true
+}
+
+func (p *PostRecord) Hashtags() []string {
+	var tags []string
+
+	for _, facet := range p.Facets {
+		for _, feature := range facet.Features {
+			if feature.Type == "app.bsky.richtext.facet#tag" && feature.Tag != "" {
+				tags = append(tags, strings.ToLower(feature.Tag))
+			}
+		}
+	}
+
+	return tags
 }

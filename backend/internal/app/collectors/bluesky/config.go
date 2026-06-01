@@ -15,14 +15,16 @@ type Config struct {
 	Hashtags Hashtags `mapstructure:"hashtags"`
 }
 
-func (h Hashtags) Lower() Hashtags {
-	lowerHashtags := make(Hashtags, len(h))
-	for i, hashtag := range h {
-		// @todo add a # if it's missing?
-		lowerHashtags[i] = strings.ToLower(hashtag)
+func (h Hashtags) Normalize() Hashtags {
+	normalized := make(Hashtags, len(h))
+	for _, tag := range h {
+		clean := strings.ToLower(strings.TrimPrefix(tag, "#"))
+		if clean != "" {
+			normalized = append(normalized, clean)
+		}
 	}
 
-	return lowerHashtags
+	return normalized
 }
 
 func DefaultConfig(generatedAPIKey string) map[string]any {

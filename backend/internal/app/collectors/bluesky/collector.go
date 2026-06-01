@@ -26,6 +26,7 @@ const (
 
 type Collector struct {
 	cfg            Config
+	searchTags     Hashtags
 	hubClient      *hubclient.HubClient
 	logger         *slog.Logger
 	knownPosts     *RKeyList
@@ -49,6 +50,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 
 	c := &Collector{
 		cfg:            cfg,
+		searchTags:     cfg.Hashtags.Normalize(),
 		hubClient:      hubClient,
 		logger:         slog.Default().With("component", "collector_bluesky"),
 		knownPosts:     NewRKeyList(),
@@ -95,6 +97,7 @@ func (c *Collector) Close() error {
 }
 
 func (c *Collector) Run(ctx context.Context) error {
+	// @TODO get a list of knownPosts from the hub
 	c.wg.Add(1)
 	go func() {
 		defer c.wg.Done()
