@@ -32,7 +32,7 @@ func DefaultConfig(generatedAPIKey string) map[string]any {
 			Type:    config.CollectorDataTypeSlide,
 			APIKey:  generatedAPIKey,
 		},
-		Hashtags: []string{"#demoscene"},
+		Hashtags: Hashtags{"#demoscene"},
 	}
 
 	var result map[string]any
