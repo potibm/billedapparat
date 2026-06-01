@@ -16,10 +16,12 @@ import (
 )
 
 const (
-	blueskyCollectorName = "bluesky"
-	jetstreamURL         = "wss://jetstream1.us-east.bsky.network/subscribe"
-	metricNamespace      = "billedapparat_collector_bluesky_"
-	eventBufferSize      = 1000
+	blueskyCollectorName    = "bluesky"
+	jetstreamURL            = "wss://jetstream1.us-east.bsky.network/subscribe"
+	metricNamespace         = "billedapparat_collector_bluesky_"
+	eventBufferSize         = 1000
+	profileRequestTimeout   = 5 * time.Second
+	jetstreamReconnectDelay = 2 * time.Second
 )
 
 type Collector struct {
@@ -114,7 +116,7 @@ func (c *Collector) Run(ctx context.Context) error {
 			c.reconnects.Add(ctx, 1)
 
 			select {
-			case <-time.After(2 * time.Second):
+			case <-time.After(jetstreamReconnectDelay):
 			case <-ctx.Done():
 				break
 			}

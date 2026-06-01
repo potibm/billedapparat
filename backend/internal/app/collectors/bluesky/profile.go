@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
-	"time"
 )
 
 type ProfileList struct {
@@ -51,7 +50,7 @@ func (p *ProfileList) Len() int {
 	return len(p.m)
 }
 
-func (c Collector) getProfile(ctx context.Context, did string) (*ProfileResponse, error) {
+func (c *Collector) getProfile(ctx context.Context, did string) (*ProfileResponse, error) {
 	profile, exists := c.profiles.Get(did)
 	if exists {
 		return profile, nil
@@ -70,12 +69,13 @@ func (c Collector) getProfile(ctx context.Context, did string) (*ProfileResponse
 func fetchProfile(ctx context.Context, did string) (*ProfileResponse, error) {
 	apiURL := fmt.Sprintf("https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=%s", url.QueryEscape(did))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: profileRequestTimeout}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

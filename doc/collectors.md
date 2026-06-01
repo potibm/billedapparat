@@ -41,7 +41,7 @@ collectors:
 
 ````
 collectors:
-    pouet:
+    blueysky:
         api_key: 123***redacted**xyz
         enabled: true
         type: slide
