@@ -222,6 +222,7 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	collectors := r.Group("/api/collectors")
 	collectors.Use(CollectorAuthMiddleware(s.cfg.Collectors))
 	collectors.POST(collectorSlidesPath, s.collectorIngestSlide)
+	collectors.GET(collectorSlidesPath+"/:source", s.collectorListExternalIDs)
 	collectors.DELETE(collectorSlidesPath+collectorPathWithIDSuffix, s.collectorDeleteSlide)
 	collectors.POST(collectorNewsPath, s.collectorUpsertNews)
 	collectors.PUT(collectorNewsPath, s.collectorSyncNews)

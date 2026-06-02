@@ -101,3 +101,32 @@ func TestHubClient_WaitForServer_ContextCancellation(t *testing.T) {
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, context.DeadlineExceeded, "Der Fehler sollte vom Context-Timeout stammen")
 }
+
+func TestHubClient_GetExternalIDs(t *testing.T) {
+	transport := &MockTransport{
+		RoundTripFunc: func(req *http.Request) (*http.Response, error) {
+			assert.Equal(t, "/api/collectors/slides/bluesky", req.URL.Path)
+			assert.Equal(t, "0", req.URL.Query().Get("_start"))
+			assert.Equal(t, "10", req.URL.Query().Get("_end"))
+			assert.Equal(t, "Bearer test-key", req.Header.Get("Authorization"))
+
+			respBody := `["ext-1", "ext-2"]`
+			resp := &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewBufferString(respBody)),
+				Header:     make(http.Header),
+			}
+			resp.Header.Set("X-Total-Count", "42")
+
+			return resp, nil
+		},
+	}
+
+	client := setupTestClient(transport)
+	ctx := context.Background()
+
+	ids, total, err := client.GetExternalIDs(ctx, "bluesky", 0, 10)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"ext-1", "ext-2"}, ids)
+	assert.Equal(t, 42, total)
+}

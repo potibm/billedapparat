@@ -4,11 +4,13 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/potibm/billedapparat/internal/app/config"
 	"github.com/potibm/billedapparat/internal/app/contracts"
 	"github.com/potibm/billedapparat/internal/app/domain"
+	"github.com/potibm/billedapparat/internal/app/repository"
 )
 
 func (s *Server) collectorIngestSlide(ctx *gin.Context) {
@@ -164,4 +166,43 @@ func (s *Server) collectorDeleteSlide(ctx *gin.Context) {
 		"source":  source,
 		"id":      externalID,
 	})
+}
+
+func (s *Server) collectorListExternalIDs(ctx *gin.Context) {
+	source := ctx.Param("source")
+
+	if source == "" {
+		respondWithBadRequestProblem(ctx, "provide source in the URL")
+
+		return
+	}
+
+	if !s.validateCollectorAccess(ctx, source, config.CollectorDataTypeSlide) {
+		return
+	}
+
+	params := repository.SlideListParams{
+		ListParams: s.getListParams(ctx),
+	}
+
+	filters := repository.SlideListFilters{
+		Source: &source,
+	}
+
+	slides, total, err := s.slideRepo.AdminList(ctx.Request.Context(), params, filters)
+	if err != nil {
+		respondWithInternalServerProblem(ctx, "Failed to list slides: "+err.Error())
+
+		return
+	}
+
+	externalIDs := make([]string, 0, len(slides))
+	for _, slide := range slides {
+		if slide.ExternalID != "" {
+			externalIDs = append(externalIDs, slide.ExternalID)
+		}
+	}
+
+	ctx.Header("X-Total-Count", strconv.FormatInt(total, 10))
+	ctx.JSON(http.StatusOK, externalIDs)
 }
