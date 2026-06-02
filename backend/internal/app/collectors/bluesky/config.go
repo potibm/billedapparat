@@ -16,7 +16,7 @@ type Config struct {
 }
 
 func (h Hashtags) Normalize() Hashtags {
-	normalized := make(Hashtags, len(h))
+	normalized := make(Hashtags, 0, len(h))
 	for _, tag := range h {
 		clean := strings.ToLower(strings.TrimPrefix(tag, "#"))
 		if clean != "" {
