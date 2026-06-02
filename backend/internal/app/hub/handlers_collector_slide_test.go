@@ -2,11 +2,17 @@ package hub
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/potibm/billedapparat/internal/app/contracts"
 	"github.com/potibm/billedapparat/internal/app/domain"
+	"github.com/potibm/billedapparat/internal/app/repository"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -226,4 +232,133 @@ func TestEvaluateModerationRules_MultipleRulesFirstMatch(t *testing.T) {
 	status := s.evaluateModerationRules(context.Background(), req)
 
 	assert.Equal(t, domain.StatusFiltered, status, "first matching rule should filter")
+}
+
+type mockCollectorSlideRepo struct {
+	slides []domain.Slide
+	total  int64
+	err    error
+}
+
+func (m *mockCollectorSlideRepo) AdminList(
+	ctx context.Context,
+	params repository.SlideListParams,
+	filters repository.SlideListFilters,
+) ([]domain.Slide, int64, error) {
+	return m.slides, m.total, m.err
+}
+
+func (m *mockCollectorSlideRepo) Save(ctx context.Context, slide *domain.Slide) error {
+	return nil
+}
+
+func (m *mockCollectorSlideRepo) GetActive(ctx context.Context) ([]domain.Slide, error) {
+	return nil, nil
+}
+
+func (m *mockCollectorSlideRepo) Delete(ctx context.Context, id int64) error {
+	return nil
+}
+
+func (m *mockCollectorSlideRepo) GetByID(ctx context.Context, id int64) (*domain.Slide, error) {
+	return nil, nil
+}
+
+func (m *mockCollectorSlideRepo) MarkAsDeleted(ctx context.Context, source, externalID string) error {
+	return nil
+}
+
+func (m *mockCollectorSlideRepo) SlideExists(source, externalID string, subID *int) (bool, error) {
+	return false, nil
+}
+
+func (m *mockCollectorSlideRepo) GetAllMediaURLs(ctx context.Context) ([]string, error) {
+	return nil, nil
+}
+
+func (m *mockCollectorSlideRepo) FindLocalURLByOriginalURL(
+	ctx context.Context,
+	originalURL string,
+) (string, bool) {
+	return "", false
+}
+
+func (m *mockCollectorSlideRepo) FindExpiredSlidesByType(
+	ctx context.Context,
+	slideType string,
+	cutoff time.Time,
+) ([]domain.Slide, error) {
+	return nil, nil
+}
+
+func (m *mockCollectorSlideRepo) Sync(
+	ctx context.Context,
+	source string,
+	newSlides []domain.Slide,
+) (*repository.SlideSyncResult, error) {
+	return nil, nil
+}
+
+func TestCollectorListExternalIDs(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	t.Run("success", func(t *testing.T) {
+		repo := &mockCollectorSlideRepo{
+			slides: []domain.Slide{
+				{
+					Source:     "bluesky",
+					ExternalID: "ext-1",
+				},
+				{
+					Source:     "bluesky",
+					ExternalID: "ext-2",
+				},
+			},
+			total: 2,
+		}
+
+		s := &Server{
+			slideRepo: repo,
+			logger:    newTestLoggerForHandler(),
+		}
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		c.Params = gin.Params{{Key: "source", Value: "bluesky"}}
+		c.Request = httptest.NewRequest(http.MethodGet, "/api/collectors/slides/bluesky?_start=0&_end=20", http.NoBody)
+
+		c.Set(collectorSourceKey, "bluesky")
+		c.Set(collectorTypeKey, "slide")
+
+		s.collectorListExternalIDs(c)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "2", w.Header().Get("X-Total-Count"))
+
+		var result []string
+
+		err := json.Unmarshal(w.Body.Bytes(), &result)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"ext-1", "ext-2"}, result)
+	})
+
+	t.Run("source mismatch unauthorized", func(t *testing.T) {
+		s := &Server{
+			logger: newTestLoggerForHandler(),
+		}
+
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+
+		c.Params = gin.Params{{Key: "source", Value: "bluesky"}}
+		c.Request = httptest.NewRequest(http.MethodGet, "/api/collectors/slides/bluesky", http.NoBody)
+
+		c.Set(collectorSourceKey, "different")
+		c.Set(collectorTypeKey, "slide")
+
+		s.collectorListExternalIDs(c)
+
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
+	})
 }

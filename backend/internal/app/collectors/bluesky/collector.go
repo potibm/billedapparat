@@ -97,7 +97,8 @@ func (c *Collector) Close() error {
 }
 
 func (c *Collector) Run(ctx context.Context) error {
-	// @TODO get a list of knownPosts from the hub
+	c.loadKnownPosts(ctx)
+
 	c.wg.Add(1)
 	go func() {
 		defer c.wg.Done()
@@ -171,6 +172,36 @@ func (c *Collector) connectAndRead(ctx context.Context) error {
 			c.eventsChan <- &event
 		}
 	}
+}
+
+func (c *Collector) loadKnownPosts(ctx context.Context) {
+	c.logger.Info("Loading known posts from hub...")
+
+	start := 0
+	pageSize := 100
+
+	for {
+		externalIDs, total, err := c.hubClient.GetExternalIDs(ctx, blueskyCollectorName, start, start+pageSize)
+		if err != nil {
+			c.logger.Error("Failed to fetch known posts from hub", "error", err)
+
+			break
+		}
+
+		for _, id := range externalIDs {
+			c.knownPosts.Add(id)
+		}
+
+		c.logger.Info("Fetched known posts page", "start", start, "count", len(externalIDs), "total", total)
+
+		if len(externalIDs) == 0 || start+len(externalIDs) >= total {
+			break
+		}
+
+		start += pageSize
+	}
+
+	c.logger.Info("Known posts loading completed", "count", c.knownPosts.Len())
 }
 
 func (c *Collector) processEvents(ctx context.Context) {
