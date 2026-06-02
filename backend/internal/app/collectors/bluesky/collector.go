@@ -194,9 +194,9 @@ func (c *Collector) loadKnownPosts(ctx context.Context) {
 
 		c.logger.Info("Fetched known posts page", "start", start, "count", len(externalIDs), "total", total)
 
-		if len(externalIDs) == 0 || start+len(externalIDs) >= total {
-			break
-		}
+		if start+pageSize >= total {
+            break
+        }
 
 		start += pageSize
 	}
