@@ -110,27 +110,3 @@ func (c *Collector) handleMessage(ctx context.Context, s *discordgo.Session, m *
 		c.logger.Warn("Buffer overflow! Dropping Discord message", "msg_id", m.ID)
 	}
 }
-
-func (c *Collector) worker(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			for len(c.msgBuffer) > 0 {
-				req := <-c.msgBuffer
-				if err := c.hubClient.SendSlide(context.Background(), req); err != nil {
-					c.logger.Error("Failed to ingest slide during shutdown", "error", err)
-				}
-			}
-
-			return
-		case req, ok := <-c.msgBuffer:
-			if !ok {
-				return
-			}
-
-			if err := c.hubClient.SendSlide(ctx, req); err != nil {
-				c.logger.Error("Failed to ingest slide", "error", err)
-			}
-		}
-	}
-}
