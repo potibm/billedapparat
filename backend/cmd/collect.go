@@ -8,6 +8,7 @@ import (
 
 	"github.com/potibm/billedapparat/internal/app/collectors"
 	"github.com/potibm/billedapparat/internal/app/collectors/bluesky"
+	"github.com/potibm/billedapparat/internal/app/collectors/discord"
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
 	"github.com/potibm/billedapparat/internal/app/collectors/mastodon"
 	"github.com/potibm/billedapparat/internal/app/collectors/pouet"
@@ -154,6 +155,14 @@ func buildCollector(source string, subViper *viper.Viper, client *hubclient.HubC
 		}
 
 		return pouet.NewCollector(cfg, client), nil
+
+	case "discord":
+		var cfg discord.Config
+		if err := subViper.Unmarshal(&cfg); err != nil {
+			return nil, fmt.Errorf("error parsing config for Discord Collector: %w", err)
+		}
+
+		return discord.NewCollector(cfg, client), nil
 
 	case "protokolapparat-news":
 		var cfg protokolapparat_news.Config
