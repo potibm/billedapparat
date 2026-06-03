@@ -28,7 +28,7 @@ type Collector struct {
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
-	meter := otel.Meter("bluesky-collector")
+	meter := otel.Meter("discord-collector")
 
 	eventsReceived, _ := meter.Int64Counter(metricNamespace+"messages_received_total",
 		metric.WithDescription("Number of messages received from Discord"))
@@ -84,6 +84,7 @@ func (c *Collector) Run(ctx context.Context) error {
 
 	c.logger.Info("Shutting down Discord collector...")
 	dg.Close()
+	close(c.msgBuffer)
 
 	return nil
 }
@@ -114,6 +115,13 @@ func (c *Collector) worker(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			for len(c.msgBuffer) > 0 {
+				req := <-c.msgBuffer
+				if err := c.hubClient.SendSlide(context.Background(), req); err != nil {
+					c.logger.Error("Failed to ingest slide during shutdown", "error", err)
+				}
+			}
+
 			return
 		case req, ok := <-c.msgBuffer:
 			if !ok {
