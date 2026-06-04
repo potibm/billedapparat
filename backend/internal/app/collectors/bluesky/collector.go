@@ -217,7 +217,11 @@ func (c *Collector) loadKnownPosts(ctx context.Context) {
 
 func (c *Collector) processEvents(ctx context.Context) {
 	for event := range c.eventsChan {
-		processCtx := context.WithoutCancel(ctx)
+		processCtx := ctx 
+		if ctx.Err() != nil {
+			// in drain phase, allow processing to finish without being canceled
+			processCtx = context.WithoutCancel(ctx)
+		}
 
 		switch event.Commit.Operation {
 		case "create":
