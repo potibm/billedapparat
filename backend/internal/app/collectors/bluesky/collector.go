@@ -33,6 +33,7 @@ type Collector struct {
 	profiles       *ProfileList
 	eventsChan     chan *JetstreamEvent
 	eventsReceived metric.Int64Counter
+	eventsDropped  metric.Int64Counter
 	reconnects     metric.Int64Counter
 	postsMatched   metric.Int64Counter
 	wg             sync.WaitGroup
@@ -47,6 +48,8 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 		metric.WithDescription("Number of connection drops/reconnects"))
 	postsMatched, _ := meter.Int64Counter(metricNamespace+"jetstream_posts_matched_total",
 		metric.WithDescription("Number of relevant posts (filtered)"))
+	eventsDropped, _ := meter.Int64Counter(metricNamespace+"events_dropped_total",
+		metric.WithDescription("Number of events dropped due to full buffer"))
 
 	c := &Collector{
 		cfg:            cfg,
@@ -59,6 +62,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 		eventsReceived: eventsReceived,
 		reconnects:     reconnects,
 		postsMatched:   postsMatched,
+		eventsDropped:  eventsDropped,
 	}
 
 	_, _ = meter.Int64ObservableGauge(
@@ -173,6 +177,9 @@ func (c *Collector) connectAndRead(ctx context.Context) error {
 			case <-ctx.Done():
 				return nil
 			case c.eventsChan <- &event:
+			default:
+				c.logger.Warn("Event buffer full, dropping event")
+				c.eventsDropped.Add(ctx, 1)
 			}
 		}
 	}

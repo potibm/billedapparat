@@ -29,6 +29,7 @@ type Collector struct {
 	logger             *slog.Logger
 	itemsFetchedTotal  metric.Int64Counter
 	itemsFilteredTotal metric.Int64Counter
+	eventsDropped      metric.Int64Counter
 	msgBuffer          chan contracts.IngestSlideRequest
 }
 
@@ -39,6 +40,8 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 		metric.WithDescription("Number of items fetched from Pouet"))
 	itemsFilteredTotal, _ := meter.Int64Counter(metricNamespace+"items_filtered_total",
 		metric.WithDescription("Number of items filtered out due to keywords"))
+	eventsDropped, _ := meter.Int64Counter(metricNamespace+"messages_dropped_total",
+		metric.WithDescription("Number of messages dropped due to full buffer"))
 
 	c := &Collector{
 		cfg:                cfg,
@@ -46,6 +49,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 		logger:             slog.Default().With("component", "collector_pouet"),
 		itemsFetchedTotal:  itemsFetchedTotal,
 		itemsFilteredTotal: itemsFilteredTotal,
+		eventsDropped:      eventsDropped,
 		msgBuffer:          make(chan contracts.IngestSlideRequest, bufferSize),
 		httpClient:         &http.Client{Timeout: defaultTimeout},
 	}
@@ -113,7 +117,14 @@ func (c *Collector) collectAndSend(ctx context.Context) error {
 	}
 
 	for _, req := range slideRequests {
-		c.msgBuffer <- req
+		select {
+		case c.msgBuffer <- req:
+
+		default:
+			c.logger.Warn("Message buffer full, dropping Pouet item", "item_id", req.ExternalID)
+
+			c.eventsDropped.Add(ctx, 1)
+		}
 	}
 
 	return nil
@@ -121,14 +132,9 @@ func (c *Collector) collectAndSend(ctx context.Context) error {
 
 func (c *Collector) fetch(ctx context.Context, url string) ([]contracts.IngestSlideRequest, error) {
 	// #nosec G107 -- url is passed as constant and not influenced by user input, so this is not vulnerable to SSRF
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	resp, err := utils.DoGet(ctx, c.httpClient, url, utils.RequestOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("error creating URL request: %w", err)
-	}
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching URL: %w", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 

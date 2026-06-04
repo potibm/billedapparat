@@ -25,7 +25,9 @@ type Collector struct {
 	hubClient      *hubclient.HubClient
 	logger         *slog.Logger
 	eventsReceived metric.Int64Counter
+	eventsDropped  metric.Int64Counter
 	postsMatched   metric.Int64Counter
+	dg             *discordgo.Session
 	msgBuffer      chan contracts.IngestSlideRequest
 }
 
@@ -36,6 +38,8 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 		metric.WithDescription("Number of messages received from Discord"))
 	postsMatched, _ := meter.Int64Counter(metricNamespace+"messages_matched_total",
 		metric.WithDescription("Number of relevant messages (filtered)"))
+	eventsDropped, _ := meter.Int64Counter(metricNamespace+"messages_dropped_total",
+		metric.WithDescription("Number of messages dropped due to full buffer"))
 
 	c := &Collector{
 		cfg:            cfg,
@@ -43,6 +47,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 		logger:         slog.Default().With("component", "collector_discord"),
 		eventsReceived: eventsReceived,
 		postsMatched:   postsMatched,
+		eventsDropped:  eventsDropped,
 		msgBuffer:      make(chan contracts.IngestSlideRequest, bufferSize),
 	}
 
@@ -60,22 +65,27 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 }
 
 func (c *Collector) Close() error {
+	c.logger.Info("Shutting down Discord collector...")
+	c.dg.Close()
+
 	return nil
 }
 
 func (c *Collector) Run(ctx context.Context) error {
-	dg, err := discordgo.New("Bot " + c.cfg.BotToken)
+	var err error
+
+	c.dg, err = discordgo.New("Bot " + c.cfg.BotToken)
 	if err != nil {
 		return fmt.Errorf("failed to create Discord session: %w", err)
 	}
 
-	dg.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+	c.dg.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
 		c.handleMessageCreate(ctx, s, m)
 	})
 
-	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentMessageContent
+	c.dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentMessageContent
 
-	err = dg.Open()
+	err = c.dg.Open()
 	if err != nil {
 		return fmt.Errorf("failed to open Discord session: %w", err)
 	}
@@ -83,9 +93,6 @@ func (c *Collector) Run(ctx context.Context) error {
 	go utils.RunWorker(ctx, c.msgBuffer, c.processRequest)
 
 	<-ctx.Done()
-
-	c.logger.Info("Shutting down Discord collector...")
-	dg.Close()
 
 	return nil
 }
@@ -117,5 +124,6 @@ func (c *Collector) handleMessageCreate(ctx context.Context, s *discordgo.Sessio
 	case c.msgBuffer <- req:
 	default:
 		c.logger.Warn("Buffer overflow! Dropping Discord message", "msg_id", m.ID)
+		c.eventsDropped.Add(ctx, 1)
 	}
 }

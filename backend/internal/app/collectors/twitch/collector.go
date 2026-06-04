@@ -27,6 +27,7 @@ type Collector struct {
 	twitchHelixClient *helix.Client
 	avatarCache       *LRUCache
 	eventsReceived    metric.Int64Counter
+	eventsDropped     metric.Int64Counter
 	logger            *slog.Logger
 	msgBuffer         chan twitch.PrivateMessage
 }
@@ -37,6 +38,9 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 	eventsReceived, _ := meter.Int64Counter(metricNamespace+"messages_received_total",
 		metric.WithDescription("Number of messages received from Twitch"))
 
+	eventsDropped, _ := meter.Int64Counter(metricNamespace+"events_dropped_total",
+		metric.WithDescription("Number of events dropped due to full buffer"))
+
 	c := &Collector{
 		cfg:               cfg,
 		hubClient:         hubClient,
@@ -44,6 +48,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 		twitchIrcClient:   twitch.NewAnonymousClient(),
 		twitchHelixClient: nil,
 		eventsReceived:    eventsReceived,
+		eventsDropped:     eventsDropped,
 		logger:            slog.Default().With("component", "collector_twitch"),
 		msgBuffer:         make(chan twitch.PrivateMessage, bufferSize),
 	}
@@ -169,5 +174,6 @@ func (c *Collector) handleMessageCreate(ctx context.Context, m twitch.PrivateMes
 	case c.msgBuffer <- m:
 	default:
 		c.logger.Warn("Message buffer full, dropping Twitch message", "user", m.User.DisplayName, "external_id", m.ID)
+		c.eventsDropped.Add(ctx, 1)
 	}
 }

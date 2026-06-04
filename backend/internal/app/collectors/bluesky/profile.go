@@ -2,11 +2,12 @@ package bluesky
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"sync"
+
+	"github.com/potibm/billedapparat/internal/app/collectors/utils"
 )
 
 type ProfileList struct {
@@ -69,27 +70,8 @@ func (c *Collector) getProfile(ctx context.Context, did string) (*ProfileRespons
 func fetchProfile(ctx context.Context, did string) (*ProfileResponse, error) {
 	apiURL := fmt.Sprintf("https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=%s", url.QueryEscape(did))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
-	if err != nil {
-		return nil, err
-	}
-
 	client := &http.Client{Timeout: profileRequestTimeout}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
-	}
-
-	var profile ProfileResponse
-	if err := json.NewDecoder(resp.Body).Decode(&profile); err != nil {
-		return nil, err
-	}
-
-	return &profile, nil
+	// Ein Einzeiler!
+	return utils.FetchJSON[ProfileResponse](ctx, client, apiURL, utils.RequestOptions{})
 }
