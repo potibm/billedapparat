@@ -136,10 +136,22 @@ func (c *Collector) Run(ctx context.Context) error {
 
 	go c.worker(ctx)
 
+	go func() {
+		<-ctx.Done()
+		c.logger.Info("Shutting down Twitch IRC Client...")
+
+		err := c.twitchIrcClient.Disconnect()
+		if err != nil {
+			c.logger.Error("Error during Twitch disconnect", "error", err)
+		}
+	}()
+
 	err := c.twitchIrcClient.Connect()
 	if err != nil {
-		return err
+		return fmt.Errorf("twitch IRC client stopped: %w", err)
 	}
+
+	c.logger.Info("Twitch Collector stopped gracefully")
 
 	return nil
 }
