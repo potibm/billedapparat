@@ -15,51 +15,33 @@ import (
 )
 
 const (
-	collectorName   = "discord"
-	metricNamespace = "billedapparat_collector_discord_"
-	bufferSize      = 1000
+	collectorName = "discord"
+	bufferSize    = 1000
 )
 
 type Collector struct {
-	cfg            Config
-	hubClient      *hubclient.HubClient
-	logger         *slog.Logger
-	eventsReceived metric.Int64Counter
-	eventsDropped  metric.Int64Counter
-	postsMatched   metric.Int64Counter
-	dg             *discordgo.Session
-	msgBuffer      chan contracts.IngestSlideRequest
+	cfg       Config
+	hubClient *hubclient.HubClient
+	logger    *slog.Logger
+	dg        *discordgo.Session
+	msgBuffer chan contracts.IngestSlideRequest
+	metrics   utils.CollectorCounters
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
-	meter := otel.Meter("discord-collector")
-
-	eventsReceived, _ := meter.Int64Counter(metricNamespace+"messages_received_total",
-		metric.WithDescription("Number of messages received from Discord"))
-	postsMatched, _ := meter.Int64Counter(metricNamespace+"messages_matched_total",
-		metric.WithDescription("Number of relevant messages (filtered)"))
-	eventsDropped, _ := meter.Int64Counter(metricNamespace+"messages_dropped_total",
-		metric.WithDescription("Number of messages dropped due to full buffer"))
+	meter := otel.Meter("github.com/potibm/billedapparat/internal/app/collectors/discord")
 
 	c := &Collector{
-		cfg:            cfg,
-		hubClient:      hubClient,
-		logger:         slog.Default().With("component", "collector_discord"),
-		eventsReceived: eventsReceived,
-		postsMatched:   postsMatched,
-		eventsDropped:  eventsDropped,
-		msgBuffer:      make(chan contracts.IngestSlideRequest, bufferSize),
+		cfg:       cfg,
+		hubClient: hubClient,
+		logger:    slog.Default().With("component", "collector_discord"),
+		msgBuffer: make(chan contracts.IngestSlideRequest, bufferSize),
+		metrics:   utils.NewCollectorCounters(meter),
 	}
 
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"worker_queue_depth",
-		metric.WithDescription("Number of unprocessed events in the channel"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(len(c.msgBuffer)))
-
-			return nil
-		}),
-	)
+	utils.RegisterQueueDepthGauge(meter, collectorName, func() int {
+		return len(c.msgBuffer)
+	})
 
 	return c
 }
@@ -100,7 +82,8 @@ func (c *Collector) Run(ctx context.Context) error {
 }
 
 func (c *Collector) handleMessageCreate(ctx context.Context, s *discordgo.Session, m *discordgo.MessageCreate) {
-	c.eventsReceived.Add(ctx, 1, metric.WithAttributes(
+	c.metrics.EventsReceived.Add(ctx, 1, metric.WithAttributes(
+		attribute.String("collector", collectorName),
 		attribute.String("operation", "create"),
 	))
 
@@ -118,7 +101,8 @@ func (c *Collector) handleMessageCreate(ctx context.Context, s *discordgo.Sessio
 
 	req := mapToIngestRequest(m.Message)
 
-	c.postsMatched.Add(ctx, 1, metric.WithAttributes(
+	c.metrics.EventsMatched.Add(ctx, 1, metric.WithAttributes(
+		attribute.String("collector", collectorName),
 		attribute.String("operation", "create"),
 	))
 
@@ -126,6 +110,8 @@ func (c *Collector) handleMessageCreate(ctx context.Context, s *discordgo.Sessio
 	case c.msgBuffer <- req:
 	default:
 		c.logger.Warn("Buffer overflow! Dropping Discord message", "msg_id", m.ID)
-		c.eventsDropped.Add(ctx, 1)
+		c.metrics.EventsDropped.Add(ctx, 1, metric.WithAttributes(
+			attribute.String("collector", collectorName),
+		))
 	}
 }

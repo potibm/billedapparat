@@ -13,6 +13,7 @@ import (
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
 	"github.com/potibm/billedapparat/internal/app/collectors/utils"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -25,48 +26,29 @@ const (
 )
 
 type Collector struct {
-	cfg              Config
-	httpClient       *http.Client
-	hubClient        *hubclient.HubClient
-	logger           *slog.Logger
-	reconnectCounter metric.Int64Counter
-	eventsReceived   metric.Int64Counter
-	eventsDropped    metric.Int64Counter
-	msgBuffer        chan Event
+	cfg        Config
+	httpClient *http.Client
+	hubClient  *hubclient.HubClient
+	logger     *slog.Logger
+	msgBuffer  chan Event
+	metrics    utils.CollectorCounters
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
-	meter := otel.Meter("mastodon-collector")
-
-	eventsReceived, _ := meter.Int64Counter(metricNamespace+"messages_received_total",
-		metric.WithDescription("Number of messages received from Mastodon"))
-
-	reconnectCounter, _ := meter.Int64Counter(metricNamespace+"reconnects_total",
-		metric.WithDescription("Number of reconnect attempts"))
-
-	eventsDropped, _ := meter.Int64Counter(metricNamespace+"messages_dropped_total",
-		metric.WithDescription("Number of messages dropped due to full buffer"))
+	meter := otel.Meter("github.com/potibm/billedapparat/internal/app/collectors/mastodon")
 
 	c := &Collector{
-		cfg:              cfg,
-		httpClient:       &http.Client{Timeout: defaultTimeout},
-		hubClient:        hubClient,
-		logger:           slog.Default().With("component", "collector_mastodon"),
-		eventsReceived:   eventsReceived,
-		reconnectCounter: reconnectCounter,
-		eventsDropped:    eventsDropped,
-		msgBuffer:        make(chan Event, bufferSize),
+		cfg:        cfg,
+		httpClient: &http.Client{Timeout: defaultTimeout},
+		hubClient:  hubClient,
+		logger:     slog.Default().With("component", "collector_mastodon"),
+		msgBuffer:  make(chan Event, bufferSize),
+		metrics:    utils.NewCollectorCounters(meter),
 	}
 
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"worker_queue_depth",
-		metric.WithDescription("Number of unprocessed events in the channel"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(len(c.msgBuffer)))
-
-			return nil
-		}),
-	)
+	utils.RegisterQueueDepthGauge(meter, collectorName, func() int {
+		return len(c.msgBuffer)
+	})
 
 	return c
 }
@@ -97,7 +79,9 @@ func (c *Collector) Run(ctx context.Context) error {
 		err := c.connectAndRead(ctx, streamURL)
 		if err != nil {
 			c.logger.Warn("Stream disconnected, reconnecting in 5s...", "error", err)
-			c.reconnectCounter.Add(ctx, 1)
+			c.metrics.Reconnects.Add(ctx, 1, metric.WithAttributes(
+				attribute.String("collector", collectorName),
+			))
 
 			timer := time.NewTimer(reconnectDuration)
 			select {
@@ -149,7 +133,9 @@ func (c *Collector) connectAndRead(ctx context.Context, streamURL string) error 
 		case strings.HasPrefix(line, "event:"):
 			currentEvent = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
 		case strings.HasPrefix(line, "data:"):
-			c.eventsReceived.Add(ctx, 1)
+			c.metrics.EventsReceived.Add(ctx, 1, metric.WithAttributes(
+				attribute.String("collector", collectorName),
+			))
 
 			payload := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
 
@@ -176,7 +162,9 @@ func (c *Collector) dispatchEvent(ctx context.Context, eventType, payload string
 	case c.msgBuffer <- event:
 	default:
 		c.logger.Warn("Message buffer full, dropping Mastodon event", "event_type", event.Type)
-		c.eventsDropped.Add(ctx, 1)
+		c.metrics.EventsDropped.Add(ctx, 1, metric.WithAttributes(
+			attribute.String("collector", collectorName),
+		))
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
 	"github.com/potibm/billedapparat/internal/app/collectors/utils"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -27,94 +28,36 @@ const (
 )
 
 type Collector struct {
-	cfg            Config
-	searchTags     Hashtags
-	hubClient      *hubclient.HubClient
-	logger         *slog.Logger
-	knownPosts     *RKeyList
-	profiles       *utils.LRUCache[*ProfileResponse]
-	eventsChan     chan *JetstreamEvent
-	eventsReceived metric.Int64Counter
-	eventsDropped  metric.Int64Counter
-	reconnects     metric.Int64Counter
-	postsMatched   metric.Int64Counter
-	wg             sync.WaitGroup
+	cfg        Config
+	searchTags Hashtags
+	hubClient  *hubclient.HubClient
+	logger     *slog.Logger
+	knownPosts *RKeyList
+	profiles   *utils.LRUCache[*ProfileResponse]
+	eventsChan chan *JetstreamEvent
+	metrics    utils.CollectorCounters
+	wg         sync.WaitGroup
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
-	meter := otel.Meter("bluesky-collector")
-
-	eventsReceived, _ := meter.Int64Counter(metricNamespace+"jetstream_events_received_total",
-		metric.WithDescription("Number of events received from Jetstream"))
-	reconnects, _ := meter.Int64Counter(metricNamespace+"jetstream_reconnects_total",
-		metric.WithDescription("Number of connection drops/reconnects"))
-	postsMatched, _ := meter.Int64Counter(metricNamespace+"jetstream_posts_matched_total",
-		metric.WithDescription("Number of relevant posts (filtered)"))
-	eventsDropped, _ := meter.Int64Counter(metricNamespace+"events_dropped_total",
-		metric.WithDescription("Number of events dropped due to full buffer"))
+	meter := otel.Meter("github.com/potibm/billedapparat/internal/app/collectors/bluesky")
 
 	c := &Collector{
-		cfg:            cfg,
-		searchTags:     cfg.Hashtags.Normalize(),
-		hubClient:      hubClient,
-		logger:         slog.Default().With("component", "collector_bluesky"),
-		knownPosts:     NewRKeyList(),
-		profiles:       utils.NewLRUCache[*ProfileResponse](profileCacheSize),
-		eventsChan:     make(chan *JetstreamEvent, eventBufferSize),
-		eventsReceived: eventsReceived,
-		reconnects:     reconnects,
-		postsMatched:   postsMatched,
-		eventsDropped:  eventsDropped,
+		cfg:        cfg,
+		searchTags: cfg.Hashtags.Normalize(),
+		hubClient:  hubClient,
+		logger:     slog.Default().With("component", "collector_bluesky"),
+		knownPosts: NewRKeyList(),
+		profiles:   utils.NewLRUCache[*ProfileResponse](profileCacheSize),
+		eventsChan: make(chan *JetstreamEvent, eventBufferSize),
+		metrics:    utils.NewCollectorCounters(meter),
 	}
 
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"worker_queue_depth",
-		metric.WithDescription("Number of unprocessed events in the channel"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(len(c.eventsChan)))
+	utils.RegisterQueueDepthGauge(meter, collectorName, func() int {
+		return len(c.eventsChan)
+	})
 
-			return nil
-		}),
-	)
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"profiles_cache_size",
-		metric.WithDescription("Number of profiles currently cached"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(c.profiles.Stats().Size))
-
-			return nil
-		}),
-	)
-
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"profiles_cache_evictions",
-		metric.WithDescription("Number of evictions in the profiles cache"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(c.profiles.Stats().Evictions))
-
-			return nil
-		}),
-	)
-
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"profiles_cache_hits",
-		metric.WithDescription("Number of hits in the profiles cache"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(c.profiles.Stats().Hits))
-
-			return nil
-		}),
-	)
-
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"profiles_cache_misses",
-		metric.WithDescription("Number of misses in the profiles cache"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(c.profiles.Stats().Misses))
-
-			return nil
-		}),
-	)
+	utils.RegisterCacheMetrics(meter, collectorName, "profiles", c.profiles)
 
 	_, _ = meter.Int64ObservableGauge(
 		metricNamespace+"known_posts_size",
@@ -154,7 +97,9 @@ func (c *Collector) Run(ctx context.Context) error {
 			}
 
 			c.logger.Error("Lost connection, attempting to reconnect...", "error", err)
-			c.reconnects.Add(ctx, 1)
+			c.metrics.Reconnects.Add(ctx, 1, metric.WithAttributes(
+				attribute.String("collector", collectorName),
+			))
 
 			select {
 			case <-time.After(jetstreamReconnectDelay):
@@ -198,7 +143,9 @@ func (c *Collector) connectAndRead(ctx context.Context) error {
 			return err
 		}
 
-		c.eventsReceived.Add(ctx, 1)
+		c.metrics.EventsReceived.Add(ctx, 1, metric.WithAttributes(
+			attribute.String("collector", collectorName),
+		))
 
 		var event JetstreamEvent
 		if err := json.Unmarshal(message, &event); err != nil {
@@ -212,7 +159,9 @@ func (c *Collector) connectAndRead(ctx context.Context) error {
 			case c.eventsChan <- &event:
 			default:
 				c.logger.Warn("Event buffer full, dropping event")
-				c.eventsDropped.Add(ctx, 1)
+				c.metrics.EventsDropped.Add(ctx, 1, metric.WithAttributes(
+					attribute.String("collector", collectorName),
+				))
 			}
 		}
 	}

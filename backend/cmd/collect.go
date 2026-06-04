@@ -77,6 +77,8 @@ func runCollectorCommand(cmd *cobra.Command, args []string) error {
 
 	slog.Info("Starting Collector", "source", source)
 
+	setTerminalTitle(fmt.Sprintf("Billedapparat Collector - %s", source))
+
 	defer func() {
 		if err := c.Close(); err != nil {
 			slog.Error("Failed to close collector", "err", err)
@@ -96,6 +98,8 @@ func runCollectorCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	slog.Info("Collector terminated", "source", source)
+
+	clearTerminal()
 
 	return nil
 }

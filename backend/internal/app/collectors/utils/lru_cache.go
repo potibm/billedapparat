@@ -50,6 +50,7 @@ func (c *LRUCache[V]) Get(key string) (V, bool) {
 	c.misses++
 
 	var zero V
+
 	return zero, false
 }
 

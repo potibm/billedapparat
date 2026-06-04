@@ -11,10 +11,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-type RedisConfig interface {
-	GetRedisURL() config.RedisURL
-}
-
 func buildRedisConsumer[T any, C collectors.Collector](
 	v *viper.Viper,
 	c *hubclient.HubClient,

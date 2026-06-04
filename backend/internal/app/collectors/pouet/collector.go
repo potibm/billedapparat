@@ -11,6 +11,7 @@ import (
 	"github.com/potibm/billedapparat/internal/app/collectors/utils"
 	"github.com/potibm/billedapparat/internal/app/contracts"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -23,46 +24,29 @@ const (
 )
 
 type Collector struct {
-	cfg                Config
-	httpClient         *http.Client
-	hubClient          *hubclient.HubClient
-	logger             *slog.Logger
-	itemsFetchedTotal  metric.Int64Counter
-	itemsFilteredTotal metric.Int64Counter
-	eventsDropped      metric.Int64Counter
-	msgBuffer          chan contracts.IngestSlideRequest
+	cfg        Config
+	httpClient *http.Client
+	hubClient  *hubclient.HubClient
+	logger     *slog.Logger
+	msgBuffer  chan contracts.IngestSlideRequest
+	metrics    utils.CollectorCounters
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
-	meter := otel.Meter("pouet-collector")
-
-	itemsFetchedTotal, _ := meter.Int64Counter(metricNamespace+"items_fetched_total",
-		metric.WithDescription("Number of items fetched from Pouet"))
-	itemsRetainedTotal, _ := meter.Int64Counter(metricNamespace+"items_retained_total",
-		metric.WithDescription("Number of items retained after filtering"))
-	eventsDropped, _ := meter.Int64Counter(metricNamespace+"messages_dropped_total",
-		metric.WithDescription("Number of messages dropped due to full buffer"))
+	meter := otel.Meter("github.com/potibm/billedapparat/internal/app/collectors/pouet")
 
 	c := &Collector{
-		cfg:                cfg,
-		hubClient:          hubClient,
-		logger:             slog.Default().With("component", "collector_pouet"),
-		itemsFetchedTotal:  itemsFetchedTotal,
-		itemsFilteredTotal: itemsRetainedTotal,
-		eventsDropped:      eventsDropped,
-		msgBuffer:          make(chan contracts.IngestSlideRequest, bufferSize),
-		httpClient:         &http.Client{Timeout: defaultTimeout},
+		cfg:        cfg,
+		hubClient:  hubClient,
+		logger:     slog.Default().With("component", "collector_pouet"),
+		msgBuffer:  make(chan contracts.IngestSlideRequest, bufferSize),
+		httpClient: &http.Client{Timeout: defaultTimeout},
+		metrics:    utils.NewCollectorCounters(meter),
 	}
 
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"worker_queue_depth",
-		metric.WithDescription("Number of unprocessed events in the channel"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(len(c.msgBuffer)))
-
-			return nil
-		}),
-	)
+	utils.RegisterQueueDepthGauge(meter, collectorName, func() int {
+		return len(c.msgBuffer)
+	})
 
 	return c
 }
@@ -108,12 +92,16 @@ func (c *Collector) collectAndSend(ctx context.Context) error {
 	}
 
 	c.logger.Info("Fetched data from Pouet", "num_items", len(slideRequests))
-	c.itemsFetchedTotal.Add(ctx, int64(len(slideRequests)))
+	c.metrics.EventsReceived.Add(ctx, int64(len(slideRequests)), metric.WithAttributes(
+		attribute.String("collector", collectorName),
+	))
 
 	if len(c.cfg.Keywords) > 0 {
 		slideRequests = filterByKeywords(slideRequests, c.cfg.Keywords.Lower())
 		c.logger.Info("Filtered data by keywords", "num_items_after_filtering", len(slideRequests))
-		c.itemsFilteredTotal.Add(ctx, int64(len(slideRequests)))
+		c.metrics.EventsMatched.Add(ctx, int64(len(slideRequests)), metric.WithAttributes(
+			attribute.String("collector", collectorName),
+		))
 	}
 
 	for _, req := range slideRequests {
@@ -123,7 +111,9 @@ func (c *Collector) collectAndSend(ctx context.Context) error {
 		default:
 			c.logger.Warn("Message buffer full, dropping Pouet item", "item_id", req.ExternalID)
 
-			c.eventsDropped.Add(ctx, 1)
+			c.metrics.EventsDropped.Add(ctx, 1, metric.WithAttributes(
+				attribute.String("collector", collectorName),
+			))
 		}
 	}
 

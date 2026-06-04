@@ -53,9 +53,10 @@ func (c *Collector) deleteSlide(ctx context.Context, rkey, reason string) {
 
 	c.knownPosts.Remove(rkey)
 
-	c.postsMatched.Add(ctx, 1, metric.WithAttributes(
+	c.metrics.EventsMatched.Add(ctx, 1, metric.WithAttributes(
 		attribute.String("operation", "delete"),
 		attribute.String("reason", reason),
+		attribute.String("collector", collectorName),
 	))
 }
 
@@ -88,8 +89,9 @@ func (c *Collector) upsertSlide(ctx context.Context, event *JetstreamEvent, opLa
 		return false
 	}
 
-	c.postsMatched.Add(ctx, 1, metric.WithAttributes(
+	c.metrics.EventsMatched.Add(ctx, 1, metric.WithAttributes(
 		attribute.String("operation", opLabel),
+		attribute.String("collector", collectorName),
 	))
 
 	return true
