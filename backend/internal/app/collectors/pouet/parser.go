@@ -52,7 +52,7 @@ func parse(logger *slog.Logger, reader io.Reader) ([]contracts.IngestSlideReques
 			Source:          collectorName,
 			ExternalID:      getExternalID(author.ExternalID, createdString),
 			Body:            getMessageHTML(s),
-			Language:        "en-EN",
+			Language:        "en",
 			OriginCreatedAt: created,
 			Author:          author,
 		}
