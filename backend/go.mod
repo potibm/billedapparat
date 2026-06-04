@@ -9,6 +9,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.12.0
 	github.com/brianvoe/gofakeit/v7 v7.15.0
 	github.com/bwmarrin/discordgo v0.29.0
+	github.com/gempir/go-twitch-irc/v4 v4.4.1
 	github.com/getsentry/sentry-go v0.46.2
 	github.com/getsentry/sentry-go/gin v0.46.2
 	github.com/gin-contrib/cors v1.7.7
@@ -21,6 +22,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
 	github.com/microcosm-cc/bluemonday v1.0.27
+	github.com/nicklaw5/helix/v2 v2.34.0
 	github.com/potibm/protokolapparat v1.0.3
 	github.com/redis/go-redis/v9 v9.20.0
 	github.com/samber/slog-gin v1.21.1
@@ -66,6 +68,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect
+	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect

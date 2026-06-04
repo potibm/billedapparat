@@ -7,6 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
+	"github.com/potibm/billedapparat/internal/app/collectors/utils"
 	"github.com/potibm/billedapparat/internal/app/contracts"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -79,7 +80,7 @@ func (c *Collector) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to open Discord session: %w", err)
 	}
 
-	go c.worker(ctx)
+	go utils.RunWorker(ctx, c.msgBuffer, c.processRequest)
 
 	<-ctx.Done()
 
