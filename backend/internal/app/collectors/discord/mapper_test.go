@@ -77,7 +77,7 @@ func TestMapToIngestRequest(t *testing.T) {
 		assert.Equal(t, "Text only", req.Body)
 	})
 
-	t.Run("author without GlobalName", func(t *testing.T) {
+	t.Run("author without GlobalName (fallback to Username)", func(t *testing.T) {
 		message := &discordgo.Message{
 			ID:        "msg-789",
 			Content:   "No display name",
@@ -92,7 +92,7 @@ func TestMapToIngestRequest(t *testing.T) {
 
 		req := mapToIngestRequest(message)
 
-		requireNotNilAndEqual(t, req.Author, "user-3", "nouser", "")
+		requireNotNilAndEqual(t, req.Author, "user-3", "nouser", "nouser")
 		assert.Equal(t, "https://cdn.discordapp.com/embed/avatars/0.png?size=128", req.Author.AvatarExternalURL)
 	})
 
