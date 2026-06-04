@@ -21,10 +21,12 @@ const (
 	metricNamespace   = "billedapparat_collector_mastodon_"
 	bufferSize        = 1000
 	reconnectDuration = 5 * time.Second
+	defaultTimeout    = 5 * time.Second
 )
 
 type Collector struct {
 	cfg              Config
+	httpClient       *http.Client
 	hubClient        *hubclient.HubClient
 	logger           *slog.Logger
 	reconnectCounter metric.Int64Counter
@@ -43,6 +45,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 
 	c := &Collector{
 		cfg:              cfg,
+		httpClient:       &http.Client{Timeout: defaultTimeout},
 		hubClient:        hubClient,
 		logger:           slog.Default().With("component", "collector_mastodon"),
 		eventsReceived:   eventsReceived,
@@ -115,7 +118,7 @@ func (c *Collector) connectAndRead(ctx context.Context, streamURL string) error 
 
 	req.Header.Set("Accept", "text/event-stream")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
 	}

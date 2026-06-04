@@ -19,15 +19,17 @@ const (
 	metricNamespace  = "billedapparat_collector_pouet_"
 	pouetOnelinerURL = "https://www.pouet.net/oneliner.php"
 	bufferSize       = 1000
+	defaultTimeout   = 5 * time.Second
 )
 
 type Collector struct {
-	cfg       Config
-	hubClient *hubclient.HubClient
-	logger    *slog.Logger
-	itemsFetchedTotal metric.Int64Counter
+	cfg                Config
+	httpClient         *http.Client
+	hubClient          *hubclient.HubClient
+	logger             *slog.Logger
+	itemsFetchedTotal  metric.Int64Counter
 	itemsFilteredTotal metric.Int64Counter
-	msgBuffer chan contracts.IngestSlideRequest
+	msgBuffer          chan contracts.IngestSlideRequest
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
@@ -39,12 +41,13 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 		metric.WithDescription("Number of items filtered out due to keywords"))
 
 	c := &Collector{
-		cfg:       cfg,
-		hubClient: hubClient,
-		logger:    slog.Default().With("component", "collector_pouet"),
-		itemsFetchedTotal: itemsFetchedTotal,
+		cfg:                cfg,
+		hubClient:          hubClient,
+		logger:             slog.Default().With("component", "collector_pouet"),
+		itemsFetchedTotal:  itemsFetchedTotal,
 		itemsFilteredTotal: itemsFilteredTotal,
-		msgBuffer: make(chan contracts.IngestSlideRequest, bufferSize),
+		msgBuffer:          make(chan contracts.IngestSlideRequest, bufferSize),
+		httpClient:         &http.Client{Timeout: defaultTimeout},
 	}
 
 	_, _ = meter.Int64ObservableGauge(
@@ -95,7 +98,7 @@ func (c *Collector) Run(ctx context.Context) error {
 func (c *Collector) collectAndSend(ctx context.Context) error {
 	c.logger.Info("Collecting data from Pouet")
 
-	slideRequests, err := fetch(ctx, c.logger, pouetOnelinerURL)
+	slideRequests, err := c.fetch(ctx, pouetOnelinerURL)
 	if err != nil {
 		return fmt.Errorf("error fetching data: %w", err)
 	}
@@ -108,7 +111,7 @@ func (c *Collector) collectAndSend(ctx context.Context) error {
 		c.logger.Info("Filtered data by keywords", "num_items_after_filtering", len(slideRequests))
 		c.itemsFilteredTotal.Add(ctx, int64(len(slideRequests)))
 	}
-	
+
 	for _, req := range slideRequests {
 		c.msgBuffer <- req
 	}
@@ -116,14 +119,14 @@ func (c *Collector) collectAndSend(ctx context.Context) error {
 	return nil
 }
 
-func fetch(ctx context.Context, logger *slog.Logger, url string) ([]contracts.IngestSlideRequest, error) {
+func (c *Collector) fetch(ctx context.Context, url string) ([]contracts.IngestSlideRequest, error) {
 	// #nosec G107 -- url is passed as constant and not influenced by user input, so this is not vulnerable to SSRF
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating URL request: %w", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching URL: %w", err)
 	}
@@ -133,5 +136,5 @@ func fetch(ctx context.Context, logger *slog.Logger, url string) ([]contracts.In
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	return parse(logger, resp.Body)
+	return parse(c.logger, resp.Body)
 }
