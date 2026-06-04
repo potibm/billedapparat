@@ -113,7 +113,7 @@ func (c *Collector) Run(ctx context.Context) error {
 			ClientSecret: c.cfg.ClientSecret,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create Twitch Helix client: %w", err)
 		}
 
 		tokenResp, err := helixClient.RequestAppAccessToken([]string{})
