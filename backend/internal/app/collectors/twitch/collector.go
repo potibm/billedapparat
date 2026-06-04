@@ -25,7 +25,7 @@ type Collector struct {
 	hubClient         *hubclient.HubClient
 	twitchIrcClient   *twitch.Client
 	twitchHelixClient *helix.Client
-	avatarCache       *LRUCache
+	avatarCache       *utils.LRUCache[string]
 	eventsReceived    metric.Int64Counter
 	eventsDropped     metric.Int64Counter
 	logger            *slog.Logger
@@ -44,7 +44,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 	c := &Collector{
 		cfg:               cfg,
 		hubClient:         hubClient,
-		avatarCache:       NewLRUCache(avatarCacheSize),
+		avatarCache:       utils.NewLRUCache[string](avatarCacheSize),
 		twitchIrcClient:   twitch.NewAnonymousClient(),
 		twitchHelixClient: nil,
 		eventsReceived:    eventsReceived,

@@ -11,6 +11,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
+	"github.com/potibm/billedapparat/internal/app/collectors/utils"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 )
@@ -20,6 +21,7 @@ const (
 	jetstreamURL            = "wss://jetstream1.us-east.bsky.network/subscribe"
 	metricNamespace         = "billedapparat_collector_bluesky_"
 	eventBufferSize         = 1000
+	profileCacheSize        = 100
 	profileRequestTimeout   = 5 * time.Second
 	jetstreamReconnectDelay = 2 * time.Second
 )
@@ -30,7 +32,7 @@ type Collector struct {
 	hubClient      *hubclient.HubClient
 	logger         *slog.Logger
 	knownPosts     *RKeyList
-	profiles       *ProfileList
+	profiles       *utils.LRUCache[*ProfileResponse]
 	eventsChan     chan *JetstreamEvent
 	eventsReceived metric.Int64Counter
 	eventsDropped  metric.Int64Counter
@@ -57,7 +59,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 		hubClient:      hubClient,
 		logger:         slog.Default().With("component", "collector_bluesky"),
 		knownPosts:     NewRKeyList(),
-		profiles:       NewProfileList(),
+		profiles:       utils.NewLRUCache[*ProfileResponse](profileCacheSize),
 		eventsChan:     make(chan *JetstreamEvent, eventBufferSize),
 		eventsReceived: eventsReceived,
 		reconnects:     reconnects,
@@ -78,11 +80,42 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 		metricNamespace+"profiles_cache_size",
 		metric.WithDescription("Number of profiles currently cached"),
 		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(c.profiles.Len()))
+			o.Observe(int64(c.profiles.Stats().Size))
 
 			return nil
 		}),
 	)
+
+	_, _ = meter.Int64ObservableGauge(
+		metricNamespace+"profiles_cache_evictions",
+		metric.WithDescription("Number of evictions in the profiles cache"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			o.Observe(int64(c.profiles.Stats().Evictions))
+
+			return nil
+		}),
+	)
+
+	_, _ = meter.Int64ObservableGauge(
+		metricNamespace+"profiles_cache_hits",
+		metric.WithDescription("Number of hits in the profiles cache"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			o.Observe(int64(c.profiles.Stats().Hits))
+
+			return nil
+		}),
+	)
+
+	_, _ = meter.Int64ObservableGauge(
+		metricNamespace+"profiles_cache_misses",
+		metric.WithDescription("Number of misses in the profiles cache"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			o.Observe(int64(c.profiles.Stats().Misses))
+
+			return nil
+		}),
+	)
+
 	_, _ = meter.Int64ObservableGauge(
 		metricNamespace+"known_posts_size",
 		metric.WithDescription("Number of known posts currently tracked"),
@@ -217,7 +250,7 @@ func (c *Collector) loadKnownPosts(ctx context.Context) {
 
 func (c *Collector) processEvents(ctx context.Context) {
 	for event := range c.eventsChan {
-		processCtx := ctx 
+		processCtx := ctx
 		if ctx.Err() != nil {
 			// in drain phase, allow processing to finish without being canceled
 			processCtx = context.WithoutCancel(ctx)

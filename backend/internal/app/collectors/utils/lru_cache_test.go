@@ -1,4 +1,4 @@
-package twitch
+package utils
 
 import (
 	"testing"
@@ -7,13 +7,13 @@ import (
 )
 
 func TestNewLRUCache(t *testing.T) {
-	c := NewLRUCache(2)
+	c := NewLRUCache[string](2)
 	assert.NotNil(t, c)
 	assert.Equal(t, CacheStats{Size: 0}, c.Stats())
 }
 
 func TestLRUCache_GetMiss(t *testing.T) {
-	c := NewLRUCache(2)
+	c := NewLRUCache[string](2)
 
 	val, ok := c.Get("missing")
 	assert.False(t, ok)
@@ -22,7 +22,7 @@ func TestLRUCache_GetMiss(t *testing.T) {
 }
 
 func TestLRUCache_SetAndGet(t *testing.T) {
-	c := NewLRUCache(2)
+	c := NewLRUCache[string](2)
 
 	c.Set("key1", "value1")
 	val, ok := c.Get("key1")
@@ -37,7 +37,7 @@ func TestLRUCache_SetAndGet(t *testing.T) {
 }
 
 func TestLRUCache_UpdateExistingKey(t *testing.T) {
-	c := NewLRUCache(2)
+	c := NewLRUCache[string](2)
 
 	c.Set("key1", "value1")
 	c.Set("key1", "value2")
@@ -49,7 +49,7 @@ func TestLRUCache_UpdateExistingKey(t *testing.T) {
 }
 
 func TestLRUCache_Eviction(t *testing.T) {
-	c := NewLRUCache(2)
+	c := NewLRUCache[string](2)
 
 	c.Set("key1", "value1")
 	c.Set("key2", "value2")
@@ -72,7 +72,7 @@ func TestLRUCache_Eviction(t *testing.T) {
 }
 
 func TestLRUCache_LRUOrder(t *testing.T) {
-	c := NewLRUCache(2)
+	c := NewLRUCache[string](2)
 
 	c.Set("key1", "value1")
 	c.Set("key2", "value2")
@@ -96,7 +96,7 @@ func TestLRUCache_LRUOrder(t *testing.T) {
 }
 
 func TestLRUCache_SetExistingMovesToFront(t *testing.T) {
-	c := NewLRUCache(2)
+	c := NewLRUCache[string](2)
 
 	c.Set("key1", "value1")
 	c.Set("key2", "value2")
@@ -116,7 +116,7 @@ func TestLRUCache_SetExistingMovesToFront(t *testing.T) {
 }
 
 func TestLRUCache_Stats(t *testing.T) {
-	c := NewLRUCache(1)
+	c := NewLRUCache[string](1)
 
 	c.Set("key1", "value1")
 	c.Get("key1")
@@ -131,7 +131,7 @@ func TestLRUCache_Stats(t *testing.T) {
 }
 
 func TestLRUCache_ConcurrentAccess(t *testing.T) {
-	c := NewLRUCache(100)
+	c := NewLRUCache[string](100)
 
 	// Just ensure no race detector complaints
 	for i := 0; i < 100; i++ {
