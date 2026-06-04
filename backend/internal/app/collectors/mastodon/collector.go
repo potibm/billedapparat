@@ -3,7 +3,6 @@ package mastodon
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -12,24 +11,56 @@ import (
 	"time"
 
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
+	"github.com/potibm/billedapparat/internal/app/collectors/utils"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
 )
 
 const (
-	collectorName = "mastodon"
+	collectorName     = "mastodon"
+	metricNamespace   = "billedapparat_collector_mastodon_"
+	bufferSize        = 1000
+	reconnectDuration = 5 * time.Second
 )
 
 type Collector struct {
-	cfg       Config
-	hubClient *hubclient.HubClient
-	logger    *slog.Logger
+	cfg              Config
+	hubClient        *hubclient.HubClient
+	logger           *slog.Logger
+	reconnectCounter metric.Int64Counter
+	eventsReceived   metric.Int64Counter
+	msgBuffer        chan Event
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
-	return &Collector{
-		cfg:       cfg,
-		hubClient: hubClient,
-		logger:    slog.Default().With("component", "collector_mastodon"),
+	meter := otel.Meter("mastodon-collector")
+
+	eventsReceived, _ := meter.Int64Counter(metricNamespace+"messages_received_total",
+		metric.WithDescription("Number of messages received from Mastodon"))
+
+	reconnectCounter, _ := meter.Int64Counter(metricNamespace+"reconnects_total",
+		metric.WithDescription("Number of reconnect attempts"))
+
+	c := &Collector{
+		cfg:              cfg,
+		hubClient:        hubClient,
+		logger:           slog.Default().With("component", "collector_mastodon"),
+		eventsReceived:   eventsReceived,
+		reconnectCounter: reconnectCounter,
+		msgBuffer:        make(chan Event, bufferSize),
 	}
+
+	_, _ = meter.Int64ObservableGauge(
+		metricNamespace+"worker_queue_depth",
+		metric.WithDescription("Number of unprocessed events in the channel"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			o.Observe(int64(len(c.msgBuffer)))
+
+			return nil
+		}),
+	)
+
+	return c
 }
 
 func (c *Collector) Close() error {
@@ -44,6 +75,8 @@ func (c *Collector) Run(ctx context.Context) error {
 	streamURL := c.buildStreamingURL()
 	c.logger.Info("Connect to Mastodon stream URL", "url", streamURL)
 
+	go utils.RunWorker(ctx, c.msgBuffer, c.handleEvent)
+
 	for {
 		select {
 		case <-ctx.Done(): // Strg+C
@@ -55,9 +88,8 @@ func (c *Collector) Run(ctx context.Context) error {
 
 		err := c.connectAndRead(ctx, streamURL)
 		if err != nil {
-			const reconnectDuration = 5 * time.Second
-
 			c.logger.Warn("Stream disconnected, reconnecting in 5s...", "error", err)
+			c.reconnectCounter.Add(ctx, 1)
 
 			timer := time.NewTimer(reconnectDuration)
 			select {
@@ -103,6 +135,8 @@ func (c *Collector) connectAndRead(ctx context.Context, streamURL string) error 
 			return err
 		}
 
+		c.eventsReceived.Add(ctx, 1)
+
 		line = strings.TrimSpace(line)
 
 		switch {
@@ -112,46 +146,19 @@ func (c *Collector) connectAndRead(ctx context.Context, streamURL string) error 
 			payload := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
 
 			if currentEvent != "" && payload != "" {
-				c.handleEvent(ctx, currentEvent, payload)
+				event := Event{
+					Type:    currentEvent,
+					Payload: payload,
+				}
+
+				c.logger.Debug("Received event", "event", event)
+				c.handleEvent(ctx, event)
+
+				c.msgBuffer <- event
 			}
 		case line == "":
 			currentEvent = ""
 		}
-	}
-}
-
-func (c *Collector) handleEvent(ctx context.Context, eventType, payload string) {
-	switch eventType {
-	case "update", "status.update":
-		var status MastoStatus
-
-		c.logger.Debug("Received new status", "payload", payload)
-
-		if err := json.Unmarshal([]byte(payload), &status); err != nil {
-			c.logger.Error("Unable to parse post", "error", err)
-
-			return
-		}
-
-		c.logger.Info("Received new post", "id", status.ID, "author", status.Account.Username)
-
-		req := mapToIngestRequest(status)
-
-		c.logger.Debug("Mapped post to ingest request", "request", req, "account", status.Account)
-
-		if err := c.hubClient.SendSlide(ctx, req); err != nil {
-			c.logger.Error("Error sending the post to the hub", "error", err)
-		}
-
-	case "delete":
-		statusID := string(payload)
-		c.logger.Info("Post was deleted", "id", statusID, "event_type", eventType)
-
-		if err := c.hubClient.DeleteSlide(ctx, collectorName, statusID); err != nil {
-			c.logger.Error("Error sending delete request to the hub", "error", err)
-		}
-	default:
-		c.logger.Info("Received unsupported event type", "type", eventType)
 	}
 }
 

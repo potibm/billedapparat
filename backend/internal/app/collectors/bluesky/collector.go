@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	collectorName    = "bluesky"
+	collectorName           = "bluesky"
 	jetstreamURL            = "wss://jetstream1.us-east.bsky.network/subscribe"
 	metricNamespace         = "billedapparat_collector_bluesky_"
 	eventBufferSize         = 1000
@@ -169,7 +169,11 @@ func (c *Collector) connectAndRead(ctx context.Context) error {
 		}
 
 		if event.Kind == "commit" && event.Commit != nil && event.Commit.Collection == "app.bsky.feed.post" {
-			c.eventsChan <- &event
+			select {
+			case <-ctx.Done():
+				return nil
+			case c.eventsChan <- &event:
+			}
 		}
 	}
 }
@@ -206,13 +210,15 @@ func (c *Collector) loadKnownPosts(ctx context.Context) {
 
 func (c *Collector) processEvents(ctx context.Context) {
 	for event := range c.eventsChan {
+		processCtx := context.WithoutCancel(ctx)
+
 		switch event.Commit.Operation {
 		case "create":
-			c.handleCreate(ctx, event)
+			c.handleCreate(processCtx, event)
 		case "update":
-			c.handleUpdate(ctx, event)
+			c.handleUpdate(processCtx, event)
 		case "delete":
-			c.handleDelete(ctx, event)
+			c.handleDelete(processCtx, event)
 		default:
 			c.logger.Info("Unknown operation", "operation", event.Commit.Operation)
 		}

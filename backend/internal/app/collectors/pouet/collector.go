@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	collectorName = "pouet"
-	pouetOnelinerURL   = "https://www.pouet.net/oneliner.php"
+	collectorName    = "pouet"
+	pouetOnelinerURL = "https://www.pouet.net/oneliner.php"
 )
 
 type Collector struct {
