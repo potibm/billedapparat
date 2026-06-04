@@ -2,7 +2,6 @@ package twitch
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/nicklaw5/helix/v2"
 )
@@ -24,8 +23,6 @@ func (c *Collector) getAvatarURL(ctx context.Context, userID string) (string, er
 	if err != nil {
 		return "", err
 	}
-
-	fmt.Printf("%+v\n", userResp)
 
 	if len(userResp.Data.Users) == 0 {
 		return "", nil
