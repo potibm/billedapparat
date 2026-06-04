@@ -65,8 +65,10 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 }
 
 func (c *Collector) Close() error {
-	c.logger.Info("Shutting down Discord collector...")
-	c.dg.Close()
+	if c.dg != nil {
+		c.logger.Info("Shutting down Discord collector...")
+		c.dg.Close()
+	}
 
 	return nil
 }
@@ -99,7 +101,7 @@ func (c *Collector) Run(ctx context.Context) error {
 
 func (c *Collector) handleMessageCreate(ctx context.Context, s *discordgo.Session, m *discordgo.MessageCreate) {
 	c.eventsReceived.Add(ctx, 1, metric.WithAttributes(
-		attribute.String("mode", "create"),
+		attribute.String("operation", "create"),
 	))
 
 	if m.Author == nil {
@@ -117,7 +119,7 @@ func (c *Collector) handleMessageCreate(ctx context.Context, s *discordgo.Sessio
 	req := mapToIngestRequest(m.Message)
 
 	c.postsMatched.Add(ctx, 1, metric.WithAttributes(
-		attribute.String("mode", "create"),
+		attribute.String("operation", "create"),
 	))
 
 	select {

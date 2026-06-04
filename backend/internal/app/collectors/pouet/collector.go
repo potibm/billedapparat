@@ -38,8 +38,8 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 
 	itemsFetchedTotal, _ := meter.Int64Counter(metricNamespace+"items_fetched_total",
 		metric.WithDescription("Number of items fetched from Pouet"))
-	itemsFilteredTotal, _ := meter.Int64Counter(metricNamespace+"items_filtered_total",
-		metric.WithDescription("Number of items filtered out due to keywords"))
+	itemsRetainedTotal, _ := meter.Int64Counter(metricNamespace+"items_retained_total",
+		metric.WithDescription("Number of items retained after filtering"))
 	eventsDropped, _ := meter.Int64Counter(metricNamespace+"messages_dropped_total",
 		metric.WithDescription("Number of messages dropped due to full buffer"))
 
@@ -48,7 +48,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 		hubClient:          hubClient,
 		logger:             slog.Default().With("component", "collector_pouet"),
 		itemsFetchedTotal:  itemsFetchedTotal,
-		itemsFilteredTotal: itemsFilteredTotal,
+		itemsFilteredTotal: itemsRetainedTotal,
 		eventsDropped:      eventsDropped,
 		msgBuffer:          make(chan contracts.IngestSlideRequest, bufferSize),
 		httpClient:         &http.Client{Timeout: defaultTimeout},

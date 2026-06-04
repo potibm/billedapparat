@@ -1,7 +1,6 @@
 package factory
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/potibm/billedapparat/internal/app/collectors"
@@ -14,7 +13,6 @@ import (
 	"github.com/potibm/billedapparat/internal/app/collectors/protokolapparat_timetable"
 	"github.com/potibm/billedapparat/internal/app/collectors/twitch"
 	"github.com/potibm/billedapparat/internal/app/config"
-	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 )
 
@@ -85,44 +83,17 @@ func buildPouet(v *viper.Viper, c *hubclient.HubClient) (collectors.Collector, e
 }
 
 func buildProtokolapparatNews(v *viper.Viper, c *hubclient.HubClient) (collectors.Collector, error) {
-	var cfg protokolapparat_news.Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("error parsing config for Protokolapparat News Collector: %w", err)
-	}
-
-	rdb, err := initializeRedisClient(cfg.RedisURL)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing Redis client: %w", err)
-	}
-
-	return protokolapparat_news.NewCollector(cfg, c, rdb), nil
+	return buildRedisConsumer(
+		v, c,
+		func(cfg protokolapparat_news.Config) config.RedisURL { return cfg.RedisURL },
+		protokolapparat_news.NewCollector,
+	)
 }
 
 func buildProtokolapparatTimetable(v *viper.Viper, c *hubclient.HubClient) (collectors.Collector, error) {
-	var cfg protokolapparat_timetable.Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("error parsing config for Protokolapparat Timetable Collector: %w", err)
-	}
-
-	rdb, err := initializeRedisClient(cfg.RedisURL)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing Redis client: %w", err)
-	}
-
-	return protokolapparat_timetable.NewCollector(cfg, c, rdb), nil
-}
-
-func initializeRedisClient(redisURL config.RedisURL) (*redis.Client, error) {
-	options, err := redis.ParseURL(string(redisURL))
-	if err != nil {
-		return nil, fmt.Errorf("invalid Redis URL: %w", err)
-	}
-
-	rdb := redis.NewClient(options)
-
-	if err := rdb.Ping(context.Background()).Err(); err != nil {
-		return nil, fmt.Errorf("could not connect to Redis: %w", err)
-	}
-
-	return rdb, nil
+	return buildRedisConsumer(
+		v, c,
+		func(cfg protokolapparat_timetable.Config) config.RedisURL { return cfg.RedisURL },
+		protokolapparat_timetable.NewCollector,
+	)
 }
