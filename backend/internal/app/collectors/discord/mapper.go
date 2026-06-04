@@ -5,7 +5,7 @@ import (
 	"github.com/potibm/billedapparat/internal/app/contracts"
 )
 
-func mapToIngestRequest(message *discordgo.MessageCreate) contracts.IngestSlideRequest {
+func mapToIngestRequest(message *discordgo.Message) contracts.IngestSlideRequest {
 	var mediaUrls []contracts.IngestSlideRequestMediaURL
 	for _, attachment := range message.Attachments {
 		mediaUrls = append(mediaUrls, contracts.IngestSlideRequestMediaURL{

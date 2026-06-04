@@ -13,28 +13,26 @@ func TestMapToIngestRequest(t *testing.T) {
 	fixedTime := time.Date(2026, time.May, 24, 10, 0, 0, 0, time.UTC)
 
 	t.Run("message with all fields populated", func(t *testing.T) {
-		message := &discordgo.MessageCreate{
-			Message: &discordgo.Message{
-				ID:        "msg-123",
-				Content:   "Hello from Discord",
-				Timestamp: fixedTime,
-				Author: &discordgo.User{
-					ID:         "user-1",
-					Username:   "testuser",
-					GlobalName: "Test User",
-					Avatar:     "avatarhash",
+		message := &discordgo.Message{
+			ID:        "msg-123",
+			Content:   "Hello from Discord",
+			Timestamp: fixedTime,
+			Author: &discordgo.User{
+				ID:         "user-1",
+				Username:   "testuser",
+				GlobalName: "Test User",
+				Avatar:     "avatarhash",
+			},
+			Attachments: []*discordgo.MessageAttachment{
+				{
+					ID:          "att-1",
+					URL:         "https://example.com/image.png",
+					ContentType: "image/png",
 				},
-				Attachments: []*discordgo.MessageAttachment{
-					{
-						ID:          "att-1",
-						URL:         "https://example.com/image.png",
-						ContentType: "image/png",
-					},
-					{
-						ID:          "att-2",
-						URL:         "https://example.com/video.mp4",
-						ContentType: "video/mp4",
-					},
+				{
+					ID:          "att-2",
+					URL:         "https://example.com/video.mp4",
+					ContentType: "video/mp4",
 				},
 			},
 		}
@@ -62,16 +60,14 @@ func TestMapToIngestRequest(t *testing.T) {
 	})
 
 	t.Run("message without attachments", func(t *testing.T) {
-		message := &discordgo.MessageCreate{
-			Message: &discordgo.Message{
-				ID:        "msg-456",
-				Content:   "Text only",
-				Timestamp: fixedTime,
-				Author: &discordgo.User{
-					ID:       "user-2",
-					Username: "textuser",
-					Avatar:   "avatarhash2",
-				},
+		message := &discordgo.Message{
+			ID:        "msg-456",
+			Content:   "Text only",
+			Timestamp: fixedTime,
+			Author: &discordgo.User{
+				ID:       "user-2",
+				Username: "textuser",
+				Avatar:   "avatarhash2",
 			},
 		}
 
@@ -82,17 +78,15 @@ func TestMapToIngestRequest(t *testing.T) {
 	})
 
 	t.Run("author without GlobalName", func(t *testing.T) {
-		message := &discordgo.MessageCreate{
-			Message: &discordgo.Message{
-				ID:        "msg-789",
-				Content:   "No display name",
-				Timestamp: fixedTime,
-				Author: &discordgo.User{
-					ID:         "user-3",
-					Username:   "nouser",
-					GlobalName: "",
-					Avatar:     "",
-				},
+		message := &discordgo.Message{
+			ID:        "msg-789",
+			Content:   "No display name",
+			Timestamp: fixedTime,
+			Author: &discordgo.User{
+				ID:         "user-3",
+				Username:   "nouser",
+				GlobalName: "",
+				Avatar:     "",
 			},
 		}
 
@@ -103,15 +97,13 @@ func TestMapToIngestRequest(t *testing.T) {
 	})
 
 	t.Run("message with empty content", func(t *testing.T) {
-		message := &discordgo.MessageCreate{
-			Message: &discordgo.Message{
-				ID:        "msg-empty",
-				Content:   "",
-				Timestamp: fixedTime,
-				Author: &discordgo.User{
-					ID:       "user-4",
-					Username: "emptyuser",
-				},
+		message := &discordgo.Message{
+			ID:        "msg-empty",
+			Content:   "",
+			Timestamp: fixedTime,
+			Author: &discordgo.User{
+				ID:       "user-4",
+				Username: "emptyuser",
 			},
 		}
 

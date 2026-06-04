@@ -9,6 +9,7 @@ import (
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
 	"github.com/potibm/billedapparat/internal/app/contracts"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -68,7 +69,7 @@ func (c *Collector) Run(ctx context.Context) error {
 	}
 
 	dg.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
-		c.handleMessage(ctx, s, m)
+		c.handleMessageCreate(ctx, s, m)
 	})
 
 	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentMessageContent
@@ -89,8 +90,10 @@ func (c *Collector) Run(ctx context.Context) error {
 	return nil
 }
 
-func (c *Collector) handleMessage(ctx context.Context, s *discordgo.Session, m *discordgo.MessageCreate) {
-	c.eventsReceived.Add(ctx, 1)
+func (c *Collector) handleMessageCreate(ctx context.Context, s *discordgo.Session, m *discordgo.MessageCreate) {
+	c.eventsReceived.Add(ctx, 1, metric.WithAttributes(
+		attribute.String("mode", "create"),
+	))
 
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -100,9 +103,11 @@ func (c *Collector) handleMessage(ctx context.Context, s *discordgo.Session, m *
 		return
 	}
 
-	req := mapToIngestRequest(m)
+	req := mapToIngestRequest(m.Message)
 
-	c.postsMatched.Add(ctx, 1)
+	c.postsMatched.Add(ctx, 1, metric.WithAttributes(
+		attribute.String("mode", "create"),
+	))
 
 	select {
 	case c.msgBuffer <- req:
