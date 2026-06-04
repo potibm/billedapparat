@@ -9,8 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/potibm/billedapparat/internal/app/collectors/utils"
 	"github.com/potibm/protokolapparat/pkg/common"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
 const (
@@ -31,6 +35,8 @@ type Consumer[T common.Validatable] struct {
 	version        int
 	pushHandler    func(ctx context.Context, event *common.Event[T]) error
 	pushErrorCount int
+	collectorName  string
+	metrics        utils.CollectorCounters
 }
 
 func New[T common.Validatable](
@@ -38,8 +44,11 @@ func New[T common.Validatable](
 	rdb *redis.Client,
 	logger *slog.Logger,
 	version int,
+	collectorName string,
 	pushHandler func(ctx context.Context, event *common.Event[T]) error,
 ) *Consumer[T] {
+	meter := otel.Meter("github.com/potibm/billedapparat/internal/app/collectors/redisconsumer")
+
 	return &Consumer[T]{
 		cfg:            cfg,
 		rdb:            rdb,
@@ -47,6 +56,8 @@ func New[T common.Validatable](
 		version:        version,
 		pushHandler:    pushHandler,
 		pushErrorCount: 0,
+		collectorName:  collectorName,
+		metrics:        utils.NewCollectorCounters(meter),
 	}
 }
 
@@ -141,6 +152,10 @@ func (c *Consumer[T]) handleBatchResult(
 	case <-ctx.Done():
 		return pelStartID, true
 	case <-time.After(backoffDelay):
+		c.metrics.Reconnects.Add(ctx, 1, metric.WithAttributes(
+			attribute.String("collector", c.collectorName),
+		))
+
 		return nextID, false
 	}
 }
@@ -215,6 +230,10 @@ func (c *Consumer[T]) processStreams(ctx context.Context, streams []redis.XStrea
 
 // processSingleMessage now returns a boolean indicating success (true) or failure (false).
 func (c *Consumer[T]) processSingleMessage(ctx context.Context, message redis.XMessage) bool {
+	c.metrics.EventsMatched.Add(ctx, 1, metric.WithAttributes(
+		attribute.String("collector", c.collectorName),
+	))
+
 	event, err := c.parseRedisMessage(message)
 	if err != nil {
 		c.logger.Error("Could not parse message (Poison Pill) - discarding it", "id", message.ID, "err", err)

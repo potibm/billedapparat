@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	collectorName                             = "protokolapparat_timetable"
 	protokolapparatTimetableScheduleCollector = "protokolapparat-timetable"
 	protokolapparatVersion                    = 1
 )
@@ -55,6 +56,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient, rdb *redis.Client)
 		rdb,
 		logger,
 		protokolapparatVersion,
+		collectorName,
 		c.pushToHub,
 	)
 

@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	collectorName                = "protokolapparat_news"
 	protokolapparatNewsCollector = "protokolapparat-news"
 	protokolapparatVersion       = 1
 )
@@ -54,6 +55,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient, rdb *redis.Client)
 		rdb,
 		logger,
 		protokolapparatVersion,
+		collectorName,
 		c.pushToHub,
 	)
 
