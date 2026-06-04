@@ -8,26 +8,56 @@ import (
 	"time"
 
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
+	"github.com/potibm/billedapparat/internal/app/collectors/utils"
 	"github.com/potibm/billedapparat/internal/app/contracts"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/metric"
 )
 
 const (
 	collectorName    = "pouet"
+	metricNamespace  = "billedapparat_collector_pouet_"
 	pouetOnelinerURL = "https://www.pouet.net/oneliner.php"
+	bufferSize       = 1000
 )
 
 type Collector struct {
 	cfg       Config
 	hubClient *hubclient.HubClient
 	logger    *slog.Logger
+	itemsFetchedTotal metric.Int64Counter
+	itemsFilteredTotal metric.Int64Counter
+	msgBuffer chan contracts.IngestSlideRequest
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
-	return &Collector{
+	meter := otel.Meter("pouet-collector")
+
+	itemsFetchedTotal, _ := meter.Int64Counter(metricNamespace+"items_fetched_total",
+		metric.WithDescription("Number of items fetched from Pouet"))
+	itemsFilteredTotal, _ := meter.Int64Counter(metricNamespace+"items_filtered_total",
+		metric.WithDescription("Number of items filtered out due to keywords"))
+
+	c := &Collector{
 		cfg:       cfg,
 		hubClient: hubClient,
 		logger:    slog.Default().With("component", "collector_pouet"),
+		itemsFetchedTotal: itemsFetchedTotal,
+		itemsFilteredTotal: itemsFilteredTotal,
+		msgBuffer: make(chan contracts.IngestSlideRequest, bufferSize),
 	}
+
+	_, _ = meter.Int64ObservableGauge(
+		metricNamespace+"worker_queue_depth",
+		metric.WithDescription("Number of unprocessed events in the channel"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			o.Observe(int64(len(c.msgBuffer)))
+
+			return nil
+		}),
+	)
+
+	return c
 }
 
 func (c *Collector) Close() error {
@@ -35,6 +65,8 @@ func (c *Collector) Close() error {
 }
 
 func (c *Collector) Run(ctx context.Context) error {
+	go utils.RunWorker(ctx, c.msgBuffer, c.processRequest)
+
 	interval := c.cfg.PollInterval
 
 	ticker := time.NewTicker(time.Duration(interval) * time.Minute)
@@ -69,20 +101,16 @@ func (c *Collector) collectAndSend(ctx context.Context) error {
 	}
 
 	c.logger.Info("Fetched data from Pouet", "num_items", len(slideRequests))
+	c.itemsFetchedTotal.Add(ctx, int64(len(slideRequests)))
 
 	if len(c.cfg.Keywords) > 0 {
 		slideRequests = filterByKeywords(slideRequests, c.cfg.Keywords.Lower())
 		c.logger.Info("Filtered data by keywords", "num_items_after_filtering", len(slideRequests))
+		c.itemsFilteredTotal.Add(ctx, int64(len(slideRequests)))
 	}
-
+	
 	for _, req := range slideRequests {
-		if err := c.hubClient.SendSlide(ctx, req); err != nil {
-			c.logger.Error("Error ingesting slide to hub", "error", err, "external_id", req.ExternalID)
-
-			continue
-		}
-
-		c.logger.Info("Successfully ingested slide to hub", "external_id", req.ExternalID)
+		c.msgBuffer <- req
 	}
 
 	return nil
