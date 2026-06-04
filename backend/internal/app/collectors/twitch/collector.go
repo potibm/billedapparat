@@ -16,7 +16,6 @@ import (
 
 const (
 	collectorName   = "twitch"
-	metricNamespace = "billedapparat_collector_twitch_"
 	bufferSize      = 1000
 	avatarCacheSize = 100
 )

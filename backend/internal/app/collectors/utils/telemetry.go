@@ -46,6 +46,21 @@ func RegisterQueueDepthGauge(meter metric.Meter, collectorName string, getLen fu
 	)
 }
 
+func RegisterCacheSizeGauge(meter metric.Meter, collectorName, cacheName string, getLen func() int) {
+	_, _ = meter.Int64ObservableGauge(
+		Namespace+"cache_size",
+		metric.WithDescription("Number of items in cache"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			o.Observe(int64(getLen()), metric.WithAttributes(
+				attribute.String("collector", collectorName),
+				attribute.String("cache_type", cacheName),
+			))
+
+			return nil
+		}),
+	)
+}
+
 type CacheStatsProvider interface {
 	Stats() CacheStats
 }

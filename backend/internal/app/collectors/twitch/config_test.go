@@ -13,6 +13,7 @@ func TestDefaultConfig(t *testing.T) {
 	defaults := DefaultConfig(apiKey)
 
 	var cfg Config
+
 	err := mapstructure.Decode(defaults, &cfg)
 
 	assert.NoError(t, err)

@@ -17,7 +17,6 @@ import (
 
 const (
 	collectorName    = "pouet"
-	metricNamespace  = "billedapparat_collector_pouet_"
 	pouetOnelinerURL = "https://www.pouet.net/oneliner.php"
 	bufferSize       = 1000
 	defaultTimeout   = 5 * time.Second

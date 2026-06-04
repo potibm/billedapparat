@@ -20,7 +20,6 @@ import (
 const (
 	collectorName           = "bluesky"
 	jetstreamURL            = "wss://jetstream1.us-east.bsky.network/subscribe"
-	metricNamespace         = "billedapparat_collector_bluesky_"
 	eventBufferSize         = 1000
 	profileCacheSize        = 100
 	profileRequestTimeout   = 5 * time.Second
@@ -59,15 +58,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 
 	utils.RegisterCacheMetrics(meter, collectorName, "profiles", c.profiles)
 
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"known_posts_size",
-		metric.WithDescription("Number of known posts currently tracked"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(c.knownPosts.Len()))
-
-			return nil
-		}),
-	)
+	utils.RegisterCacheSizeGauge(meter, collectorName, "known_posts", c.knownPosts.Len)
 
 	return c
 }

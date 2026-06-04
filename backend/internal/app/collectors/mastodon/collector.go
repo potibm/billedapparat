@@ -19,7 +19,6 @@ import (
 
 const (
 	collectorName     = "mastodon"
-	metricNamespace   = "billedapparat_collector_mastodon_"
 	bufferSize        = 1000
 	reconnectDuration = 5 * time.Second
 	defaultTimeout    = 5 * time.Second
