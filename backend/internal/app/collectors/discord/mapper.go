@@ -14,6 +14,11 @@ func mapToIngestRequest(message *discordgo.Message) contracts.IngestSlideRequest
 		})
 	}
 
+	displayName := message.Author.GlobalName
+	if displayName == "" {
+		displayName = message.Author.Username
+	}
+
 	req := contracts.IngestSlideRequest{
 		Source:          collectorName,
 		ExternalID:      message.ID,
@@ -24,7 +29,7 @@ func mapToIngestRequest(message *discordgo.Message) contracts.IngestSlideRequest
 		Author: &contracts.IngestSlideRequestAuthor{
 			ExternalID:        message.Author.ID,
 			Username:          message.Author.Username,
-			DisplayName:       message.Author.GlobalName,
+			DisplayName:       displayName,
 			AvatarExternalURL: message.Author.AvatarURL("128"),
 		},
 	}
