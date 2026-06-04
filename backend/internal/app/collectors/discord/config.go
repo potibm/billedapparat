@@ -6,7 +6,7 @@ import (
 )
 
 type Config struct {
-	config.CollectorConfig
+	config.CollectorConfig `mapstructure:",squash"`
 
 	BotToken  string `mapstructure:"bot_token"`
 	ChannelID string `mapstructure:"channel_id"`

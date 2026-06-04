@@ -105,7 +105,7 @@ Once the process is complete, the bot will appear in the member list of the resp
 
 Enable the "Developer Mode" in the Settings. 
 
-Now you can right click on the channel and select "Copy Channel ID" from the popup.
+Now you can right-click on the channel and select "Copy Channel ID" from the popup.
 
 ````yaml
 collectors:
@@ -114,5 +114,5 @@ collectors:
         enabled: true
         type: slide
         bot_token: bot-token-secret
-        channel_id: 1000524269958213747
+        channel_id: "1000524269958213747"
 ````

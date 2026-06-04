@@ -12,7 +12,7 @@ const pouetDefaultPollIntervalOneHour = 60
 type Keywords []string
 
 type Config struct {
-	config.CollectorConfig
+	config.CollectorConfig `mapstructure:",squash"`
 
 	PollInterval int      `mapstructure:"poll_interval"`
 	Keywords     Keywords `mapstructure:"keywords"`

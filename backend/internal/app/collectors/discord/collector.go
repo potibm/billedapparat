@@ -95,6 +95,10 @@ func (c *Collector) handleMessageCreate(ctx context.Context, s *discordgo.Sessio
 		attribute.String("mode", "create"),
 	))
 
+	if m.Author == nil {
+		return
+	}
+
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
