@@ -8,6 +8,7 @@ import (
 	"github.com/gempir/go-twitch-irc/v4"
 	"github.com/nicklaw5/helix/v2"
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
+	"github.com/potibm/billedapparat/internal/app/collectors/utils"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/metric"
 )
@@ -134,7 +135,7 @@ func (c *Collector) Run(ctx context.Context) error {
 
 	c.twitchIrcClient.Join(c.cfg.Channel)
 
-	go c.worker(ctx)
+	go utils.RunWorker(ctx, c.msgBuffer, c.processRequest)
 
 	go func() {
 		<-ctx.Done()
