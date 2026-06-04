@@ -12,6 +12,7 @@ import (
 	"github.com/potibm/billedapparat/internal/app/collectors/pouet"
 	"github.com/potibm/billedapparat/internal/app/collectors/protokolapparat_news"
 	"github.com/potibm/billedapparat/internal/app/collectors/protokolapparat_timetable"
+	"github.com/potibm/billedapparat/internal/app/collectors/twitch"
 	"github.com/potibm/billedapparat/internal/app/config"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
@@ -27,6 +28,8 @@ func Build(source string, v *viper.Viper, client *hubclient.HubClient) (collecto
 		return buildPouet(v, client)
 	case "discord":
 		return buildDiscord(v, client)
+	case "twitch":
+		return buildTwitch(v, client)
 	case "protokolapparat-news":
 		return buildProtokolapparatNews(v, client)
 	case "protokolapparat-timetable":
@@ -43,6 +46,15 @@ func buildDiscord(v *viper.Viper, c *hubclient.HubClient) (collectors.Collector,
 	}
 
 	return discord.NewCollector(cfg, c), nil
+}
+
+func buildTwitch(v *viper.Viper, c *hubclient.HubClient) (collectors.Collector, error) {
+	var cfg twitch.Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("error parsing config for Twitch Collector: %w", err)
+	}
+
+	return twitch.NewCollector(cfg, c), nil
 }
 
 func buildBluesky(v *viper.Viper, c *hubclient.HubClient) (collectors.Collector, error) {
