@@ -10,7 +10,7 @@ import (
 type Hashtags []string
 
 type Config struct {
-	config.CollectorConfig
+	config.CollectorConfig `mapstructure:",squash"`
 
 	Hashtags Hashtags `mapstructure:"hashtags"`
 }

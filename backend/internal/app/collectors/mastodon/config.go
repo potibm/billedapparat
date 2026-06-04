@@ -6,7 +6,7 @@ import (
 )
 
 type Config struct {
-	config.CollectorConfig
+	config.CollectorConfig `mapstructure:",squash"`
 
 	Host        string `mapstructure:"host"`
 	AccessToken string `mapstructure:"access_token"`

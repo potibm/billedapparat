@@ -12,7 +12,7 @@ const (
 )
 
 type Config struct {
-	config.CollectorConfig
+	config.CollectorConfig `mapstructure:",squash"`
 
 	RedisURL      config.RedisURL `mapstructure:"redis_url"`
 	StreamName    string          `mapstructure:"stream_name"`

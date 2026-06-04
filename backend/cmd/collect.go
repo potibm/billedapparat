@@ -1,21 +1,14 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"time"
 
-	"github.com/potibm/billedapparat/internal/app/collectors"
-	"github.com/potibm/billedapparat/internal/app/collectors/bluesky"
+	"github.com/potibm/billedapparat/internal/app/collectors/factory"
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
-	"github.com/potibm/billedapparat/internal/app/collectors/mastodon"
-	"github.com/potibm/billedapparat/internal/app/collectors/pouet"
-	"github.com/potibm/billedapparat/internal/app/collectors/protokolapparat_news"
-	"github.com/potibm/billedapparat/internal/app/collectors/protokolapparat_timetable"
 	"github.com/potibm/billedapparat/internal/app/config"
 	"github.com/potibm/billedapparat/internal/app/initializer"
-	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
@@ -77,7 +70,7 @@ func runCollectorCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to wait for hub server: %w", err)
 	}
 
-	c, err := buildCollector(source, subViper, client)
+	c, err := factory.Build(source, subViper, client)
 	if err != nil {
 		return err
 	}
@@ -128,76 +121,4 @@ func loadCollectorConfig(source string) (subViper *viper.Viper, hubURL, apiKey s
 	}
 
 	return subViper, hubURL, apiKey, nil
-}
-
-func buildCollector(source string, subViper *viper.Viper, client *hubclient.HubClient) (collectors.Collector, error) {
-	switch source {
-	case "mastodon":
-		var cfg mastodon.Config
-		if err := subViper.Unmarshal(&cfg); err != nil {
-			return nil, fmt.Errorf("error parsing config for Mastodon Collector: %w", err)
-		}
-
-		return mastodon.NewCollector(cfg, client), nil
-	case "bluesky":
-		var cfg bluesky.Config
-		if err := subViper.Unmarshal(&cfg); err != nil {
-			return nil, fmt.Errorf("error parsing config for Bluesky Collector: %w", err)
-		}
-
-		return bluesky.NewCollector(cfg, client), nil
-
-	case "pouet":
-		var cfg pouet.Config
-		if err := subViper.Unmarshal(&cfg); err != nil {
-			return nil, fmt.Errorf("error parsing config for Pouet Collector: %w", err)
-		}
-
-		return pouet.NewCollector(cfg, client), nil
-
-	case "protokolapparat-news":
-		var cfg protokolapparat_news.Config
-		if err := subViper.Unmarshal(&cfg); err != nil {
-			return nil, fmt.Errorf("error parsing config for Protokolapparat News Collector: %w", err)
-		}
-
-		rdb, err := initializeRedisClient(cfg.RedisURL)
-		if err != nil {
-			return nil, fmt.Errorf("error initializing Redis client: %w", err)
-		}
-
-		return protokolapparat_news.NewCollector(cfg, client, rdb), nil
-
-	case "protokolapparat-timetable":
-		var cfg protokolapparat_timetable.Config
-		if err := subViper.Unmarshal(&cfg); err != nil {
-			return nil, fmt.Errorf("error parsing config for Protokolapparat Timetable Collector: %w", err)
-		}
-
-		rdb, err := initializeRedisClient(cfg.RedisURL)
-		if err != nil {
-			return nil, fmt.Errorf("error initializing Redis client: %w", err)
-		}
-
-		return protokolapparat_timetable.NewCollector(cfg, client, rdb), nil
-
-	default:
-		return nil, fmt.Errorf("unknown collector source: %s", source)
-	}
-}
-
-func initializeRedisClient(redisURL config.RedisURL) (*redis.Client, error) {
-	options, err := redis.ParseURL(string(redisURL))
-	if err != nil {
-		return nil, fmt.Errorf("invalid Redis URL: %w", err)
-	}
-
-	rdb := redis.NewClient(options)
-
-	// Test connection
-	if err := rdb.Ping(context.Background()).Err(); err != nil {
-		return nil, fmt.Errorf("could not connect to Redis: %w", err)
-	}
-
-	return rdb, nil
 }
