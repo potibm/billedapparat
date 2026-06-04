@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/potibm/billedapparat/internal/app/collectors"
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
 	"github.com/potibm/billedapparat/internal/app/config"
@@ -14,12 +15,17 @@ import (
 func buildRedisConsumer[T any, C collectors.Collector](
 	v *viper.Viper,
 	c *hubclient.HubClient,
+	cv *validator.Validate,
 	getRedisURL func(T) config.RedisURL,
 	newCollector func(T, *hubclient.HubClient, *redis.Client) C,
 ) (collectors.Collector, error) {
 	var cfg T
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("error parsing config: %w", err)
+	}
+
+	if err := cv.Struct(&cfg); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
 	rdb, err := initializeRedisClient(getRedisURL(cfg))

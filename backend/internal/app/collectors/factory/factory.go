@@ -3,6 +3,7 @@ package factory
 import (
 	"fmt"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/potibm/billedapparat/internal/app/collectors"
 	"github.com/potibm/billedapparat/internal/app/collectors/bluesky"
 	"github.com/potibm/billedapparat/internal/app/collectors/discord"
@@ -17,82 +18,67 @@ import (
 )
 
 func Build(source string, v *viper.Viper, client *hubclient.HubClient) (collectors.Collector, error) {
+	validate := validator.New()
+
 	switch source {
 	case "mastodon":
-		return buildMastodon(v, client)
+		return buildMastodon(v, client, validate)
 	case "bluesky":
-		return buildBluesky(v, client)
+		return buildBluesky(v, client, validate)
 	case "pouet":
-		return buildPouet(v, client)
+		return buildPouet(v, client, validate)
 	case "discord":
-		return buildDiscord(v, client)
+		return buildDiscord(v, client, validate)
 	case "twitch":
-		return buildTwitch(v, client)
+		return buildTwitch(v, client, validate)
 	case "protokolapparat-news":
-		return buildProtokolapparatNews(v, client)
+		return buildProtokolapparatNews(v, client, validate)
 	case "protokolapparat-timetable":
-		return buildProtokolapparatTimetable(v, client)
+		return buildProtokolapparatTimetable(v, client, validate)
 	default:
 		return nil, fmt.Errorf("unknown collector source: %s", source)
 	}
 }
 
-func buildDiscord(v *viper.Viper, c *hubclient.HubClient) (collectors.Collector, error) {
-	var cfg discord.Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("error parsing config for Discord Collector: %w", err)
-	}
-
-	return discord.NewCollector(cfg, c), nil
+func buildDiscord(v *viper.Viper, c *hubclient.HubClient, validate *validator.Validate) (collectors.Collector, error) {
+	return buildCollector(v, c, validate, "Discord", discord.NewCollector)
 }
 
-func buildTwitch(v *viper.Viper, c *hubclient.HubClient) (collectors.Collector, error) {
-	var cfg twitch.Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("error parsing config for Twitch Collector: %w", err)
-	}
-
-	return twitch.NewCollector(cfg, c), nil
+func buildTwitch(v *viper.Viper, c *hubclient.HubClient, validate *validator.Validate) (collectors.Collector, error) {
+	return buildCollector(v, c, validate, "Twitch", twitch.NewCollector)
 }
 
-func buildBluesky(v *viper.Viper, c *hubclient.HubClient) (collectors.Collector, error) {
-	var cfg bluesky.Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("error parsing config for Bluesky Collector: %w", err)
-	}
-
-	return bluesky.NewCollector(cfg, c), nil
+func buildBluesky(v *viper.Viper, c *hubclient.HubClient, validate *validator.Validate) (collectors.Collector, error) {
+	return buildCollector(v, c, validate, "Bluesky", bluesky.NewCollector)
 }
 
-func buildMastodon(v *viper.Viper, c *hubclient.HubClient) (collectors.Collector, error) {
-	var cfg mastodon.Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("error parsing config for Mastodon Collector: %w", err)
-	}
-
-	return mastodon.NewCollector(cfg, c), nil
+func buildMastodon(v *viper.Viper, c *hubclient.HubClient, validate *validator.Validate) (collectors.Collector, error) {
+	return buildCollector(v, c, validate, "Mastodon", mastodon.NewCollector)
 }
 
-func buildPouet(v *viper.Viper, c *hubclient.HubClient) (collectors.Collector, error) {
-	var cfg pouet.Config
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("error parsing config for Pouet Collector: %w", err)
-	}
-
-	return pouet.NewCollector(cfg, c), nil
+func buildPouet(v *viper.Viper, c *hubclient.HubClient, validate *validator.Validate) (collectors.Collector, error) {
+	return buildCollector(v, c, validate, "Pouet", pouet.NewCollector)
 }
 
-func buildProtokolapparatNews(v *viper.Viper, c *hubclient.HubClient) (collectors.Collector, error) {
+func buildProtokolapparatNews(
+	v *viper.Viper,
+	c *hubclient.HubClient,
+	validate *validator.Validate,
+) (collectors.Collector, error) {
 	return buildRedisConsumer(
-		v, c,
+		v, c, validate,
 		func(cfg protokolapparat_news.Config) config.RedisURL { return cfg.RedisURL },
 		protokolapparat_news.NewCollector,
 	)
 }
 
-func buildProtokolapparatTimetable(v *viper.Viper, c *hubclient.HubClient) (collectors.Collector, error) {
+func buildProtokolapparatTimetable(
+	v *viper.Viper,
+	c *hubclient.HubClient,
+	validate *validator.Validate,
+) (collectors.Collector, error) {
 	return buildRedisConsumer(
-		v, c,
+		v, c, validate,
 		func(cfg protokolapparat_timetable.Config) config.RedisURL { return cfg.RedisURL },
 		protokolapparat_timetable.NewCollector,
 	)

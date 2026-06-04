@@ -8,9 +8,9 @@ import (
 type Config struct {
 	config.CollectorConfig `mapstructure:",squash"`
 
-	Host        string `mapstructure:"host"`
-	AccessToken string `mapstructure:"access_token"`
-	Tag         string `mapstructure:"tag"`
+	Host        string `mapstructure:"host"         validate:"required"`
+	AccessToken string `mapstructure:"access_token" validate:"required"`
+	Tag         string `mapstructure:"tag"          validate:"required"`
 }
 
 func DefaultConfig(generatedAPIKey string) map[string]any {

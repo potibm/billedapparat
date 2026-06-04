@@ -8,7 +8,7 @@ import (
 type Config struct {
 	config.CollectorConfig `mapstructure:",squash"`
 
-	Channel      string `mapstructure:"channel"`
+	Channel      string `mapstructure:"channel"       validate:"required"`
 	ClientID     string `mapstructure:"client_id"`
 	ClientSecret string `mapstructure:"client_secret"`
 }
