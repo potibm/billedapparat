@@ -85,7 +85,6 @@ func (c *Collector) Run(ctx context.Context) error {
 
 	c.logger.Info("Shutting down Discord collector...")
 	dg.Close()
-	close(c.msgBuffer)
 
 	return nil
 }
