@@ -47,7 +47,7 @@ func (c *Collector) handleDelete(ctx context.Context, event *JetstreamEvent) {
 func (c *Collector) deleteSlide(ctx context.Context, rkey, reason string) {
 	c.logger.Info("Deleting slide from hub", "rkey", rkey, "reason", reason)
 
-	if err := c.hubClient.DeleteSlide(ctx, blueskyCollectorName, rkey); err != nil {
+	if err := c.hubClient.DeleteSlide(ctx, collectorName, rkey); err != nil {
 		c.logger.Error("Failed to delete slide from hub", "rkey", rkey, "error", err)
 	}
 

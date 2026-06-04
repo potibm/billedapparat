@@ -49,7 +49,7 @@ func stripHTML(content string) string {
 
 func mapToIngestRequest(status MastoStatus) contracts.IngestSlideRequest {
 	req := contracts.IngestSlideRequest{
-		Source:          mastodonCollectorName,
+		Source:          collectorName,
 		ExternalID:      status.ID,
 		Body:            stripHTML(status.Content),
 		Language:        status.Language,

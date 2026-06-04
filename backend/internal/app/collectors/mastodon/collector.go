@@ -14,7 +14,9 @@ import (
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
 )
 
-const mastodonCollectorName = "mastodon"
+const (
+	collectorName = "mastodon"
+)
 
 type Collector struct {
 	cfg       Config
@@ -145,7 +147,7 @@ func (c *Collector) handleEvent(ctx context.Context, eventType, payload string) 
 		statusID := string(payload)
 		c.logger.Info("Post was deleted", "id", statusID, "event_type", eventType)
 
-		if err := c.hubClient.DeleteSlide(ctx, mastodonCollectorName, statusID); err != nil {
+		if err := c.hubClient.DeleteSlide(ctx, collectorName, statusID); err != nil {
 			c.logger.Error("Error sending delete request to the hub", "error", err)
 		}
 	default:

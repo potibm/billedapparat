@@ -105,7 +105,7 @@ func TestMapToIngestRequest(t *testing.T) {
 
 		req := mapToIngestRequest(status)
 
-		assert.Equal(t, mastodonCollectorName, req.Source)
+		assert.Equal(t, collectorName, req.Source)
 		assert.Equal(t, "12345", req.ExternalID)
 		assert.Equal(t, "en", req.Language)
 		assert.Equal(t, fixedTime, req.OriginCreatedAt)
@@ -248,7 +248,7 @@ func TestMapToIngestRequest(t *testing.T) {
 
 		req := mapToIngestRequest(status)
 
-		assert.Equal(t, mastodonCollectorName, req.Source)
+		assert.Equal(t, collectorName, req.Source)
 		assert.Equal(t, "ext-1", req.ExternalID)
 		assert.Contains(t, req.Body, "Some body content")
 		assert.Equal(t, "de", req.Language)

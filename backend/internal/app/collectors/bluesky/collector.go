@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	blueskyCollectorName    = "bluesky"
+	collectorName    = "bluesky"
 	jetstreamURL            = "wss://jetstream1.us-east.bsky.network/subscribe"
 	metricNamespace         = "billedapparat_collector_bluesky_"
 	eventBufferSize         = 1000
@@ -181,7 +181,7 @@ func (c *Collector) loadKnownPosts(ctx context.Context) {
 	pageSize := 100
 
 	for {
-		externalIDs, total, err := c.hubClient.GetExternalIDs(ctx, blueskyCollectorName, start, start+pageSize)
+		externalIDs, total, err := c.hubClient.GetExternalIDs(ctx, collectorName, start, start+pageSize)
 		if err != nil {
 			c.logger.Error("Failed to fetch known posts from hub", "error", err)
 

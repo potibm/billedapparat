@@ -42,7 +42,7 @@ func mapEventToIngestSlide(event *JetstreamEvent, did string, profile *ProfileRe
 	}
 
 	return &contracts.IngestSlideRequest{
-		Source:          blueskyCollectorName,
+		Source:          collectorName,
 		ExternalID:      event.Commit.Rkey,
 		Author:          &author,
 		Body:            event.Commit.Record.Text,

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	pouetCollectorName = "pouet"
+	collectorName = "pouet"
 	pouetOnelinerURL   = "https://www.pouet.net/oneliner.php"
 )
 
