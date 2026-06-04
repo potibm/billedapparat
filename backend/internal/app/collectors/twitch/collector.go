@@ -145,12 +145,16 @@ func (c *Collector) Run(ctx context.Context) error {
 }
 
 func (c *Collector) handleMessageCreate(ctx context.Context, m twitch.PrivateMessage) {
-	c.logger.Info("Received Twitch message", "user", m.User.DisplayName, "message", m.Message)
+	if ctx.Err() != nil {
+		return
+	}
+
+	c.logger.Debug("Received Twitch message", "user", m.User.DisplayName, "external_id", m.ID)
 	c.eventsReceived.Add(ctx, 1)
 
 	select {
 	case c.msgBuffer <- m:
 	default:
-		c.logger.Warn("Message buffer full, dropping Twitch message", "user", m.User.DisplayName)
+		c.logger.Warn("Message buffer full, dropping Twitch message", "user", m.User.DisplayName, "external_id", m.ID)
 	}
 }
