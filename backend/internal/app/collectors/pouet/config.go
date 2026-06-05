@@ -14,8 +14,8 @@ type Keywords []string
 type Config struct {
 	config.CollectorConfig `mapstructure:",squash"`
 
-	PollInterval int      `mapstructure:"poll_interval"`
-	Keywords     Keywords `mapstructure:"keywords"`
+	PollInterval int      `mapstructure:"poll_interval" validate:"required"`
+	Keywords     Keywords `mapstructure:"keywords"      validate:"required,dive,required"`
 }
 
 func (k Keywords) Lower() Keywords {

@@ -55,7 +55,7 @@ func TestMapEventToIngestSlide(t *testing.T) {
 
 		req := mapEventToIngestSlide(event, did, profile)
 		assert.NotNil(t, req)
-		assert.Equal(t, blueskyCollectorName, req.Source)
+		assert.Equal(t, collectorName, req.Source)
 		assert.Equal(t, "rkey123", req.ExternalID)
 		assert.Equal(t, "Hello world #demoscene", req.Body)
 		assert.Equal(t, "en", req.Language)

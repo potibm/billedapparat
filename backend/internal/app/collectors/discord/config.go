@@ -8,8 +8,8 @@ import (
 type Config struct {
 	config.CollectorConfig `mapstructure:",squash"`
 
-	BotToken  string `mapstructure:"bot_token"`
-	ChannelID string `mapstructure:"channel_id"`
+	BotToken  string `mapstructure:"bot_token"  validate:"required"`
+	ChannelID string `mapstructure:"channel_id" validate:"required"`
 }
 
 func DefaultConfig(generatedAPIKey string) map[string]any {

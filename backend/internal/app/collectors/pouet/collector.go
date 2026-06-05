@@ -8,26 +8,46 @@ import (
 	"time"
 
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
+	"github.com/potibm/billedapparat/internal/app/collectors/utils"
 	"github.com/potibm/billedapparat/internal/app/contracts"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
 const (
-	pouetCollectorName = "pouet"
-	pouetOnelinerURL   = "https://www.pouet.net/oneliner.php"
+	collectorName    = "pouet"
+	pouetOnelinerURL = "https://www.pouet.net/oneliner.php"
+	bufferSize       = 1000
+	defaultTimeout   = 5 * time.Second
 )
 
 type Collector struct {
-	cfg       Config
-	hubClient *hubclient.HubClient
-	logger    *slog.Logger
+	cfg        Config
+	httpClient *http.Client
+	hubClient  *hubclient.HubClient
+	logger     *slog.Logger
+	msgBuffer  chan contracts.IngestSlideRequest
+	metrics    utils.CollectorCounters
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
-	return &Collector{
-		cfg:       cfg,
-		hubClient: hubClient,
-		logger:    slog.Default().With("component", "collector_pouet"),
+	meter := otel.Meter("github.com/potibm/billedapparat/internal/app/collectors/pouet")
+
+	c := &Collector{
+		cfg:        cfg,
+		hubClient:  hubClient,
+		logger:     slog.Default().With("component", "collector_pouet"),
+		msgBuffer:  make(chan contracts.IngestSlideRequest, bufferSize),
+		httpClient: &http.Client{Timeout: defaultTimeout},
+		metrics:    utils.NewCollectorCounters(meter),
 	}
+
+	utils.RegisterQueueDepthGauge(meter, collectorName, func() int {
+		return len(c.msgBuffer)
+	})
+
+	return c
 }
 
 func (c *Collector) Close() error {
@@ -35,6 +55,8 @@ func (c *Collector) Close() error {
 }
 
 func (c *Collector) Run(ctx context.Context) error {
+	go utils.RunWorker(ctx, c.msgBuffer, c.processRequest)
+
 	interval := c.cfg.PollInterval
 
 	ticker := time.NewTicker(time.Duration(interval) * time.Minute)
@@ -63,41 +85,46 @@ func (c *Collector) Run(ctx context.Context) error {
 func (c *Collector) collectAndSend(ctx context.Context) error {
 	c.logger.Info("Collecting data from Pouet")
 
-	slideRequests, err := fetch(ctx, c.logger, pouetOnelinerURL)
+	slideRequests, err := c.fetch(ctx, pouetOnelinerURL)
 	if err != nil {
 		return fmt.Errorf("error fetching data: %w", err)
 	}
 
 	c.logger.Info("Fetched data from Pouet", "num_items", len(slideRequests))
+	c.metrics.EventsReceived.Add(ctx, int64(len(slideRequests)), metric.WithAttributes(
+		attribute.String("collector", collectorName),
+	))
 
 	if len(c.cfg.Keywords) > 0 {
 		slideRequests = filterByKeywords(slideRequests, c.cfg.Keywords.Lower())
 		c.logger.Info("Filtered data by keywords", "num_items_after_filtering", len(slideRequests))
 	}
 
+	c.metrics.EventsMatched.Add(ctx, int64(len(slideRequests)), metric.WithAttributes(
+		attribute.String("collector", collectorName),
+	))
+
 	for _, req := range slideRequests {
-		if err := c.hubClient.SendSlide(ctx, req); err != nil {
-			c.logger.Error("Error ingesting slide to hub", "error", err, "external_id", req.ExternalID)
+		select {
+		case c.msgBuffer <- req:
 
-			continue
+		default:
+			c.logger.Warn("Message buffer full, dropping Pouet item", "item_id", req.ExternalID)
+
+			c.metrics.EventsDropped.Add(ctx, 1, metric.WithAttributes(
+				attribute.String("collector", collectorName),
+			))
 		}
-
-		c.logger.Info("Successfully ingested slide to hub", "external_id", req.ExternalID)
 	}
 
 	return nil
 }
 
-func fetch(ctx context.Context, logger *slog.Logger, url string) ([]contracts.IngestSlideRequest, error) {
+func (c *Collector) fetch(ctx context.Context, url string) ([]contracts.IngestSlideRequest, error) {
 	// #nosec G107 -- url is passed as constant and not influenced by user input, so this is not vulnerable to SSRF
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	resp, err := utils.DoGet(ctx, c.httpClient, url, utils.RequestOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("error creating URL request: %w", err)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("error fetching URL: %w", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
 
@@ -105,5 +132,5 @@ func fetch(ctx context.Context, logger *slog.Logger, url string) ([]contracts.In
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	return parse(logger, resp.Body)
+	return parse(c.logger, resp.Body)
 }

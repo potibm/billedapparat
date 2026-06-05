@@ -49,10 +49,10 @@ func parse(logger *slog.Logger, reader io.Reader) ([]contracts.IngestSlideReques
 		author := getAuthor(userTag)
 
 		slide := contracts.IngestSlideRequest{
-			Source:          pouetCollectorName,
+			Source:          collectorName,
 			ExternalID:      getExternalID(author.ExternalID, createdString),
 			Body:            getMessageHTML(s),
-			Language:        "en-EN",
+			Language:        "en",
 			OriginCreatedAt: created,
 			Author:          author,
 		}

@@ -3,31 +3,53 @@ package mastodon
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
+	"github.com/potibm/billedapparat/internal/app/collectors/utils"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
-const mastodonCollectorName = "mastodon"
+const (
+	collectorName     = "mastodon"
+	bufferSize        = 1000
+	reconnectDuration = 5 * time.Second
+)
 
 type Collector struct {
-	cfg       Config
-	hubClient *hubclient.HubClient
-	logger    *slog.Logger
+	cfg        Config
+	httpClient *http.Client
+	hubClient  *hubclient.HubClient
+	logger     *slog.Logger
+	msgBuffer  chan Event
+	metrics    utils.CollectorCounters
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
-	return &Collector{
-		cfg:       cfg,
-		hubClient: hubClient,
-		logger:    slog.Default().With("component", "collector_mastodon"),
+	meter := otel.Meter("github.com/potibm/billedapparat/internal/app/collectors/mastodon")
+
+	c := &Collector{
+		cfg:        cfg,
+		httpClient: &http.Client{},
+		hubClient:  hubClient,
+		logger:     slog.Default().With("component", "collector_mastodon"),
+		msgBuffer:  make(chan Event, bufferSize),
+		metrics:    utils.NewCollectorCounters(meter),
 	}
+
+	utils.RegisterQueueDepthGauge(meter, collectorName, func() int {
+		return len(c.msgBuffer)
+	})
+
+	return c
 }
 
 func (c *Collector) Close() error {
@@ -35,27 +57,44 @@ func (c *Collector) Close() error {
 }
 
 func (c *Collector) Run(ctx context.Context) error {
-	if err := c.verifyCredentials(); err != nil {
+	if err := c.verifyCredentials(ctx); err != nil {
 		return err
 	}
 
 	streamURL := c.buildStreamingURL()
 	c.logger.Info("Connect to Mastodon stream URL", "url", streamURL)
 
-	for {
-		select {
-		case <-ctx.Done(): // Strg+C
-			c.logger.Info("Shutting down Mastodon collector")
+	var wg sync.WaitGroup
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		utils.RunWorker(ctx, c.msgBuffer, c.handleEvent)
+	}()
+
+	defer func() {
+		c.logger.Info("Shutting down Mastodon collector: closing buffer and draining events")
+		close(c.msgBuffer)
+		wg.Wait()
+		c.logger.Info("Mastodon collector shutdown complete")
+	}()
+
+	for {
+		if ctx.Err() != nil {
 			return nil
-		default:
 		}
 
 		err := c.connectAndRead(ctx, streamURL)
 		if err != nil {
-			const reconnectDuration = 5 * time.Second
+			if ctx.Err() != nil {
+				return nil
+			}
 
 			c.logger.Warn("Stream disconnected, reconnecting in 5s...", "error", err)
+			c.metrics.Reconnects.Add(ctx, 1, metric.WithAttributes(
+				attribute.String("collector", collectorName),
+			))
 
 			timer := time.NewTimer(reconnectDuration)
 			select {
@@ -81,7 +120,7 @@ func (c *Collector) connectAndRead(ctx context.Context, streamURL string) error 
 
 	req.Header.Set("Accept", "text/event-stream")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -107,65 +146,57 @@ func (c *Collector) connectAndRead(ctx context.Context, streamURL string) error 
 		case strings.HasPrefix(line, "event:"):
 			currentEvent = strings.TrimSpace(strings.TrimPrefix(line, "event:"))
 		case strings.HasPrefix(line, "data:"):
+			c.metrics.EventsReceived.Add(ctx, 1, metric.WithAttributes(
+				attribute.String("collector", collectorName),
+			))
+
 			payload := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
 
-			if currentEvent != "" && payload != "" {
-				c.handleEvent(ctx, currentEvent, payload)
-			}
+			c.dispatchEvent(ctx, currentEvent, payload)
 		case line == "":
 			currentEvent = ""
 		}
 	}
 }
 
-func (c *Collector) handleEvent(ctx context.Context, eventType, payload string) {
-	switch eventType {
-	case "update", "status.update":
-		var status MastoStatus
+func (c *Collector) dispatchEvent(ctx context.Context, eventType, payload string) {
+	if eventType == "" || payload == "" {
+		return
+	}
 
-		c.logger.Debug("Received new status", "payload", payload)
+	event := Event{
+		Type:    eventType,
+		Payload: payload,
+	}
 
-		if err := json.Unmarshal([]byte(payload), &status); err != nil {
-			c.logger.Error("Unable to parse post", "error", err)
+	c.logger.Debug("Received event", "event", event)
 
-			return
-		}
-
-		c.logger.Info("Received new post", "id", status.ID, "author", status.Account.Username)
-
-		req := mapToIngestRequest(status)
-
-		c.logger.Debug("Mapped post to ingest request", "request", req, "account", status.Account)
-
-		if err := c.hubClient.SendSlide(ctx, req); err != nil {
-			c.logger.Error("Error sending the post to the hub", "error", err)
-		}
-
-	case "delete":
-		statusID := string(payload)
-		c.logger.Info("Post was deleted", "id", statusID, "event_type", eventType)
-
-		if err := c.hubClient.DeleteSlide(ctx, mastodonCollectorName, statusID); err != nil {
-			c.logger.Error("Error sending delete request to the hub", "error", err)
-		}
+	select {
+	case c.msgBuffer <- event:
 	default:
-		c.logger.Info("Received unsupported event type", "type", eventType)
+		c.logger.Warn("Message buffer full, dropping Mastodon event", "event_type", event.Type)
+		c.metrics.EventsDropped.Add(ctx, 1, metric.WithAttributes(
+			attribute.String("collector", collectorName),
+		))
 	}
 }
 
-func (c *Collector) verifyCredentials() error {
-	verifyURL := fmt.Sprintf("%s/api/v1/apps/verify_credentials", c.getBaseURL())
+func (c *Collector) verifyCredentials(ctx context.Context) error {
+	const defaultTimeout = 5 * time.Second
 
-	req, err := http.NewRequest(http.MethodGet, verifyURL, http.NoBody)
-	if err != nil {
-		return fmt.Errorf("failed to create verification request: %w", err)
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
+	verifyURL := fmt.Sprintf("%s/api/v1/apps/verify_credentials", c.getBaseURL())
+	opts := utils.RequestOptions{
+		Headers: map[string]string{
+			"Authorization": "Bearer " + c.cfg.AccessToken,
+		},
 	}
 
-	req.Header.Set("Authorization", "Bearer "+c.cfg.AccessToken)
-
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := utils.DoGet(ctx, c.httpClient, verifyURL, opts)
 	if err != nil {
-		return fmt.Errorf("network error on access_token check: %w", err)
+		return err
 	}
 	defer resp.Body.Close()
 

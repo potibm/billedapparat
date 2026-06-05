@@ -226,3 +226,11 @@ func ensureAppInfrastructure() error {
 
 	return nil
 }
+
+func setTerminalTitle(title string) {
+	fmt.Printf("\033]0;%s\007", title)
+}
+
+func clearTerminal() {
+	fmt.Print("\033[H\033[2J")
+}

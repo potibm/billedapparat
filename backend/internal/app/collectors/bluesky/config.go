@@ -12,7 +12,7 @@ type Hashtags []string
 type Config struct {
 	config.CollectorConfig `mapstructure:",squash"`
 
-	Hashtags Hashtags `mapstructure:"hashtags"`
+	Hashtags Hashtags `mapstructure:"hashtags" validate:"required,dive,required"`
 }
 
 func (h Hashtags) Normalize() Hashtags {

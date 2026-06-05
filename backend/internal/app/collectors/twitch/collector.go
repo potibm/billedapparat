@@ -10,12 +10,12 @@ import (
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
 	"github.com/potibm/billedapparat/internal/app/collectors/utils"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
 
 const (
 	collectorName   = "twitch"
-	metricNamespace = "billedapparat_collector_twitch_"
 	bufferSize      = 1000
 	avatarCacheSize = 100
 )
@@ -25,78 +25,31 @@ type Collector struct {
 	hubClient         *hubclient.HubClient
 	twitchIrcClient   *twitch.Client
 	twitchHelixClient *helix.Client
-	avatarCache       *LRUCache
-	eventsReceived    metric.Int64Counter
+	avatarCache       *utils.LRUCache[string]
 	logger            *slog.Logger
 	msgBuffer         chan twitch.PrivateMessage
+	metrics           utils.CollectorCounters
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
-	meter := otel.Meter("twitch-collector")
-
-	eventsReceived, _ := meter.Int64Counter(metricNamespace+"messages_received_total",
-		metric.WithDescription("Number of messages received from Twitch"))
+	meter := otel.Meter("github.com/potibm/billedapparat/internal/app/collectors/twitch")
 
 	c := &Collector{
 		cfg:               cfg,
 		hubClient:         hubClient,
-		avatarCache:       NewLRUCache(avatarCacheSize),
+		avatarCache:       utils.NewLRUCache[string](avatarCacheSize),
 		twitchIrcClient:   twitch.NewAnonymousClient(),
 		twitchHelixClient: nil,
-		eventsReceived:    eventsReceived,
 		logger:            slog.Default().With("component", "collector_twitch"),
 		msgBuffer:         make(chan twitch.PrivateMessage, bufferSize),
+		metrics:           utils.NewCollectorCounters(meter),
 	}
 
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"worker_queue_depth",
-		metric.WithDescription("Number of unprocessed events in the channel"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(len(c.msgBuffer)))
+	utils.RegisterQueueDepthGauge(meter, collectorName, func() int {
+		return len(c.msgBuffer)
+	})
 
-			return nil
-		}),
-	)
-
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"avatar_cache_size",
-		metric.WithDescription("Number of entries in the avatar cache"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(c.avatarCache.Stats().Size))
-
-			return nil
-		}),
-	)
-
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"avatar_cache_evictions",
-		metric.WithDescription("Number of evictions in the avatar cache"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(c.avatarCache.Stats().Evictions))
-
-			return nil
-		}),
-	)
-
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"avatar_cache_hits",
-		metric.WithDescription("Number of hits in the avatar cache"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(c.avatarCache.Stats().Hits))
-
-			return nil
-		}),
-	)
-
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"avatar_cache_misses",
-		metric.WithDescription("Number of misses in the avatar cache"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(c.avatarCache.Stats().Misses))
-
-			return nil
-		}),
-	)
+	utils.RegisterCacheMetrics(meter, collectorName, "avatar_cache", c.avatarCache)
 
 	return c
 }
@@ -163,11 +116,16 @@ func (c *Collector) handleMessageCreate(ctx context.Context, m twitch.PrivateMes
 	}
 
 	c.logger.Debug("Received Twitch message", "user", m.User.DisplayName, "external_id", m.ID)
-	c.eventsReceived.Add(ctx, 1)
+	c.metrics.EventsReceived.Add(ctx, 1, metric.WithAttributes(
+		attribute.String("collector", collectorName),
+	))
 
 	select {
 	case c.msgBuffer <- m:
 	default:
 		c.logger.Warn("Message buffer full, dropping Twitch message", "user", m.User.DisplayName, "external_id", m.ID)
+		c.metrics.EventsDropped.Add(ctx, 1, metric.WithAttributes(
+			attribute.String("collector", collectorName),
+		))
 	}
 }

@@ -47,15 +47,16 @@ func (c *Collector) handleDelete(ctx context.Context, event *JetstreamEvent) {
 func (c *Collector) deleteSlide(ctx context.Context, rkey, reason string) {
 	c.logger.Info("Deleting slide from hub", "rkey", rkey, "reason", reason)
 
-	if err := c.hubClient.DeleteSlide(ctx, blueskyCollectorName, rkey); err != nil {
+	if err := c.hubClient.DeleteSlide(ctx, collectorName, rkey); err != nil {
 		c.logger.Error("Failed to delete slide from hub", "rkey", rkey, "error", err)
 	}
 
 	c.knownPosts.Remove(rkey)
 
-	c.postsMatched.Add(ctx, 1, metric.WithAttributes(
+	c.metrics.EventsMatched.Add(ctx, 1, metric.WithAttributes(
 		attribute.String("operation", "delete"),
 		attribute.String("reason", reason),
+		attribute.String("collector", collectorName),
 	))
 }
 
@@ -88,8 +89,9 @@ func (c *Collector) upsertSlide(ctx context.Context, event *JetstreamEvent, opLa
 		return false
 	}
 
-	c.postsMatched.Add(ctx, 1, metric.WithAttributes(
+	c.metrics.EventsMatched.Add(ctx, 1, metric.WithAttributes(
 		attribute.String("operation", opLabel),
+		attribute.String("collector", collectorName),
 	))
 
 	return true

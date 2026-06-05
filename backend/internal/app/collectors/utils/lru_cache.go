@@ -1,13 +1,13 @@
-package twitch
+package utils
 
 import (
 	"container/list"
 	"sync"
 )
 
-type entry struct {
+type entry[V any] struct {
 	key   string
-	value string
+	value V
 }
 
 type CacheStats struct {
@@ -17,7 +17,7 @@ type CacheStats struct {
 	Size      int   `json:"size"`
 }
 
-type LRUCache struct {
+type LRUCache[V any] struct {
 	capacity int
 	mu       sync.Mutex
 	items    map[string]*list.Element
@@ -28,15 +28,15 @@ type LRUCache struct {
 	evictions int64
 }
 
-func NewLRUCache(capacity int) *LRUCache {
-	return &LRUCache{
+func NewLRUCache[V any](capacity int) *LRUCache[V] {
+	return &LRUCache[V]{
 		capacity: capacity,
 		items:    make(map[string]*list.Element),
 		evict:    list.New(),
 	}
 }
 
-func (c *LRUCache) Get(key string) (string, bool) {
+func (c *LRUCache[V]) Get(key string) (V, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -44,26 +44,28 @@ func (c *LRUCache) Get(key string) (string, bool) {
 		c.evict.MoveToFront(ent)
 		c.hits++
 
-		return ent.Value.(*entry).value, true
+		return ent.Value.(*entry[V]).value, true
 	}
 
 	c.misses++
 
-	return "", false
+	var zero V
+
+	return zero, false
 }
 
-func (c *LRUCache) Set(key, value string) {
+func (c *LRUCache[V]) Set(key string, value V) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if ent, ok := c.items[key]; ok {
 		c.evict.MoveToFront(ent)
-		ent.Value.(*entry).value = value
+		ent.Value.(*entry[V]).value = value
 
 		return
 	}
 
-	ent := &entry{key, value}
+	ent := &entry[V]{key, value}
 	element := c.evict.PushFront(ent)
 	c.items[key] = element
 
@@ -72,7 +74,7 @@ func (c *LRUCache) Set(key, value string) {
 	}
 }
 
-func (c *LRUCache) Stats() CacheStats {
+func (c *LRUCache[V]) Stats() CacheStats {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -84,11 +86,11 @@ func (c *LRUCache) Stats() CacheStats {
 	}
 }
 
-func (c *LRUCache) removeOldest() {
+func (c *LRUCache[V]) removeOldest() {
 	ent := c.evict.Back()
 	if ent != nil {
 		c.evict.Remove(ent)
-		kv := ent.Value.(*entry)
+		kv := ent.Value.(*entry[V])
 		delete(c.items, kv.key)
 		c.evictions++
 	}

@@ -11,83 +11,54 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
+	"github.com/potibm/billedapparat/internal/app/collectors/utils"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 )
 
 const (
-	blueskyCollectorName    = "bluesky"
+	collectorName           = "bluesky"
 	jetstreamURL            = "wss://jetstream1.us-east.bsky.network/subscribe"
-	metricNamespace         = "billedapparat_collector_bluesky_"
 	eventBufferSize         = 1000
+	profileCacheSize        = 100
 	profileRequestTimeout   = 5 * time.Second
 	jetstreamReconnectDelay = 2 * time.Second
 )
 
 type Collector struct {
-	cfg            Config
-	searchTags     Hashtags
-	hubClient      *hubclient.HubClient
-	logger         *slog.Logger
-	knownPosts     *RKeyList
-	profiles       *ProfileList
-	eventsChan     chan *JetstreamEvent
-	eventsReceived metric.Int64Counter
-	reconnects     metric.Int64Counter
-	postsMatched   metric.Int64Counter
-	wg             sync.WaitGroup
+	cfg        Config
+	searchTags Hashtags
+	hubClient  *hubclient.HubClient
+	logger     *slog.Logger
+	knownPosts *RKeyList
+	profiles   *utils.LRUCache[*ProfileResponse]
+	eventsChan chan *JetstreamEvent
+	metrics    utils.CollectorCounters
+	wg         sync.WaitGroup
 }
 
 func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
-	meter := otel.Meter("bluesky-collector")
-
-	eventsReceived, _ := meter.Int64Counter(metricNamespace+"jetstream_events_received_total",
-		metric.WithDescription("Number of events received from Jetstream"))
-	reconnects, _ := meter.Int64Counter(metricNamespace+"jetstream_reconnects_total",
-		metric.WithDescription("Number of connection drops/reconnects"))
-	postsMatched, _ := meter.Int64Counter(metricNamespace+"jetstream_posts_matched_total",
-		metric.WithDescription("Number of relevant posts (filtered)"))
+	meter := otel.Meter("github.com/potibm/billedapparat/internal/app/collectors/bluesky")
 
 	c := &Collector{
-		cfg:            cfg,
-		searchTags:     cfg.Hashtags.Normalize(),
-		hubClient:      hubClient,
-		logger:         slog.Default().With("component", "collector_bluesky"),
-		knownPosts:     NewRKeyList(),
-		profiles:       NewProfileList(),
-		eventsChan:     make(chan *JetstreamEvent, eventBufferSize),
-		eventsReceived: eventsReceived,
-		reconnects:     reconnects,
-		postsMatched:   postsMatched,
+		cfg:        cfg,
+		searchTags: cfg.Hashtags.Normalize(),
+		hubClient:  hubClient,
+		logger:     slog.Default().With("component", "collector_bluesky"),
+		knownPosts: NewRKeyList(),
+		profiles:   utils.NewLRUCache[*ProfileResponse](profileCacheSize),
+		eventsChan: make(chan *JetstreamEvent, eventBufferSize),
+		metrics:    utils.NewCollectorCounters(meter),
 	}
 
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"worker_queue_depth",
-		metric.WithDescription("Number of unprocessed events in the channel"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(len(c.eventsChan)))
+	utils.RegisterQueueDepthGauge(meter, collectorName, func() int {
+		return len(c.eventsChan)
+	})
 
-			return nil
-		}),
-	)
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"profiles_cache_size",
-		metric.WithDescription("Number of profiles currently cached"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(c.profiles.Len()))
+	utils.RegisterCacheMetrics(meter, collectorName, "profiles", c.profiles)
 
-			return nil
-		}),
-	)
-	_, _ = meter.Int64ObservableGauge(
-		metricNamespace+"known_posts_size",
-		metric.WithDescription("Number of known posts currently tracked"),
-		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
-			o.Observe(int64(c.knownPosts.Len()))
-
-			return nil
-		}),
-	)
+	utils.RegisterCacheSizeGauge(meter, collectorName, "known_posts", c.knownPosts.Len)
 
 	return c
 }
@@ -117,7 +88,9 @@ func (c *Collector) Run(ctx context.Context) error {
 			}
 
 			c.logger.Error("Lost connection, attempting to reconnect...", "error", err)
-			c.reconnects.Add(ctx, 1)
+			c.metrics.Reconnects.Add(ctx, 1, metric.WithAttributes(
+				attribute.String("collector", collectorName),
+			))
 
 			select {
 			case <-time.After(jetstreamReconnectDelay):
@@ -161,7 +134,9 @@ func (c *Collector) connectAndRead(ctx context.Context) error {
 			return err
 		}
 
-		c.eventsReceived.Add(ctx, 1)
+		c.metrics.EventsReceived.Add(ctx, 1, metric.WithAttributes(
+			attribute.String("collector", collectorName),
+		))
 
 		var event JetstreamEvent
 		if err := json.Unmarshal(message, &event); err != nil {
@@ -169,7 +144,16 @@ func (c *Collector) connectAndRead(ctx context.Context) error {
 		}
 
 		if event.Kind == "commit" && event.Commit != nil && event.Commit.Collection == "app.bsky.feed.post" {
-			c.eventsChan <- &event
+			select {
+			case <-ctx.Done():
+				return nil
+			case c.eventsChan <- &event:
+			default:
+				c.logger.Warn("Event buffer full, dropping event")
+				c.metrics.EventsDropped.Add(ctx, 1, metric.WithAttributes(
+					attribute.String("collector", collectorName),
+				))
+			}
 		}
 	}
 }
@@ -181,7 +165,7 @@ func (c *Collector) loadKnownPosts(ctx context.Context) {
 	pageSize := 100
 
 	for {
-		externalIDs, total, err := c.hubClient.GetExternalIDs(ctx, blueskyCollectorName, start, start+pageSize)
+		externalIDs, total, err := c.hubClient.GetExternalIDs(ctx, collectorName, start, start+pageSize)
 		if err != nil {
 			c.logger.Error("Failed to fetch known posts from hub", "error", err)
 
@@ -206,13 +190,19 @@ func (c *Collector) loadKnownPosts(ctx context.Context) {
 
 func (c *Collector) processEvents(ctx context.Context) {
 	for event := range c.eventsChan {
+		processCtx := ctx
+		if ctx.Err() != nil {
+			// in drain phase, allow processing to finish without being canceled
+			processCtx = context.WithoutCancel(ctx)
+		}
+
 		switch event.Commit.Operation {
 		case "create":
-			c.handleCreate(ctx, event)
+			c.handleCreate(processCtx, event)
 		case "update":
-			c.handleUpdate(ctx, event)
+			c.handleUpdate(processCtx, event)
 		case "delete":
-			c.handleDelete(ctx, event)
+			c.handleDelete(processCtx, event)
 		default:
 			c.logger.Info("Unknown operation", "operation", event.Commit.Operation)
 		}
