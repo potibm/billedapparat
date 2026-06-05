@@ -65,44 +65,47 @@ func (c *Collector) Run(ctx context.Context) error {
 	c.logger.Info("Connect to Mastodon stream URL", "url", streamURL)
 
 	var wg sync.WaitGroup
-    wg.Add(1)
-    go func() {
-        defer wg.Done()
-        utils.RunWorker(ctx, c.msgBuffer, c.handleEvent)
-    }()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		utils.RunWorker(ctx, c.msgBuffer, c.handleEvent)
+	}()
 
 	defer func() {
-        c.logger.Info("Shutting down Mastodon collector: closing buffer and draining events")
-        close(c.msgBuffer) 
-        wg.Wait()          
-        c.logger.Info("Mastodon collector shutdown complete")
-    }()
+		c.logger.Info("Shutting down Mastodon collector: closing buffer and draining events")
+		close(c.msgBuffer)
+		wg.Wait()
+		c.logger.Info("Mastodon collector shutdown complete")
+	}()
 
 	for {
-        if ctx.Err() != nil {
-            return nil
-        }
+		if ctx.Err() != nil {
+			return nil
+		}
 
-        err := c.connectAndRead(ctx, streamURL)
-        if err != nil {
-            if ctx.Err() != nil {
-                return nil
-            }
+		err := c.connectAndRead(ctx, streamURL)
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil
+			}
 
-            c.logger.Warn("Stream disconnected, reconnecting in 5s...", "error", err)
-            c.metrics.Reconnects.Add(ctx, 1, metric.WithAttributes(
-                attribute.String("collector", collectorName),
-            ))
+			c.logger.Warn("Stream disconnected, reconnecting in 5s...", "error", err)
+			c.metrics.Reconnects.Add(ctx, 1, metric.WithAttributes(
+				attribute.String("collector", collectorName),
+			))
 
-            timer := time.NewTimer(reconnectDuration)
-            select {
-            case <-ctx.Done():
-                timer.Stop()
-                return nil 
-            case <-timer.C:
-            }
-        }
-    }
+			timer := time.NewTimer(reconnectDuration)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+
+				return nil
+			case <-timer.C:
+			}
+		}
+	}
 }
 
 func (c *Collector) connectAndRead(ctx context.Context, streamURL string) error {
@@ -179,9 +182,11 @@ func (c *Collector) dispatchEvent(ctx context.Context, eventType, payload string
 }
 
 func (c *Collector) verifyCredentials(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-    defer cancel()
-	
+	const defaultTimeout = 5 * time.Second
+
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
 	verifyURL := fmt.Sprintf("%s/api/v1/apps/verify_credentials", c.getBaseURL())
 	opts := utils.RequestOptions{
 		Headers: map[string]string{
