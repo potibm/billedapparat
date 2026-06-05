@@ -25,7 +25,7 @@ func (c *Collector) handleEvent(ctx context.Context, event Event) {
 		}
 
 	case EventTypeDelete:
-		statusID := string(event.Payload)
+		statusID := event.Payload
 		c.logger.Info("Post was deleted", "id", statusID, "event_type", event.Type)
 
 		if err := c.hubClient.DeleteSlide(ctx, collectorName, statusID); err != nil {

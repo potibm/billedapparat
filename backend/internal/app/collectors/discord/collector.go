@@ -49,7 +49,10 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 func (c *Collector) Close() error {
 	if c.dg != nil {
 		c.logger.Info("Shutting down Discord collector...")
-		c.dg.Close()
+
+		if err := c.dg.Close(); err != nil {
+			return fmt.Errorf("failed to close Discord session: %w", err)
+		}
 	}
 
 	return nil

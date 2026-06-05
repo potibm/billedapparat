@@ -98,10 +98,11 @@ func (c *Collector) collectAndSend(ctx context.Context) error {
 	if len(c.cfg.Keywords) > 0 {
 		slideRequests = filterByKeywords(slideRequests, c.cfg.Keywords.Lower())
 		c.logger.Info("Filtered data by keywords", "num_items_after_filtering", len(slideRequests))
-		c.metrics.EventsMatched.Add(ctx, int64(len(slideRequests)), metric.WithAttributes(
-			attribute.String("collector", collectorName),
-		))
 	}
+
+	c.metrics.EventsMatched.Add(ctx, int64(len(slideRequests)), metric.WithAttributes(
+		attribute.String("collector", collectorName),
+	))
 
 	for _, req := range slideRequests {
 		select {

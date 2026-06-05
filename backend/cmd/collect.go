@@ -77,7 +77,7 @@ func runCollectorCommand(cmd *cobra.Command, args []string) error {
 
 	slog.Info("Starting Collector", "source", source)
 
-	setTerminalTitle(fmt.Sprintf("Billedapparat Collector - %s", source))
+	setTerminalTitle(fmt.Sprintf("📡 Billedapparat Collector - %s", source))
 
 	defer func() {
 		if err := c.Close(); err != nil {

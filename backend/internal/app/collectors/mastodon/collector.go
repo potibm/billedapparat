@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
@@ -21,7 +22,6 @@ const (
 	collectorName     = "mastodon"
 	bufferSize        = 1000
 	reconnectDuration = 5 * time.Second
-	defaultTimeout    = 5 * time.Second
 )
 
 type Collector struct {
@@ -38,7 +38,7 @@ func NewCollector(cfg Config, hubClient *hubclient.HubClient) *Collector {
 
 	c := &Collector{
 		cfg:        cfg,
-		httpClient: &http.Client{Timeout: defaultTimeout},
+		httpClient: &http.Client{},
 		hubClient:  hubClient,
 		logger:     slog.Default().With("component", "collector_mastodon"),
 		msgBuffer:  make(chan Event, bufferSize),
@@ -64,34 +64,45 @@ func (c *Collector) Run(ctx context.Context) error {
 	streamURL := c.buildStreamingURL()
 	c.logger.Info("Connect to Mastodon stream URL", "url", streamURL)
 
-	go utils.RunWorker(ctx, c.msgBuffer, c.handleEvent)
+	var wg sync.WaitGroup
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        utils.RunWorker(ctx, c.msgBuffer, c.handleEvent)
+    }()
+
+	defer func() {
+        c.logger.Info("Shutting down Mastodon collector: closing buffer and draining events")
+        close(c.msgBuffer) 
+        wg.Wait()          
+        c.logger.Info("Mastodon collector shutdown complete")
+    }()
 
 	for {
-		select {
-		case <-ctx.Done(): // Strg+C
-			c.logger.Info("Shutting down Mastodon collector")
+        if ctx.Err() != nil {
+            return nil
+        }
 
-			return nil
-		default:
-		}
+        err := c.connectAndRead(ctx, streamURL)
+        if err != nil {
+            if ctx.Err() != nil {
+                return nil
+            }
 
-		err := c.connectAndRead(ctx, streamURL)
-		if err != nil {
-			c.logger.Warn("Stream disconnected, reconnecting in 5s...", "error", err)
-			c.metrics.Reconnects.Add(ctx, 1, metric.WithAttributes(
-				attribute.String("collector", collectorName),
-			))
+            c.logger.Warn("Stream disconnected, reconnecting in 5s...", "error", err)
+            c.metrics.Reconnects.Add(ctx, 1, metric.WithAttributes(
+                attribute.String("collector", collectorName),
+            ))
 
-			timer := time.NewTimer(reconnectDuration)
-			select {
-			case <-ctx.Done():
-				timer.Stop()
-
-				return nil
-			case <-timer.C:
-			}
-		}
-	}
+            timer := time.NewTimer(reconnectDuration)
+            select {
+            case <-ctx.Done():
+                timer.Stop()
+                return nil 
+            case <-timer.C:
+            }
+        }
+    }
 }
 
 func (c *Collector) connectAndRead(ctx context.Context, streamURL string) error {
@@ -168,6 +179,9 @@ func (c *Collector) dispatchEvent(ctx context.Context, eventType, payload string
 }
 
 func (c *Collector) verifyCredentials(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+    defer cancel()
+	
 	verifyURL := fmt.Sprintf("%s/api/v1/apps/verify_credentials", c.getBaseURL())
 	opts := utils.RequestOptions{
 		Headers: map[string]string{

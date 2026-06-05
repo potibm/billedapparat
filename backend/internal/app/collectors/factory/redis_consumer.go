@@ -45,6 +45,8 @@ func initializeRedisClient(redisURL config.RedisURL) (*redis.Client, error) {
 	rdb := redis.NewClient(options)
 
 	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		_ = rdb.Close()
+
 		return nil, fmt.Errorf("could not connect to Redis: %w", err)
 	}
 
