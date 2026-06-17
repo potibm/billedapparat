@@ -1,0 +1,20 @@
+issuer: https://dex.billedapparat.test/dex
+storage:
+  type: memory
+web:
+  http: 0.0.0.0:5556
+  allowedOrigins: ['https://billedapparat.test']
+staticClients:
+- id: react-admin-client
+  redirectURIs:
+  - 'https://billedapparat.test/auth-callback'
+  name: 'Billedapparat Admin'
+  public: true
+
+enablePasswordDB: true
+staticPasswords:
+- email: "admin@example.com"
+  # bcrypt hash for the password "password"
+  hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+  username: "Admin"
+  userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"

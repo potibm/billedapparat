@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# mise description="Prepares local DNS, certs, and routing (Cross-Platform)"
+
+set -e
+
+DOMAIN="billedapparat.test"
+DEX_DOMAIN="dex.billedapparat.test"
+WILDCARD="*.billedapparat.test"
+CERTS_DIR="infra/.certs"
+
+echo "==> 🚀 Starting local infrastructure setup..."
+
+# ---------------------------------------------------------
+# 1. macOS Setup
+# ---------------------------------------------------------
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  echo "==> 🍎 Detected macOS..."
+
+  if ! command -v brew &> /dev/null; then
+    echo "❌ Error: Homebrew is not installed. Please install it first."
+  else
+
+  echo "==> 🔒 Setting up local Certificate Authority (CA)..."
+  mkcert -install
+
+  if ! command -v dnsmasq &> /dev/null; then
+    echo "==> 📦 Installing dnsmasq..."
+    brew install dnsmasq
+  fi
+
+  BREW_PREFIX=$(brew --prefix)
+  DNSMASQ_CONF="${BREW_PREFIX}/etc/dnsmasq.conf"
+
+  if ! grep -q "address=/.billedapparat.test/127.0.0.1" "$DNSMASQ_CONF" 2>/dev/null; then
+    echo "==> ⚙️  Routing *.billedapparat.test to 127.0.0.1 in dnsmasq..."
+    echo "address=/.billedapparat.test/127.0.0.1" >> "$DNSMASQ_CONF"
+    echo "==> 🔄 Restarting dnsmasq service (requires sudo)..."
+    sudo brew services restart dnsmasq
+  fi
+
+  if [ ! -f "/etc/resolver/billedapparat.test" ]; then
+    echo "==> ⚙️  Creating macOS resolver..."
+    sudo mkdir -p /etc/resolver
+    echo "nameserver 127.0.0.1" | sudo tee /etc/resolver/billedapparat.test > /dev/null
+    sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder
+  fi
+  fi
+
+# ---------------------------------------------------------
+# 2. Linux Setup
+# ---------------------------------------------------------
+elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+  echo "==> 🐧 Detected Linux..."
+
+  echo "==> 🔒 Setting up local Certificate Authority (CA)..."
+  mkcert -install
+
+  echo "==> ⚙️  Checking /etc/hosts for local domains..."
+  if ! grep -q "$DOMAIN" /etc/hosts; then
+    echo "==> Adding domains to /etc/hosts (requires sudo)..."
+    echo "127.0.0.1 $DOMAIN $DEX_DOMAIN observe.billedapparat.test redis.billedapparat.test minio.billedapparat.test" | sudo tee -a /etc/hosts > /dev/null
+  else
+    echo "==> ✅ /etc/hosts is already configured."
+  fi
+
+# ---------------------------------------------------------
+# 3. Fallback (Windows/WSL etc.)
+# ---------------------------------------------------------
+else
+  echo "❌ Error: Unsupported OS ($OSTYPE). Please setup certs and DNS manually."
+fi
+
+# ---------------------------------------------------------
+# 4. Generate Certificates (Platform Independent)
+# ---------------------------------------------------------
+echo "==> 📜 Generating project certificates..."
+mkdir -p "$CERTS_DIR"
+mkcert -cert-file "$CERTS_DIR/cert.pem" -key-file "$CERTS_DIR/key.pem" "$DOMAIN" "$WILDCARD"
+
+echo "==> 🎉 Setup complete!"

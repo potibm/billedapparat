@@ -18,6 +18,7 @@ import (
 	"github.com/potibm/billedapparat/internal/app/config"
 	"github.com/potibm/billedapparat/internal/app/generator"
 	"github.com/potibm/billedapparat/internal/app/repository"
+	"github.com/potibm/billedapparat/internal/app/middleware"
 	sloggin "github.com/samber/slog-gin"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
@@ -195,6 +196,29 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	api.GET("/stream", s.streamSlides)
 
 	admin := r.Group("/api/admin")
+
+	if s.cfg.Auth != nil && s.cfg.Auth.Type == "oidc" {
+		if s.cfg.Auth.SkipTLSVerify {
+			if s.cfg.App.Environment == "production" {
+				return nil, fmt.Errorf("auth.skip_tls_verify must be false in production")
+			}
+
+			s.logger.Warn("OIDC TLS verification is disabled. This should only be used in development environments.")
+		}
+
+		authMW, err := middleware.AuthMiddleware(
+			context.Background(),
+			s.cfg.Auth.AuthorityURL,
+			s.cfg.Auth.ClientID,
+			s.cfg.Auth.SkipTLSVerify,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("setting up auth middleware: %w", err)
+		}
+
+		admin.Use(authMW)
+	}
+
 	admin.GET(pathSlides, s.adminListSlides)
 	admin.POST(pathSlides, s.adminCreateSlide)
 	admin.GET(pathSlidesWithID, s.adminGetSlide)

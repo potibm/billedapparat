@@ -83,5 +83,10 @@ func newStore(dsn string) (*Store, error) {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
+	err = RegisterAuditCallbacks(db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to register audit callbacks: %w", err)
+	}
+
 	return &Store{db: db}, nil
 }

@@ -6,6 +6,7 @@ import (
 
 type dbFilterRule struct {
 	GormModel
+	AuditModel
 
 	Source string            `gorm:"type:varchar(50);index"`
 	Type   domain.FilterType `gorm:"type:varchar(50);index"`

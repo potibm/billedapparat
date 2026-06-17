@@ -87,7 +87,16 @@ type ExternalAdminURLs struct {
 	News      string `json:"news"      mapstructure:"news"      validate:"omitempty,http_url"`
 }
 
+type AuthConfig struct {
+	Type          string `json:"type"      mapstructure:"type"            validate:"required,oneof=oidc"`
+	Name          string `json:"name"      mapstructure:"name"            validate:"required"`
+	AuthorityURL  string `json:"authority" mapstructure:"authority"       validate:"required,url"`
+	ClientID      string `json:"client_id" mapstructure:"client_id"       validate:"required"`
+	SkipTLSVerify bool   `json:"-"         mapstructure:"skip_tls_verify"`
+}
+
 type Config struct {
+	Auth       *AuthConfig                `mapstructure:"auth"`
 	App        AppConfig                  `mapstructure:"app"`
 	Format     FormatConfig               `mapstructure:"format"`
 	Sentry     SentryConfig               `mapstructure:"sentry"`

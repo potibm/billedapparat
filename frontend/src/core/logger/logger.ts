@@ -7,6 +7,7 @@ interface LoggerComponentBadgeStyle {
 
 export const LOGGER_COMPONENTS: Record<string, LoggerComponentBadgeStyle> = {
   Admin: { emoji: "🔑", color: "blue" },
+  Auth: { emoji: "🔐", color: "indigo" },
   Api: { emoji: "📡", color: "purple" },
   Slides: { emoji: "🖼️", color: "green" },
   Slideshow: { emoji: "🎬", color: "orange" },

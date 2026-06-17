@@ -8,19 +8,26 @@ It is a party information system for the bigscreen at [demoparties](https://en.w
 
 ## Tooling
 
-- [Go](https://go.dev)
+- **Backend**
+  - [Go](https://go.dev)
   - [Gin Web Framework](https://gin-gonic.com)
   - [GORM](https://gorm.io)
   - [Cobra](https://cobra.dev) & [Viper](https://github.com/spf13/viper)
-- [React](https://react.dev)
+- **Frontend**
+  - [React](https://react.dev)
   - [Vite](https://vitejs.dev/)
   - [React Admin](https://marmelab.com/react-admin/)
   - [Flowbite React](https://flowbite-react.com) & [Tailwind CSS](https://tailwindcss.com)
-- [SQLite](https://www.sqlite.org)
-- Observability
+- **Database**
+  - [SQLite](https://www.sqlite.org)
+- **Identity & Local Infrastructure**
+  - [Dex](https://dexidp.io/) (OIDC Provider)
+  - [Traefik](https://traefik.io/) (Local Edge Router)
+  - [mkcert](https://github.com/FiloSottile/mkcert) & dnsmasq (Local TLS & `.test` Routing)
+- **Observability**
   - [Sentry](https://sentry.io)
   - [OpenTelemetry](https://opentelemetry.io)
-- Development & Ops
+- **Development & Ops**
   - [mise](https://mise.jdx.dev/)
   - [Docker](https://www.docker.com)
 
@@ -28,17 +35,37 @@ It is a party information system for the bigscreen at [demoparties](https://en.w
 
 We use `mise` to automatically manage all tool versions (Go, Node, etc.) and project tasks.
 
-```bash
-# 1. Install mise (if not already installed)
-curl https://mise.run | sh
+Please refer to `mise` documentation on how to install it.
 
-# 2. Setup the project (installs dependencies and starts infra)
-mise run setup
+```
+# 1. Setup local infrastructure
+# This generates local certificates, configures dnsmasq/resolver, and updates /etc/hosts (Linux)
+mise run infra:prepare
+
+# 2. Start local services (Traefik, Dex, etc.)
+mise run infra:up
 
 # 3. Start the development server (hot-reload for backend & frontend)
 overmind s --timeout 10
 ```
 
+## Local Environment
+
+Once the stack is running, you can access the applications via:
+
+- Billedapparat Admin: https://billedapparat.test
+- Dex IdP: https://dex.billedapparat.test
+- OpenObserve: https://observe.billedapparat.test
+- RedisInsight: https://redis.billedapparat.test
+
+## Authentication (OIDC)
+
+The system is configured to use OpenID Connect (OIDC) via [Dex](https://dexidp.io/). Local environment uses `react-admin-client` as client id to connect with `dex`. Make sure `skip_tls_verify` is not true in production.
+
+To log in:
+- Username: `admin@example.com`
+- Password: `password`
+
 ## Documentation
 
-_todo_
+Please refer to the documentation for further details.
