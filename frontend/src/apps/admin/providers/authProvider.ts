@@ -2,6 +2,7 @@ import { createLogger } from "@core/logger/logger";
 import { UserManager } from "oidc-client-ts";
 import { AuthProvider } from "react-admin";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const log = createLogger("Auth" as any); // using any here since log components are strictly typed in typescript and "Auth" was added
 
 let userManager: UserManager | null = null;

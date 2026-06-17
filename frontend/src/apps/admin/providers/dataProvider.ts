@@ -1,6 +1,11 @@
 // src/apps/admin/dataProvider.ts
 import jsonServerProvider from "ra-data-json-server";
-import { CreateParams, DataProvider, UpdateParams, fetchUtils } from "react-admin";
+import {
+  CreateParams,
+  DataProvider,
+  UpdateParams,
+  fetchUtils,
+} from "react-admin";
 import { getAccessToken } from "./authProvider";
 
 const httpClient = async (url: string, options: fetchUtils.Options = {}) => {
