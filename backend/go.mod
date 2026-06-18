@@ -24,7 +24,7 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/nicklaw5/helix/v2 v2.34.0
 	github.com/potibm/protokolapparat v1.0.3
-	github.com/redis/go-redis/v9 v9.20.0
+	github.com/redis/go-redis/v9 v9.20.1
 	github.com/samber/slog-gin v1.21.1
 	github.com/samber/slog-multi v1.8.0
 	github.com/spf13/cobra v1.10.2
