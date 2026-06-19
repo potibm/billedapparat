@@ -5,8 +5,9 @@ docker compose up -d --force-recreate --remove-orphans
 
 echo ""
 echo "🚀 --- INFRASTRUCTURE DASHBOARD -----------"
-echo "📊    OpenObserve:    http://localhost:3105 (admin@example.com / password123)"
-echo "📊    RedisInsight:   http://localhost:3106"
-echo "📣    Funkapparat:    http://localhost:3110" 
-echo "⏳    Tidsapparat:    http://localhost:3120"
+echo "📊    OpenObserve:    https://observe.billedapparat.test (admin@example.com / password123)"
+echo "📊    RedisInsight:   https://redis.billedapparat.test"
+echo "🪪    Dex OIDC:       https://dex.billedapparat.test"
+echo "📣    Funkapparat:    https://funkapparat.billedapparat.test"
+echo "⏳    Tidsapparat:    https://tidsapparat.billedapparat.test"
 echo "-------------------------------------------"

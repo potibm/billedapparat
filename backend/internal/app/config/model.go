@@ -72,6 +72,14 @@ type DateFormatConfig struct {
 
 type CorsAllowOriginsConfig []string
 
+type AuthConfig struct {
+	Type          string `json:"type"      mapstructure:"type"            validate:"required,oneof=oidc"`
+	Name          string `json:"name"      mapstructure:"name"            validate:"required"`
+	AuthorityURL  string `json:"authority" mapstructure:"authority"       validate:"required,url"`
+	ClientID      string `json:"client_id" mapstructure:"client_id"       validate:"required"`
+	SkipTLSVerify bool   `json:"-"         mapstructure:"skip_tls_verify"`
+}
+
 type APIConfig struct {
 	AdminAPIKey string `mapstructure:"admin_api_key" validate:"required"`
 }
@@ -95,6 +103,7 @@ type Config struct {
 	Collectors map[string]CollectorConfig `mapstructure:"collectors" validate:"dive"`
 	Playlists  []PlaylistConfig           `mapstructure:"playlists"`
 	AdminURLs  ExternalAdminURLs          `mapstructure:"admin_urls"`
+	Auth       *AuthConfig                `mapstructure:"auth"       validate:"omitempty"`
 }
 
 func (p *PlaylistStep) SetDefaults() {

@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 export const Splash: React.FC = () => {
   return (
     <BaseCard>
-      <p>
+      <>
         <p className="mb-2">A screen director for demoparties</p>
 
         <Link to="/beamer">
@@ -25,7 +25,7 @@ export const Splash: React.FC = () => {
           />
           Admin
         </Link>
-      </p>
+      </>
     </BaseCard>
   );
 };

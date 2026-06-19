@@ -4,6 +4,7 @@ import "github.com/potibm/billedapparat/internal/app/domain"
 
 type dbNews struct {
 	GormModel
+	AuditModel
 
 	Source     string `gorm:"uniqueIndex:news_idx_ext"`
 	ExternalID string `gorm:"uniqueIndex:news_idx_ext"`

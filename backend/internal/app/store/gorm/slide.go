@@ -8,6 +8,7 @@ import (
 
 type dbSlide struct {
 	GormModel
+	AuditModel
 
 	// status and type
 	Type   string `gorm:"index"` // sponsor, social, news

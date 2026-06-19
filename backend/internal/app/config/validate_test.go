@@ -43,6 +43,12 @@ func TestConfig_PlaylistDefaultsAndValidation(t *testing.T) {
 				},
 			},
 		},
+		Auth: &AuthConfig{
+			Type:         "oidc",
+			Name:         "Dex",
+			AuthorityURL: "https://dex.billedapparat.test",
+			ClientID:     "billedapparat-frontend",
+		},
 	}
 
 	// 1. trigger validation
