@@ -21,7 +21,13 @@ export const OidcLogin = () => {
           boxShadow: 4,
         }}
       >
-        <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <CardContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
           <Logo width={64} height={64} />
 
           <Typography variant="h5" component="h1" gutterBottom>

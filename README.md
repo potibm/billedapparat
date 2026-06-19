@@ -60,8 +60,8 @@ Once the stack is running, you can access the applications via:
 
 Please refer to the documentation on
 
-* [collectors](doc/collectors.md)
-* [authentication](doc/auth.md)
-* [setting up a global traefik service](doc/global-traefik.md)
+- [collectors](doc/collectors.md)
+- [authentication](doc/auth.md)
+- [setting up a global traefik service](doc/global-traefik.md)
 
 Further information will be added soon.
