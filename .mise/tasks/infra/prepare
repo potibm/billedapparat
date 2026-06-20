@@ -12,6 +12,8 @@ REQUIRED_DOMAINS=(
   "dex.$DOMAIN"
   "observe.$DOMAIN"
   "redis.$DOMAIN"
+  "funkapparat.$DOMAIN"  
+  "tidsapparat.$DOMAIN"  
 )
 
 echo "==> 🚀 Starting local infrastructure setup..."

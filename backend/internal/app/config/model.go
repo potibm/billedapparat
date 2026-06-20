@@ -73,11 +73,11 @@ type DateFormatConfig struct {
 type CorsAllowOriginsConfig []string
 
 type AuthConfig struct {
-	Type          string `json:"type"      mapstructure:"type"            validate:"required,oneof=oidc"`
-	Name          string `json:"name"      mapstructure:"name"            validate:"required"`
-	AuthorityURL  string `json:"authority" mapstructure:"authority"       validate:"required,url"`
-	ClientID      string `json:"client_id" mapstructure:"client_id"       validate:"required"`
-	SkipTLSVerify bool   `json:"-"         mapstructure:"skip_tls_verify"`
+	Type          string `json:"type"      yaml:"type"            mapstructure:"type"            validate:"required,oneof=oidc"`
+	Name          string `json:"name"      yaml:"name"            mapstructure:"name"            validate:"required"`
+	AuthorityURL  string `json:"authority" yaml:"authority"       mapstructure:"authority"       validate:"required,url"`
+	ClientID      string `json:"client_id" yaml:"client_id"       mapstructure:"client_id"       validate:"required"`
+	SkipTLSVerify bool   `json:"-"         yaml:"skip_tls_verify" mapstructure:"skip_tls_verify"`
 }
 
 type APIConfig struct {

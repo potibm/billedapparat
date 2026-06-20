@@ -53,9 +53,9 @@ export const AppConfigSchema = z.object({
   auth: z
     .object({
       type: z.enum(["oidc"]),
-      name: z.string(),
-      authority: z.string(),
-      client_id: z.string(),
+      name: z.string().min(1),
+      authority: z.url(),
+      client_id: z.string().min(1),
     })
     .optional(),
 });
