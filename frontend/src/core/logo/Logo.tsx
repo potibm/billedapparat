@@ -1,8 +1,12 @@
 import React from "react";
 
 export const Logo: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" {...props}>
-    <rect width="256" height="256" fill="none"></rect>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="currentColor"
+    viewBox="0 0 256 256"
+    {...props}
+  >
     <line
       x1="48"
       y1="184"

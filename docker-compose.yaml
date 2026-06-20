@@ -1,14 +1,59 @@
 services:
-  # Monitoring & logging backend
+  # --------------------------------------------------------
+  # Traefik Reverse Proxy
+  # --------------------------------------------------------
+  traefik:
+    image: traefik:v3.7
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--providers.file.filename=/etc/traefik/dynamic.yaml"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./infra/.certs:/certs:ro
+      - ./infra/traefik-dynamic.yaml:/etc/traefik/dynamic.yaml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # --------------------------------------------------------
+  # Identity
+  # --------------------------------------------------------
+  dex:
+    image: ghcr.io/dexidp/dex:v2.38.0
+    volumes:
+      - ./infra/dex-config.yaml:/etc/dex/config.docker.yaml
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dex-billed.rule=Host(`dex.billedapparat.test`)"
+      - "traefik.http.routers.dex-billed.entrypoints=websecure"
+      - "traefik.http.routers.dex-billed.tls=true"
+      - "traefik.http.services.dex-billed.loadbalancer.server.port=5556"
+
+  # --------------------------------------------------------
+  # Observability
+  # --------------------------------------------------------
   openobserve:
     image: public.ecr.aws/zinclabs/openobserve:latest
     environment:
       - ZO_ROOT_USER_EMAIL=admin@example.com
       - ZO_ROOT_USER_PASSWORD=password123
-    ports:
-      - "3105:5080" # Web UI
     volumes:
       - o2_data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.observe-billed.rule=Host(`observe.billedapparat.test`)"
+      - "traefik.http.routers.observe-billed.entrypoints=websecure"
+      - "traefik.http.routers.observe-billed.tls=true"
+      - "traefik.http.services.observe-billed.loadbalancer.server.port=5080"
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
@@ -17,19 +62,21 @@ services:
       - ./backend/logs:/etc/app/logs:ro
     command: ["--config=/etc/otel/config.yaml"]
     ports:
-      - "3117:4317" # OTLP gRPC
-      - "3118:4318" # OTLP HTTP
+      - "3117:4317" # OTLP gRPC (Needed for Go backend on host)
+      - "3118:4318" # OTLP HTTP (Needed for Vite frontend on host)
     depends_on:
       - openobserve
 
+  # --------------------------------------------------------
+  # Data Stores
+  # --------------------------------------------------------
   redis:
     image: redis:7-alpine
     container_name: billedapparat_redis
     ports:
-      - "3151:6379"
+      - "3151:6379" # Needed for Go backend on host
     volumes:
       - redis_data:/data
-    # Saves every 60 seconds if at least 1 key changes
     command: redis-server --save 60 1 --loglevel warning
 
   redisinsight:
@@ -42,16 +89,21 @@ services:
       - RI_REDIS_ALIAS0=Billedapparat-Redis
       - RI_REDIS_HOST0=billedapparat_redis
       - RI_REDIS_PORT0=6379
-    ports:
-      - "3106:5540"
     volumes:
       - redisinsight_data:/data
     depends_on:
       - redis
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.redis-billed.rule=Host(`redis.billedapparat.test`)"
+      - "traefik.http.routers.redis-billed.entrypoints=websecure"
+      - "traefik.http.routers.redis-billed.tls=true"
+      - "traefik.http.services.redis-billed.loadbalancer.server.port=5540"
 
   funkapparat-seed:
     image: ghcr.io/potibm/funkapparat:latest
     container_name: billedapparat_funkapparat_seed
+    pull_policy: always
     command: database reset --force --seed
     volumes:
       - ./infra/funkapparat:/app/config
@@ -60,12 +112,17 @@ services:
   funkapparat:
     image: ghcr.io/potibm/funkapparat:latest
     container_name: billedapparat_funkapparat
-    ports:
-      - "3110:3200"
+    pull_policy: always
     volumes:
       - ./infra/funkapparat:/app/config
       - funkapparat_data:/app/data
     command: serve --otel-endpoint=otel-collector:4317
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.funkapparat-billed.rule=Host(`funkapparat.billedapparat.test`)"
+      - "traefik.http.routers.funkapparat-billed.entrypoints=websecure"
+      - "traefik.http.routers.funkapparat-billed.tls=true"
+      - "traefik.http.services.funkapparat-billed.loadbalancer.server.port=8080"
     depends_on:
       funkapparat-seed:
         condition: service_completed_successfully
@@ -77,6 +134,7 @@ services:
   tidsapparat-seed:
     image: ghcr.io/potibm/tidsapparat:latest
     container_name: billedapparat_tidsapparat_seed
+    pull_policy: always
     command: database reset --force --seed
     volumes:
       - ./infra/tidsapparat:/app/config
@@ -85,12 +143,17 @@ services:
   tidsapparat:
     image: ghcr.io/potibm/tidsapparat:latest
     container_name: billedapparat_tidsapparat
-    ports:
-      - "3120:3200"
+    pull_policy: always
     volumes:
       - ./infra/tidsapparat:/app/config
       - tidsapparat_data:/app/data
     command: serve --otel-endpoint=otel-collector:4317
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tidsapparat-billed.rule=Host(`tidsapparat.billedapparat.test`)"
+      - "traefik.http.routers.tidsapparat-billed.entrypoints=websecure"
+      - "traefik.http.routers.tidsapparat-billed.tls=true"
+      - "traefik.http.services.tidsapparat-billed.loadbalancer.server.port=8080"
     depends_on:
       tidsapparat-seed:
         condition: service_completed_successfully

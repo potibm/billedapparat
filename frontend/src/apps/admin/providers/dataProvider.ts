@@ -1,8 +1,34 @@
 // src/apps/admin/dataProvider.ts
 import jsonServerProvider from "ra-data-json-server";
-import { CreateParams, DataProvider, UpdateParams } from "react-admin";
+import {
+  CreateParams,
+  DataProvider,
+  UpdateParams,
+  fetchUtils,
+} from "react-admin";
+import { getAccessToken } from "./authProvider";
 
-const baseProvider = jsonServerProvider("/api/admin");
+const httpClient = async (url: string, options: fetchUtils.Options = {}) => {
+  if (!options.headers) {
+    options.headers = new Headers({ Accept: "application/json" });
+  }
+
+  const headers =
+    options.headers instanceof Headers
+      ? options.headers
+      : new Headers(options.headers);
+
+  const token = await getAccessToken();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  options.headers = headers;
+
+  return fetchUtils.fetchJson(url, options);
+};
+
+const baseProvider = jsonServerProvider("/api/admin", httpClient);
 
 const BASE_RESOURCE = "slides";
 

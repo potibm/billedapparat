@@ -6,6 +6,7 @@ toolchain go1.25.1
 
 require (
 	github.com/HugoSmits86/nativewebp v1.3.0
+	github.com/MicahParks/keyfunc/v2 v2.1.0
 	github.com/PuerkitoBio/goquery v1.12.0
 	github.com/brianvoe/gofakeit/v7 v7.15.0
 	github.com/bwmarrin/discordgo v0.29.0
@@ -18,6 +19,7 @@ require (
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/go-viper/mapstructure/v2 v2.5.0
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
