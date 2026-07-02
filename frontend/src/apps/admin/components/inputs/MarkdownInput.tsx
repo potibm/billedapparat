@@ -40,7 +40,7 @@ export const MarkdownInput = ({
       margin="normal"
       className="ra-input-markdown"
     >
-      <Box mb={1}>
+      <Box sx={{ mb: 1 }}>
         <InputLabel
           shrink
           htmlFor={id}
@@ -51,7 +51,7 @@ export const MarkdownInput = ({
         </InputLabel>
       </Box>
 
-      <Box mt={2} data-color-mode={colorMode}>
+      <Box sx={{ mt: 2 }} data-color-mode={colorMode}>
         <MDEditor
           id={id}
           value={field.value || ""}

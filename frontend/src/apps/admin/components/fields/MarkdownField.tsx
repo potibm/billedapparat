@@ -37,7 +37,7 @@ export const MarkdownField = ({
       className={`ra-field-markdown ${className || ""}`}
       {...props}
     >
-      <Box mb={1}>
+      <Box sx={{ mb: 1 }}>
         <Typography variant="caption" color="text.secondary">
           {label ?? source}
         </Typography>
@@ -57,12 +57,11 @@ export const MarkdownField = ({
         </Box>
 
         {showRaw && (
-          <Box mt={2}>
+          <Box sx={{ mt: 2 }}>
             <Typography
               variant="caption"
               color="text.secondary"
-              display="block"
-              mb={1}
+              sx={{ display: "block", mb: 1 }}
             >
               Markdown
             </Typography>
