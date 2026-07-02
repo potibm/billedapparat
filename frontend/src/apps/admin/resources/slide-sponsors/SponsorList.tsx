@@ -34,7 +34,8 @@ export const SponsorList = () => (
       <StatusToggleField source="status" inactiveValue="hidden" />
 
       <EditButton />
-      <DeleteButton />
+
+      <DeleteButton mutationMode="pessimistic" />
     </Datagrid>
   </List>
 );

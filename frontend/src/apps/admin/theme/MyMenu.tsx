@@ -36,36 +36,48 @@ const MenuExternalLink = ({ href, label }: { href: string; label: string }) => (
 const MenuDiv = () => <Divider sx={{ my: 1 }} />;
 
 export const MyMenu = () => {
-  const { admin_urls } = useAppConfig();
+  const { admin_urls, version } = useAppConfig();
 
   const timetableURL = admin_urls?.timetable || null;
   const newsURL = admin_urls?.news || null;
 
   return (
-    <Menu>
-      <Menu.ResourceItem name="sponsor-slides" />
-      <MenuDiv />
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <Box sx={{ flex: 1 }}>
+        <Menu>
+          <Menu.ResourceItem name="sponsor-slides" />
+          <MenuDiv />
 
-      {/* --- GROUP: SOCIAL --- */}
-      <MenuGroup title="Social" />
-      <Menu.ResourceItem name="social-medias-slides" />
-      <Menu.ResourceItem name="social-text-slides" />
-      <Menu.ResourceItem name="filter-rules" />
-      <MenuDiv />
+          {/* --- GROUP: SOCIAL --- */}
+          <MenuGroup title="Social" />
+          <Menu.ResourceItem name="social-medias-slides" />
+          <Menu.ResourceItem name="social-text-slides" />
+          <Menu.ResourceItem name="filter-rules" />
+          <MenuDiv />
 
-      {/* --- GROUP: TIMETABLE --- */}
-      <MenuGroup title="Timetable" />
-      {timetableURL && <MenuExternalLink href={timetableURL} label="Edit" />}
-      <Menu.ResourceItem name="timetable-slides" />
-      <Menu.ResourceItem name="timetable" />
-      <MenuDiv />
+          {/* --- GROUP: TIMETABLE --- */}
+          <MenuGroup title="Timetable" />
+          {timetableURL && (
+            <MenuExternalLink href={timetableURL} label="Edit" />
+          )}
+          <Menu.ResourceItem name="timetable-slides" />
+          <Menu.ResourceItem name="timetable" />
+          <MenuDiv />
 
-      {/* --- GROUP: NEWS --- */}
-      <MenuGroup title="News" />
-      {newsURL && <MenuExternalLink href={newsURL} label="Edit" />}
-      <Menu.ResourceItem name="news-slides" />
-      <Menu.ResourceItem name="news" />
-      <MenuDiv />
-    </Menu>
+          {/* --- GROUP: NEWS --- */}
+          <MenuGroup title="News" />
+          {newsURL && <MenuExternalLink href={newsURL} label="Edit" />}
+          <Menu.ResourceItem name="news-slides" />
+          <Menu.ResourceItem name="news" />
+          <MenuDiv />
+        </Menu>
+      </Box>
+
+      <Box sx={{ p: 2, textAlign: "center" }}>
+        <Typography variant="caption" color="text.secondary">
+          Version: {version}
+        </Typography>
+      </Box>
+    </Box>
   );
 };

@@ -18,7 +18,11 @@ import (
 	sloggin "github.com/samber/slog-gin"
 )
 
-const defaultTimeout = 10 * time.Second
+const (
+	defaultTimeout              = 10 * time.Second
+	defaultJWKSRefreshInterval  = 1 * time.Hour
+	defaultJWKSRefreshRateLimit = 5 * time.Minute
+)
 
 // OIDCDiscovery represents the necessary fields from the /.well-known/openid-configuration.
 type OIDCDiscovery struct {
@@ -120,6 +124,12 @@ func initJWKS(ctx context.Context, client *http.Client, issuerURL string) (*keyf
 	options := keyfunc.Options{
 		Client: client,
 		Ctx:    ctx,
+		RefreshErrorHandler: func(err error) {
+			slog.Error("Error refreshing JWKS", "error", err)
+		},
+		RefreshInterval:   defaultJWKSRefreshInterval,
+		RefreshUnknownKID: true,
+		RefreshRateLimit:  defaultJWKSRefreshRateLimit,
 	}
 
 	jwks, err := keyfunc.Get(discovery.JwksURI, options)
