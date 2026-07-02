@@ -19,7 +19,7 @@ export const FilterRulesList = () => (
       <TextField source="value" label="Value" />
 
       <EditButton />
-      <DeleteButton />
+      <DeleteButton mutationMode="pessimistic" />
     </Datagrid>
   </List>
 );

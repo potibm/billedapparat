@@ -42,7 +42,7 @@ export const StatusToggleField = ({
         previousData: record,
       },
       {
-        mutationMode: "optimistic",
+        mutationMode: "pessimistic",
         onSuccess: () => {
           notify(`Status updated`, { type: "success" });
         },
