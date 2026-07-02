@@ -15,7 +15,7 @@ export const SocialTextList = () => (
     filters={SocialFilters}
     sort={{ field: "id", order: "DESC" }}
   >
-    <Datagrid rowClick="show" bulkActionButtons={false}>
+    <Datagrid rowClick="show" bulkActionButtons={true}>
       <NumberField source="id" label="ID" />
 
       <SourceField source="source" label="Source" width={24} height={24} />
