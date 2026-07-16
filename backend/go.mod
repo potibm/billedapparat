@@ -11,7 +11,7 @@ require (
 	github.com/brianvoe/gofakeit/v7 v7.15.0
 	github.com/bwmarrin/discordgo v0.29.0
 	github.com/gempir/go-twitch-irc/v4 v4.4.1
-	github.com/getsentry/sentry-go v0.47.0
+	github.com/getsentry/sentry-go v0.48.0
 	github.com/getsentry/sentry-go/gin v0.47.0
 	github.com/gin-contrib/cors v1.7.7
 	github.com/gin-contrib/static v1.1.6
