@@ -141,7 +141,14 @@ services:
     labels:
       - "traefik.docker.network=traefik-global"
 
-  minio:
+  funkapparat:
+    networks:
+      - default
+      - traefik-global
+    labels:
+      - "traefik.docker.network=traefik-global"
+
+  tidsapparat:
     networks:
       - default
       - traefik-global
