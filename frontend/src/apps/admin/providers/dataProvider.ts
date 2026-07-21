@@ -104,7 +104,7 @@ export const dataProvider: DataProvider = {
   },
 };
 
-const handleFileUpload = (
+const handleFileUpload = async (
   resource: string,
   params: UpdateParams | CreateParams,
   method: "POST" | "PUT",
@@ -149,10 +149,24 @@ const handleFileUpload = (
       ? `/api/admin/${BASE_RESOURCE}/${id}`
       : `/api/admin/${BASE_RESOURCE}`;
 
+  const token = await getAccessToken();
+
+  const headers = new Headers();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
   return fetch(url, {
     method: method,
+    headers: headers,
     body: formData,
   })
-    .then((response) => response.json())
+    .then(async (response) => {
+      if (!response.ok) {
+        const errBody = await response.text();
+        throw new Error(errBody || response.statusText);
+      }
+      return response.json();
+    })
     .then((json) => ({ data: json }));
 };
