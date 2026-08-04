@@ -30,7 +30,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@eslint-react/eslint-plugin": "^5.10.0",
+    "@eslint-react/eslint-plugin": "^5.18.1",
     "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^10.5.0",
     "@playwright/test": "^1.61.1",
