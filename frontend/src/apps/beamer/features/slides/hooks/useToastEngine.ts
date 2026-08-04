@@ -32,7 +32,7 @@ export const useToastEngine = (toastSlides: Slide[], allowOverlay: boolean) => {
       setActiveToasts((prev) => {
         let currentList = [...prev];
 
-        // A. Zeit abziehen und gelöschte Slides entfernen
+        // A. Decrement time and remove deleted slides
         currentList = currentList
           .map((t) => ({ ...t, timeLeft: t.timeLeft - 1 }))
           .filter(
@@ -40,11 +40,11 @@ export const useToastEngine = (toastSlides: Slide[], allowOverlay: boolean) => {
               t.timeLeft > 0 && toastSlides.some((s) => s.id === t.slide.id),
           );
 
-        // B. Gibt es neue Slides im Posteingang? Dann jetzt einfügen!
+        // B. Are there new slides in the inbox? Insert them now!
         if (pendingSlidesRef.current.length > 0) {
           const added = pendingSlidesRef.current
             .slice()
-            .reverse() // Die neuesten nach unten
+            .reverse() // Newest at the bottom
             .map((slide) => ({
               slide,
               timeLeft: TOAST_DURATION_SEC,
@@ -52,11 +52,11 @@ export const useToastEngine = (toastSlides: Slide[], allowOverlay: boolean) => {
 
           currentList = [...currentList, ...added];
 
-          // Posteingang leeren, da wir sie jetzt verarbeitet haben
+          // Clear inbox since we have now processed them
           pendingSlidesRef.current = [];
         }
 
-        // C. Liste auf Maximum kürzen (älteste oben fallen raus)
+        // C. Trim list to maximum (oldest at top are dropped)
         return currentList.slice(-MAX_VISIBLE_TOASTS);
       });
     }, 1000);

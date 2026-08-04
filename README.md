@@ -56,6 +56,26 @@ Once the stack is running, you can access the applications via:
 
 - Billedapparat Admin: https://billedapparat.test
 
+## Beamer
+
+The beamer displays the different configured playlists. You can change the playlist by entering the ID, e.g. `2`.
+
+In addition you can use:
+
+- `right arrow` to switch to the next screen
+- `left arrow` to switch to the previous screen
+- `space` to pause at the current screen
+
+## Admin
+
+Use the admin to
+
+- upload sponsor or partner screen
+- adminstrate media or text slides
+- modify filter rules for collectors
+- monitor the timetable data and the generated timetable slied
+- monitor the news data and generated news slides
+
 ## Documentation
 
 Please refer to the documentation on
