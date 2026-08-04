@@ -34,7 +34,7 @@ export const BeamerApp = () => {
     return keys[Math.floor(Math.random() * keys.length)];
   }, [currentSlide]);
 
-  // Tastatur-Steuerung
+  // Keyboard controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") next();
@@ -51,7 +51,7 @@ export const BeamerApp = () => {
   useEffect(() => {
     if (isUrgent || !currentSlide) return;
 
-    // duration ist in Sekunden in der Config, wir brauchen Millisekunden
+    // duration is in seconds in the config, we need milliseconds
     const timer = setInterval(next, duration * 1000);
 
     return () => clearInterval(timer);

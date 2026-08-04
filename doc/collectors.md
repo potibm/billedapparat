@@ -1,5 +1,13 @@
 # Billedapparat: Collectors
 
+Collectors are run as a separate service. They are pushing the updates via HTTP to the main hub. 
+
+Start them using `billedapparat collect` followed by the collector name.
+
+For each collector you will need an item in the  `collectors`-section of your `config.yaml`. 
+
+Each config item will need a `type` (of slide, news or timetable) and an `api_key` to authenticate with the main hub.
+
 ## Mastodon
 
 You will need to create an application unter Preferences > Development.
@@ -162,4 +170,32 @@ collectors:
         channel: "endless_demoshow"
         client_id: ""
         client_secret: ""
+````
+
+## Protokolapparat Timetable Schedule (e.g. Tidsapparat)
+
+Timetable entries (as defined in [https://github.com/potibm/protokolapparat]) are shared via Redis Streams:
+
+````yaml
+collectors:
+    protokolapparat-timetable:
+        enabled: true
+        redis_url: redis://localhost:3151
+        stream_name: party:schedule:events
+        consumer_group: time-collector
+        consumer_name: time-collector-1
+````
+
+## Protokolapparat News (e.g. Funkapparat)
+
+News (as defined in [https://github.com/potibm/protokolapparat]) are shared via Redis Streams:
+
+````yaml
+collectors:
+    protokolapparat-news:
+        enabled: true
+        redis_url: redis://localhost:3151
+        stream_name: party:news:events
+        consumer_group: news-collector
+        consumer_name: news-collector-1
 ````
