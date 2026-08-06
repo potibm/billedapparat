@@ -38,7 +38,7 @@ func (r *newsRepository) Save(ctx context.Context, news *domain.News) error {
 }
 
 func (r *newsRepository) Delete(ctx context.Context, source, externalID string) error {
-	return r.db.WithContext(ctx).Delete(&dbNews{}, "source = ? AND external_id = ?", source, externalID).Error
+	return r.db.WithContext(ctx).Unscoped().Delete(&dbNews{}, "source = ? AND external_id = ?", source, externalID).Error
 }
 
 func (r *newsRepository) GetAll(ctx context.Context) ([]domain.News, error) {
@@ -186,7 +186,7 @@ func (r *newsRepository) deleteObsolete(tx *gorm.DB, items []domain.News, res *r
 		dbItems = append(dbItems, fromDomainNews(&itemCopy))
 	}
 
-	if err := tx.Delete(&dbItems).Error; err != nil {
+	if err := tx.Unscoped().Delete(&dbItems).Error; err != nil {
 		return err
 	}
 
