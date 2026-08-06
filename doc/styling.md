@@ -52,6 +52,12 @@ Each slide type follows the BEM naming convention: `.slide-{type}__{element}`. U
 | `.slide-timetable__container` | Wrapper for content layout |
 | `.slide-timetable__content` | Content area (title + markdown body) |
 | `.slide-timetable__title` | The `<h1>` headline |
+| `.slide-timetable__table` | The whole table |
+| `.slide-timetable__cell-start-time` | Cells with start time content |
+| `.slide-timetable__cell-end-time` | Cells with end time content |
+| `.slide-timetable__cell-category` | Cells with category |
+| `.slide-timetable__cell-title` | Cells with title |
+| `.slide-timetable__cell-location` | Cells with location |
 | `.slide-timetable__fallback` | Shown when no body content exists |
 
 ### Sponsor (`slide-sponsor`)
