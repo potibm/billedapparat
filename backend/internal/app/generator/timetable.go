@@ -67,8 +67,8 @@ func (g *timetableGenerator) timetableToSlide(
 		title += fmt.Sprintf(" %d/%d", subID+1, totalPages)
 	}
 
-	body := "| Start Time | End Time | Category | Title | Location |\n"
-	body += "| --- | --- | --- | --- | --- |\n"
+	body := "| Start Time | End Time | Category | Category Color | Title | Location |\n"
+	body += "| --- | --- | --- | --- | --- | --- |\n"
 
 	for _, event := range t {
 		location := ""
@@ -82,16 +82,20 @@ func (g *timetableGenerator) timetableToSlide(
 		}
 
 		category := ""
+		categoryColor := ""
+
 		if event.Category != nil {
 			category = event.Category.Name
+			categoryColor = event.Category.Color
 		}
 
-		body += fmt.Sprintf("| %s | %s | %s | %s | %s |\n",
-			wrapInDivClass(event.StartTime.Format("15:04"), "start-time"),
-			wrapInDivClass(endTimeStr, "end-time"),
-			wrapInDivClass(escapePipes(category),"category"),
-			wrapInDivClass(escapePipes(event.Title), "title"),
-			wrapInDivClass(escapePipes(location), "location"),
+		body += fmt.Sprintf("| %s | %s | %s | %s | %s | %s |\n",
+			event.StartTime.Format("15:04"),
+			endTimeStr,
+			escapePipes(category),
+			escapePipes(categoryColor),
+			escapePipes(event.Title),
+			escapePipes(location),
 		)
 	}
 
@@ -112,8 +116,4 @@ func (g *timetableGenerator) timetableToSlide(
 
 func escapePipes(s string) string {
 	return strings.ReplaceAll(s, "|", "&#124;")
-}
-
-func wrapInDivClass(s, _c string) string {
-	return s;
 }

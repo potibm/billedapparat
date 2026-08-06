@@ -8,7 +8,9 @@ export const NewsSlide = ({ slide }: { slide: Slide }) => {
         {slide.content.body ? (
           <div className="text-gray-200 p-8 max-w-4xl mx-auto slide-news__content">
             <h1 className="slide-news__title">{slide.content.title}</h1>
-            <div className="slide-news__body"><Markdown>{slide.content.body}</Markdown></div>
+            <div className="slide-news__body">
+              <Markdown>{slide.content.body}</Markdown>
+            </div>
           </div>
         ) : (
           <h2 className="text-5xl font-light text-gray-500 tracking-widest uppercase slide-news__fallback">
