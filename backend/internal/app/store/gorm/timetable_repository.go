@@ -39,7 +39,10 @@ func (r *eventRepository) Save(ctx context.Context, event *domain.TimetableEvent
 }
 
 func (r *eventRepository) Delete(ctx context.Context, source, externalID string) error {
-	return r.db.WithContext(ctx).Unscoped().Delete(&dbTimetableEvent{}, "source = ? AND external_id = ?", source, externalID).Error
+	return r.db.WithContext(ctx).
+		Unscoped().
+		Delete(&dbTimetableEvent{}, "source = ? AND external_id = ?", source, externalID).
+		Error
 }
 
 func (r *eventRepository) GetAll(ctx context.Context) (domain.Timetable, error) {
