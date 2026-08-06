@@ -36,7 +36,7 @@ type IngestNewsRequest struct {
 
 type IngestNewsSyncRequest struct {
 	Source string              `json:"source" binding:"required"`
-	Items  []IngestNewsRequest `json:"items"  binding:"required,dive"`
+	Items  []IngestNewsRequest `json:"items"  binding:"dive"`
 }
 
 type IngestTimetableEventRequest struct {
