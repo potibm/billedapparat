@@ -88,7 +88,13 @@ export const TimetableRow = ({
   let hexColor = "#9ca3af";
   if (colorCell?.props?.children) {
     const content = colorCell.props.children;
-    hexColor = Array.isArray(content) ? String(content[0]) : String(content);
+    const colorValue = Array.isArray(content) ? content[0] : content;
+    if (typeof colorValue === "string" && colorValue.trim()) {
+      const trimmedColor = colorValue.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(trimmedColor)) {
+        hexColor = trimmedColor;
+      }
+    }
   }
 
   const modifiedCells = cells

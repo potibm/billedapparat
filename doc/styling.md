@@ -42,6 +42,7 @@ Each slide type follows the BEM naming convention: `.slide-{type}__{element}`. U
 | `.slide-news__container` | Wrapper for content layout |
 | `.slide-news__content` | Content area (title + markdown body) |
 | `.slide-news__title` | The `<h1>` headline |
+| `.slide-news__body` | Markdown body content |
 | `.slide-news__fallback` | Shown when no body content exists |
 
 ### Timetable (`slide-timetable`)
