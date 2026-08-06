@@ -40,7 +40,7 @@ func TestTimetableToSlide_SinglePage(t *testing.T) {
 	assert.Equal(t, "2026-05-25", slide.ExternalID)
 	assert.Equal(t, 0, *slide.ExternalSubID)
 	assert.Contains(t, slide.Content.Body, "| Morning Yoga |")
-	assert.Contains(t, slide.Content.Body, "| 09:00 | 10:00 | Sports | Morning Yoga | Studio 1 |")
+	assert.Contains(t, slide.Content.Body, "| 09:00 | 10:00 | Sports |  | Morning Yoga | Studio 1 |")
 }
 
 func TestTimetableToSlide_MultiPage(t *testing.T) {
@@ -143,7 +143,7 @@ func TestTimetableToSlide_AllFields(t *testing.T) {
 	assert.Equal(t, domain.TypeTimetable, slide.Content.Type)
 	assert.Equal(t, domain.StatusActive, slide.Status)
 
-	expectedRow := "| 10:00 | 12:00 | Workshop | Full Event | Main Hall |"
+	expectedRow := "| 10:00 | 12:00 | Workshop | #ff0000 | Full Event | Main Hall |"
 	assert.Contains(t, slide.Content.Body, expectedRow)
 }
 

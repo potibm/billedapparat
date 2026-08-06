@@ -90,8 +90,8 @@ func (g *timetableGenerator) timetableToSlide(
 		}
 
 		body += fmt.Sprintf("| %s | %s | %s | %s | %s | %s |\n",
-			event.StartTime.Format("15:04"),
-			endTimeStr,
+			escapePipes(event.StartTime.Format("15:04")),
+			escapePipes(endTimeStr),
 			escapePipes(category),
 			escapePipes(categoryColor),
 			escapePipes(event.Title),

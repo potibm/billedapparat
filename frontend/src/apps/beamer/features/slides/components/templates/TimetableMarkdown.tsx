@@ -65,12 +65,26 @@ export const TimetableRow = ({
   ...props
 }: TableRowComponentProps) => {
   const headers = use(TableHeaderContext);
+
+  const { colorColumnIndex, categoryColumnIndex } = useMemo(() => {
+    const colorIdx = headers.findIndex(
+      (h) => h.toLowerCase() === "category color",
+    );
+    const categoryIdx = headers.findIndex(
+      (h) => h.toLowerCase() === "category",
+    );
+    return {
+      colorColumnIndex: colorIdx >= 0 ? colorIdx : -1,
+      categoryColumnIndex: categoryIdx >= 0 ? categoryIdx : -1,
+    };
+  }, [headers]);
+
   // eslint-disable-next-line @eslint-react/no-children-to-array
   const cells = React.Children.toArray(
     children,
   ) as ReactElement<MarkdownCellProps>[];
 
-  const colorCell = cells[3];
+  const colorCell = colorColumnIndex >= 0 ? cells[colorColumnIndex] : undefined;
   let hexColor = "#9ca3af";
   if (colorCell?.props?.children) {
     const content = colorCell.props.children;
@@ -81,7 +95,6 @@ export const TimetableRow = ({
     .map((cell, index) => {
       const tagName = cell.props?.node?.tagName;
 
-      // Now we intervene for both td AND th
       if (tagName === "td" || tagName === "th") {
         const headerName = headers[index] || `col-${index}`;
         const formattedName = headerName.toLowerCase().replace(/\s+/g, "-");
@@ -89,8 +102,7 @@ export const TimetableRow = ({
 
         let cellContent = cell.props.children;
 
-        // Pill styling only applies to the category td (index 2)
-        if (index === 2 && tagName === "td") {
+        if (index === categoryColumnIndex && tagName === "td") {
           const textColorClass = getContrastTextColor(hexColor);
           cellContent = (
             <span
@@ -102,17 +114,16 @@ export const TimetableRow = ({
           );
         }
 
-        // Modify cell: pass class and (if changed) children
         // eslint-disable-next-line @eslint-react/no-clone-element
         return React.cloneElement(cell, {
-          className: cellClass, // Attach class as prop to the cell
+          className: cellClass,
           children: cellContent,
         });
       }
 
       return cell;
     })
-    .filter((_, index) => index !== 3);
+    .filter((_, index) => index !== colorColumnIndex);
 
   return (
     <tr className="border-b" {...props}>
