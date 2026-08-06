@@ -2,16 +2,16 @@ import { Slide } from "../../types/slide.schema";
 
 export const SponsorSlide = ({ slide }: { slide: Slide }) => {
   return (
-    <div className="slide-sponsor flex items-center justify-center w-full h-full bg-black">
+    <div className="flex items-center justify-center w-full h-full bg-black slide-sponsor">
       {slide.content.media?.local_url ? (
         <img
           src={slide.content.media?.local_url}
           alt={slide.content.title || "Sponsor"}
           title={slide.content.title || "Sponsor"}
-          className="slide-sponsor__image w-full h-full object-contain"
+          className="w-full h-full object-contain slide-sponsor__image"
         />
       ) : (
-        <h2 className="slide-sponsor__fallback text-5xl font-light text-gray-500 tracking-widest uppercase">
+        <h2 className="text-5xl font-light text-gray-500 tracking-widest uppercase slide-sponsor__fallback">
           Sponsor: {slide.content.title}
         </h2>
       )}

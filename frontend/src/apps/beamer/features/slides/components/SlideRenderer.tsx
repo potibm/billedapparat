@@ -2,6 +2,7 @@ import { Slide } from "../types/slide.schema";
 import { NewsSlide } from "./templates/NewsSlide";
 import { SocialSlide } from "./templates/SocialSlide";
 import { SponsorSlide } from "./templates/SponsorSlide";
+import { TimetableSlide } from "./templates/TimetableSlide";
 // import { UrgentSlide } from "./templates/UrgentSlide";
 // import { NewsSlide } from "./templates/NewsSlide";
 // import { TimetableSlide } from "./templates/TimetableSlide";
@@ -18,12 +19,11 @@ export const SlideRenderer = ({ slide }: SlideRendererProps) => {
       return <NewsSlide slide={slide} />;
     case "social.media":
       return <SocialSlide slide={slide} />;
+    case "timetable":
+      return <TimetableSlide slide={slide} />;
 
     /*case "urgent":
       return <UrgentSlide slide={slide} />;
-   
-    case "timetable":
-      return <TimetableSlide slide={slide} />;
     */
 
     default:

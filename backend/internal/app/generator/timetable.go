@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/potibm/billedapparat/internal/app/domain"
@@ -66,11 +67,8 @@ func (g *timetableGenerator) timetableToSlide(
 		title += fmt.Sprintf(" %d/%d", subID+1, totalPages)
 	}
 
-	body := "# " + title
-
-	body += "\n\n"
-	body += "| Start Time | End Time | Category | Title | Location |\n"
-	body += "| --- | --- | --- | --- | --- |\n"
+	body := "| Start Time | End Time | Category | Category Color | Title | Location |\n"
+	body += "| --- | --- | --- | --- | --- | --- |\n"
 
 	for _, event := range t {
 		location := ""
@@ -84,16 +82,20 @@ func (g *timetableGenerator) timetableToSlide(
 		}
 
 		category := ""
+		categoryColor := ""
+
 		if event.Category != nil {
 			category = event.Category.Name
+			categoryColor = event.Category.Color
 		}
 
-		body += fmt.Sprintf("| %s | %s | %s | %s | %s |\n",
-			event.StartTime.Format("15:04"),
-			endTimeStr,
-			category,
-			event.Title,
-			location,
+		body += fmt.Sprintf("| %s | %s | %s | %s | %s | %s |\n",
+			escapePipes(event.StartTime.Format("15:04")),
+			escapePipes(endTimeStr),
+			escapePipes(category),
+			escapePipes(categoryColor),
+			escapePipes(event.Title),
+			escapePipes(location),
 		)
 	}
 
@@ -110,4 +112,8 @@ func (g *timetableGenerator) timetableToSlide(
 	}
 
 	return slide
+}
+
+func escapePipes(s string) string {
+	return strings.ReplaceAll(s, "|", "&#124;")
 }
