@@ -367,7 +367,7 @@ func (r *slideRepository) deleteObsolete(tx *gorm.DB, items []domain.Slide, res 
 
 	dbItems := fromDomainSlideList(items)
 
-	if err := tx.Delete(&dbItems).Error; err != nil {
+	if err := tx.Unscoped().Delete(&dbItems).Error; err != nil {
 		return err
 	}
 
