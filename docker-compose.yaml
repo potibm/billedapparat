@@ -28,7 +28,7 @@ services:
   # Identity
   # --------------------------------------------------------
   dex:
-    image: ghcr.io/dexidp/dex:v2.38.0
+    image: ghcr.io/dexidp/dex:v2.45.1
     volumes:
       - ./infra/dex-config.yaml:/etc/dex/config.docker.yaml
     labels:
@@ -71,7 +71,7 @@ services:
   # Data Stores
   # --------------------------------------------------------
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: billedapparat_redis
     ports:
       - "3151:6379" # Needed for Go backend on host
