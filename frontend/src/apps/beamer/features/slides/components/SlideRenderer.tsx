@@ -3,9 +3,7 @@ import { NewsSlide } from "./templates/NewsSlide";
 import { SocialSlide } from "./templates/SocialSlide";
 import { SponsorSlide } from "./templates/SponsorSlide";
 import { TimetableSlide } from "./templates/TimetableSlide";
-// import { UrgentSlide } from "./templates/UrgentSlide";
-// import { NewsSlide } from "./templates/NewsSlide";
-// import { TimetableSlide } from "./templates/TimetableSlide";
+import { UrgentSlide } from "./templates/UrgentSlide";
 
 interface SlideRendererProps {
   slide: Slide;
@@ -21,10 +19,8 @@ export const SlideRenderer = ({ slide }: SlideRendererProps) => {
       return <SocialSlide slide={slide} />;
     case "timetable":
       return <TimetableSlide slide={slide} />;
-
-    /*case "urgent":
+    case "urgent":
       return <UrgentSlide slide={slide} />;
-    */
 
     default:
       return (
