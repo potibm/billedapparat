@@ -117,7 +117,12 @@ export const useSlideManager = () => {
 
   const getUrgent = useCallback(() => {
     return allSlides
-      .filter((s) => s.content.type === "urgent" && s.status === "active")
+      .filter(
+        (s) =>
+          s.content.type === "news" &&
+          s.display_options.is_urgent &&
+          s.status === "active",
+      )
       .sort((a, b) => {
         const prioA = Number(a.display_options?.priority || 0);
         const prioB = Number(b.display_options?.priority || 0);

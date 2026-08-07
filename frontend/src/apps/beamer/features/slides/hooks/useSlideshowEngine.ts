@@ -23,6 +23,11 @@ export const useSlideshowEngine = (): SlideshowEngine => {
   const [stepIndex, setStepIndex] = useState(0);
   const [stepCountPointer, setStepCountPointer] = useState(0);
 
+  const [displayedStepInfo, setDisplayedStepInfo] = useState<{
+    stepIndex: number;
+    stepCountPointer: number;
+  } | null>(null);
+
   const [history, setHistory] = useState<number[]>([]);
   const [historyPointer, setHistoryPointer] = useState(-1);
   const [isPaused, setIsPaused] = useState(false);
@@ -67,8 +72,8 @@ export const useSlideshowEngine = (): SlideshowEngine => {
       if (selected && selected.id !== currentlyShownId) {
         setHistory((prev) => [...prev, selected.id].slice(-HISTORY_LIMIT));
         setHistoryPointer((prev) => Math.min(prev + 1, HISTORY_LIMIT - 1));
-        return;
       }
+      return; // Immer zurückkehren, wenn hasUrgent true ist
     }
 
     // 3. Find playlist step
@@ -102,6 +107,10 @@ export const useSlideshowEngine = (): SlideshowEngine => {
 
     // 5. Syncronize state
     if (selected) {
+      setDisplayedStepInfo({
+        stepIndex: foundIndex,
+        stepCountPointer: stepCountPointer,
+      });
       updateHistory(selected.id);
       advanceStepPointers(step.count, activePlaylist.steps.length);
     }
@@ -189,13 +198,14 @@ export const useSlideshowEngine = (): SlideshowEngine => {
     isUrgent: currentSlide?.content.type === "urgent",
     toastSlides,
     duration: currentStep?.duration || 10,
-    stepInfo: currentStep
-      ? {
-          type: currentStep.type,
-          current: stepCountPointer + 1,
-          total: currentStep.count,
-          playlistName: activePlaylist.name,
-        }
-      : null,
+    stepInfo:
+      displayedStepInfo && activePlaylist
+        ? {
+            type: activePlaylist.steps[displayedStepInfo.stepIndex].type,
+            current: displayedStepInfo.stepCountPointer + 1,
+            total: activePlaylist.steps[displayedStepInfo.stepIndex].count,
+            playlistName: activePlaylist.name,
+          }
+        : null,
   };
 };
