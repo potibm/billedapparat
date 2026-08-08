@@ -23,6 +23,11 @@ export const useSlideshowEngine = (): SlideshowEngine => {
   const [stepIndex, setStepIndex] = useState(0);
   const [stepCountPointer, setStepCountPointer] = useState(0);
 
+  const [displayedStepInfo, setDisplayedStepInfo] = useState<{
+    stepIndex: number;
+    stepCountPointer: number;
+  } | null>(null);
+
   const [history, setHistory] = useState<number[]>([]);
   const [historyPointer, setHistoryPointer] = useState(-1);
   const [isPaused, setIsPaused] = useState(false);
@@ -67,8 +72,8 @@ export const useSlideshowEngine = (): SlideshowEngine => {
       if (selected && selected.id !== currentlyShownId) {
         setHistory((prev) => [...prev, selected.id].slice(-HISTORY_LIMIT));
         setHistoryPointer((prev) => Math.min(prev + 1, HISTORY_LIMIT - 1));
-        return;
       }
+      return; // Always return when hasUrgent is true
     }
 
     // 3. Find playlist step
@@ -102,6 +107,10 @@ export const useSlideshowEngine = (): SlideshowEngine => {
 
     // 5. Syncronize state
     if (selected) {
+      setDisplayedStepInfo({
+        stepIndex: foundIndex,
+        stepCountPointer: stepCountPointer,
+      });
       updateHistory(selected.id);
       advanceStepPointers(step.count, activePlaylist.steps.length);
     }
@@ -148,17 +157,25 @@ export const useSlideshowEngine = (): SlideshowEngine => {
   }, [history.length, allSlides.length, next]);
 
   useEffect(() => {
-    if (hasUrgent && currentSlide?.content.type !== "urgent") {
+    if (hasUrgent && currentSlide?.display_options?.is_urgent !== true) {
       const timeoutId = setTimeout(next, NEXT_TICK_TIMEOUT);
       return () => clearTimeout(timeoutId);
     }
   }, [hasUrgent, currentSlide, next]);
 
   useEffect(() => {
+    if (currentSlide && currentSlide.status !== "active") {
+      const timeoutId = setTimeout(next, NEXT_TICK_TIMEOUT);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [currentSlide, next]);
+
+  useEffect(() => {
     logger.info("Playlist changed, resetting engine pointers");
     const timeoutId = setTimeout(() => {
       setStepIndex(0);
       setStepCountPointer(0);
+      setDisplayedStepInfo(null);
       next();
     }, 0);
 
@@ -186,16 +203,19 @@ export const useSlideshowEngine = (): SlideshowEngine => {
     previous,
     togglePause,
     isPaused,
-    isUrgent: currentSlide?.content.type === "urgent",
+    isUrgent: currentSlide?.display_options?.is_urgent === true,
     toastSlides,
     duration: currentStep?.duration || 10,
-    stepInfo: currentStep
-      ? {
-          type: currentStep.type,
-          current: stepCountPointer + 1,
-          total: currentStep.count,
-          playlistName: activePlaylist.name,
-        }
-      : null,
+    stepInfo:
+      displayedStepInfo &&
+      activePlaylist &&
+      displayedStepInfo.stepIndex < activePlaylist.steps.length
+        ? {
+            type: activePlaylist.steps[displayedStepInfo.stepIndex].type,
+            current: displayedStepInfo.stepCountPointer + 1,
+            total: activePlaylist.steps[displayedStepInfo.stepIndex].count,
+            playlistName: activePlaylist.name,
+          }
+        : null,
   };
 };

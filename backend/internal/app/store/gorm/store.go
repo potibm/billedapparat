@@ -83,10 +83,31 @@ func newStore(dsn string) (*Store, error) {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
+	if err := cleanupSoftDeletes(db); err != nil {
+		return nil, fmt.Errorf("failed to cleanup soft deleted records: %w", err)
+	}
+
 	err = RegisterAuditCallbacks(db)
 	if err != nil {
 		return nil, fmt.Errorf("failed to register audit callbacks: %w", err)
 	}
 
 	return &Store{db: db}, nil
+}
+
+func cleanupSoftDeletes(db *gorm.DB) error {
+	if err := db.Unscoped().Where("deleted_at IS NOT NULL").Delete(&dbNews{}).Error; err != nil {
+		return fmt.Errorf("failed to hard delete news: %w", err)
+	}
+
+	if err := db.Unscoped().Where("deleted_at IS NOT NULL").Delete(&dbTimetableEvent{}).Error; err != nil {
+		return fmt.Errorf("failed to hard delete timetable: %w", err)
+	}
+
+	query := "(type = 'news' OR type = 'timetable') AND deleted_at IS NOT NULL"
+	if err := db.Unscoped().Where(query).Delete(&dbSlide{}).Error; err != nil {
+		return fmt.Errorf("failed to hard delete slides: %w", err)
+	}
+
+	return nil
 }

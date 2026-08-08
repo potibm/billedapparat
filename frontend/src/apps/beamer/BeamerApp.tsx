@@ -30,9 +30,18 @@ export const BeamerApp = () => {
 
   const activeAnimation = useMemo(() => {
     if (!currentSlide) return "fade";
+    if (isUrgent) return "urgent";
     const keys = Object.keys(animations) as AnimationType[];
     return keys[Math.floor(Math.random() * keys.length)];
-  }, [currentSlide]);
+  }, [currentSlide, isUrgent]);
+
+  const transition = useMemo(() => {
+    const ease: "easeOut" | "easeInOut" = isUrgent ? "easeOut" : "easeInOut";
+    return {
+      duration: isUrgent ? 0.2 : 0.8,
+      ease,
+    };
+  }, [isUrgent]);
 
   // Keyboard controls
   useEffect(() => {
@@ -73,15 +82,15 @@ export const BeamerApp = () => {
   return (
     <div
       ref={containerRef}
-      className={`h-screen w-screen overflow-hidden bg-black transition-all duration-1000 ${
+      className={`h-screen w-screen overflow-hidden bg-black ${
         isUrgent ? "ring-inset ring-12 ring-red-600" : ""
       }`}
     >
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode={isUrgent ? "sync" : "wait"}>
         <motion.div
           key={currentSlide.id}
           {...animations[activeAnimation]}
-          transition={{ duration: 0.8, ease: "easeInOut" }}
+          transition={transition}
           className="absolute inset-0"
         >
           <Sentry.ErrorBoundary fallback={<p>Slide Rendering Error</p>}>
@@ -94,9 +103,11 @@ export const BeamerApp = () => {
 
       {environment !== "production" && (
         <div className="absolute bottom-2 right-2 text-[10px] text-white/20 pointer-events-none font-mono">
-          {environment} | v{version} | {stepInfo?.playlistName} |{" "}
-          {stepInfo?.type} ({stepInfo?.current}/{stepInfo?.total}) |{" "}
-          {activeAnimation} | {duration}s
+          {environment} | v{version} |{" "}
+          {isUrgent
+            ? "URGENT"
+            : `${stepInfo?.playlistName} | ${stepInfo?.type} (${stepInfo?.current}/${stepInfo?.total})`}{" "}
+          | {activeAnimation} | {duration}s
         </div>
       )}
     </div>
