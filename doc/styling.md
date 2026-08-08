@@ -13,12 +13,16 @@ Create a file called `custom.css` within this directory, which will be used in t
     background: url("/style/assets/background.png") no-repeat center center fixed !important;
 }
 
-.slide-news__content {
+.slide-news__content, .slide-urgent__content  {
     font-family:'Comic Sans MS', cursive, sans-serif !important;
 }
 
-.slide-news__content h1 {
+.slide-news__title {
     color: #00ff00 !important;
+}
+
+.slide-urgent__title {
+    color: #ff0000 !important;
 }
 
 .formatted-text__hashtag {
@@ -44,6 +48,18 @@ Each slide type follows the BEM naming convention: `.slide-{type}__{element}`. U
 | `.slide-news__title` | The `<h1>` headline |
 | `.slide-news__body` | Markdown body content |
 | `.slide-news__fallback` | Shown when no body content exists |
+
+
+### Urgent News (`slide-urgent`)
+
+| Class | Element |
+|-------|---------|
+| `.slide-urgent` | Root container |
+| `.slide-urgent__container` | Wrapper for content layout |
+| `.slide-urgent__content` | Content area (title + markdown body) |
+| `.slide-urgent__title` | The `<h1>` headline |
+| `.slide-urgent__body` | Markdown body content |
+| `.slide-urgent__fallback` | Shown when no body content exists |
 
 ### Timetable (`slide-timetable`)
 

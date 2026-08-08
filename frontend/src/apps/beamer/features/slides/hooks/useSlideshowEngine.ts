@@ -73,7 +73,7 @@ export const useSlideshowEngine = (): SlideshowEngine => {
         setHistory((prev) => [...prev, selected.id].slice(-HISTORY_LIMIT));
         setHistoryPointer((prev) => Math.min(prev + 1, HISTORY_LIMIT - 1));
       }
-      return; // Immer zurückkehren, wenn hasUrgent true ist
+      return; // Always return when hasUrgent is true
     }
 
     // 3. Find playlist step
@@ -157,17 +157,25 @@ export const useSlideshowEngine = (): SlideshowEngine => {
   }, [history.length, allSlides.length, next]);
 
   useEffect(() => {
-    if (hasUrgent && currentSlide?.content.type !== "urgent") {
+    if (hasUrgent && currentSlide?.display_options?.is_urgent !== true) {
       const timeoutId = setTimeout(next, NEXT_TICK_TIMEOUT);
       return () => clearTimeout(timeoutId);
     }
   }, [hasUrgent, currentSlide, next]);
 
   useEffect(() => {
+    if (currentSlide && currentSlide.status !== "active") {
+      const timeoutId = setTimeout(next, NEXT_TICK_TIMEOUT);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [currentSlide, next]);
+
+  useEffect(() => {
     logger.info("Playlist changed, resetting engine pointers");
     const timeoutId = setTimeout(() => {
       setStepIndex(0);
       setStepCountPointer(0);
+      setDisplayedStepInfo(null);
       next();
     }, 0);
 
@@ -195,11 +203,13 @@ export const useSlideshowEngine = (): SlideshowEngine => {
     previous,
     togglePause,
     isPaused,
-    isUrgent: currentSlide?.content.type === "urgent",
+    isUrgent: currentSlide?.display_options?.is_urgent === true,
     toastSlides,
     duration: currentStep?.duration || 10,
     stepInfo:
-      displayedStepInfo && activePlaylist
+      displayedStepInfo &&
+      activePlaylist &&
+      displayedStepInfo.stepIndex < activePlaylist.steps.length
         ? {
             type: activePlaylist.steps[displayedStepInfo.stepIndex].type,
             current: displayedStepInfo.stepCountPointer + 1,

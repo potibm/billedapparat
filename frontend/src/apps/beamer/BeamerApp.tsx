@@ -82,7 +82,7 @@ export const BeamerApp = () => {
   return (
     <div
       ref={containerRef}
-      className={`h-screen w-screen overflow-hidden bg-black transition-all duration-1000 ${
+      className={`h-screen w-screen overflow-hidden bg-black ${
         isUrgent ? "ring-inset ring-12 ring-red-600" : ""
       }`}
     >

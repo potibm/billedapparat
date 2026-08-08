@@ -10,17 +10,23 @@ interface SlideRendererProps {
 }
 
 export const SlideRenderer = ({ slide }: SlideRendererProps) => {
+  if (slide.status !== "active") {
+    return null;
+  }
+
   switch (slide.content.type) {
     case "sponsor":
       return <SponsorSlide slide={slide} />;
     case "news":
-      return <NewsSlide slide={slide} />;
+      return slide.display_options?.is_urgent ? (
+        <UrgentSlide slide={slide} />
+      ) : (
+        <NewsSlide slide={slide} />
+      );
     case "social.media":
       return <SocialSlide slide={slide} />;
     case "timetable":
       return <TimetableSlide slide={slide} />;
-    case "urgent":
-      return <UrgentSlide slide={slide} />;
 
     default:
       return (
