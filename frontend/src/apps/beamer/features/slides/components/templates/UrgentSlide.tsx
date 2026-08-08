@@ -3,7 +3,7 @@ import Markdown from "react-markdown";
 
 export const UrgentSlide = ({ slide }: { slide: Slide }) => {
   return (
-    <div className="w-full h-full slide-news">
+    <div className="w-full h-full slide-urgent">
       <div className="flex items-center justify-center w-full h-full slide-urgent__container">
         {slide.content.body ? (
           <div className="text-gray-200 p-8 max-w-4xl mx-auto slide-urgent__content">
