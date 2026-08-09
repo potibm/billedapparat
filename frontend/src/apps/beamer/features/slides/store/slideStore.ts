@@ -22,7 +22,7 @@ type Listener = () => void;
  */
 export class SlideStore {
   private slideMap: SlideDictionary = {};
-  private listeners: Set<Listener> = new Set();
+  private readonly listeners: Set<Listener> = new Set();
   private evtSource: EventSource | null = null;
 
   // --- 1. Reactivity (Observer Pattern) ---
