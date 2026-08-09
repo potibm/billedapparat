@@ -9,6 +9,7 @@ import {
 import { ToastManager } from "./features/slides/components/ToastManager";
 import { useAppConfig } from "@core/config/useConfig";
 import * as Sentry from "@sentry/react";
+import { slideStore } from "./features/slides/store/slideStore";
 
 export const BeamerApp = () => {
   const {
@@ -24,6 +25,14 @@ export const BeamerApp = () => {
 
   const { version, environment } = useAppConfig();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    slideStore.connect();
+
+    return () => {
+      slideStore.disconnect();
+    };
+  }, []);
 
   const allowOverlay =
     currentSlide?.display_options.allow_social_overlay ?? false;
