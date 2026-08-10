@@ -1,160 +1,57 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useEffect, useMemo, useReducer, useCallback } from "react";
 import { useSlideManager } from "./useSlideManager";
 import { createLogger } from "@core/logger/logger";
 import { useCurrentPlaylist } from "./useCurrentPlaylist";
 import { PlaylistStep } from "@core/config/config.schemas";
 import { SlideshowEngine } from "../types/slideshow.types";
-import {
-  pickWeightedSlide,
-  sortSlides,
-  selectNextSlide,
-  findNextValidStep,
-} from "../utils/slideshow.logic";
+import { engineReducer, initialEngineState } from "./engineReducer";
 
-const HISTORY_LIMIT = 50;
 const NEXT_TICK_TIMEOUT = 0;
-
 const logger = createLogger("Slideshow");
 
 export const useSlideshowEngine = (): SlideshowEngine => {
   const { getByType, getUrgent, slides: allSlides } = useSlideManager();
   const activePlaylist = useCurrentPlaylist();
 
-  const [stepIndex, setStepIndex] = useState(0);
-  const [stepCountPointer, setStepCountPointer] = useState(0);
-
-  const [displayedStepInfo, setDisplayedStepInfo] = useState<{
-    stepIndex: number;
-    stepCountPointer: number;
-  } | null>(null);
-
-  const [history, setHistory] = useState<number[]>([]);
-  const [historyPointer, setHistoryPointer] = useState(-1);
-  const [isPaused, setIsPaused] = useState(false);
+  // Unser neuer, zentraler State!
+  const [state, dispatch] = useReducer(engineReducer, initialEngineState);
 
   const urgentSlides = getUrgent();
   const hasUrgent = urgentSlides.length > 0;
   const toastSlides = getByType("social.text");
 
-  const updateHistory = useCallback((id: number) => {
-    setHistory((prev) => [...prev, id].slice(-HISTORY_LIMIT));
-    setHistoryPointer((prev) => Math.min(prev + 1, HISTORY_LIMIT - 1));
-  }, []);
-
-  const advanceStepPointers = useCallback(
-    (currentStepCount: number, stepsLength: number) => {
-      setStepCountPointer((prevCount) => {
-        const nextCount = prevCount + 1;
-        if (nextCount >= currentStepCount) {
-          setStepIndex((prevIndex) => (prevIndex + 1) % stepsLength);
-          return 0;
-        }
-        return nextCount;
-      });
-    },
-    [],
-  );
-
+  // --- Actions ---
+  // Durch den Reducer brauchen diese Funktionen keine Dependency-Arrays
+  // mehr, die sich ständig ändern.
   const next = useCallback(() => {
-    // 1. Guard & history navigation
-    if (isPaused || !activePlaylist?.steps) return;
+    dispatch({
+      type: "NEXT",
+      payload: { hasUrgent, urgentSlides, activePlaylist, getByType },
+    });
+  }, [hasUrgent, urgentSlides, activePlaylist, getByType]);
 
-    if (historyPointer < history.length - 1) {
-      setHistoryPointer((prev) => prev + 1);
-      return;
-    }
+  const previous = useCallback(() => dispatch({ type: "PREVIOUS" }), []);
+  const togglePause = useCallback(() => dispatch({ type: "TOGGLE_PAUSE" }), []);
 
-    const currentlyShownId = history[historyPointer];
-
-    // 2. Urgent override
-    if (hasUrgent) {
-      const selected = pickWeightedSlide(urgentSlides);
-      if (selected && selected.id !== currentlyShownId) {
-        setHistory((prev) => [...prev, selected.id].slice(-HISTORY_LIMIT));
-        setHistoryPointer((prev) => Math.min(prev + 1, HISTORY_LIMIT - 1));
-      }
-      return; // Always return when hasUrgent is true
-    }
-
-    // 3. Find playlist step
-    const result = findNextValidStep(
-      activePlaylist.steps,
-      stepIndex,
-      getByType,
-    );
-
-    if (!result) {
-      logger.warn("No slides found for any step in playlist");
-      return;
-    }
-
-    const { step, index: foundIndex, candidates } = result;
-
-    // In case findNextValidStep found a different index than the current one:
-    if (foundIndex !== stepIndex) {
-      setStepIndex(foundIndex);
-      setStepCountPointer(0);
-    }
-
-    // 4. Select slide
-    const sorted = sortSlides(candidates, step.order);
-    const selected = selectNextSlide(
-      sorted,
-      step,
-      stepCountPointer,
-      currentlyShownId,
-    );
-
-    // 5. Syncronize state
-    if (selected) {
-      setDisplayedStepInfo({
-        stepIndex: foundIndex,
-        stepCountPointer: stepCountPointer,
-      });
-      updateHistory(selected.id);
-      advanceStepPointers(step.count, activePlaylist.steps.length);
-    }
-  }, [
-    isPaused,
-    historyPointer,
-    history,
-    hasUrgent,
-    activePlaylist,
-    stepIndex,
-    stepCountPointer,
-    urgentSlides,
-    getByType,
-    advanceStepPointers,
-    updateHistory,
-  ]);
-
-  const previous = useCallback(() => {
-    if (historyPointer > 0) {
-      setHistoryPointer((prev) => prev - 1);
-    }
-  }, [historyPointer]);
-
-  const togglePause = useCallback(() => {
-    setIsPaused((prev) => !prev);
-  }, []);
-
+  // --- Abgeleitete Daten (Derived State) ---
   const currentSlide = useMemo(() => {
-    const id = history[historyPointer];
+    const id = state.history[state.historyPointer];
     return allSlides.find((s) => s.id === id) || null;
-  }, [history, historyPointer, allSlides]);
+  }, [state.history, state.historyPointer, allSlides]);
 
   const currentStep = useMemo<PlaylistStep | undefined>(() => {
     if (!activePlaylist) return undefined;
-    return activePlaylist.steps[stepIndex];
-  }, [activePlaylist, stepIndex]);
+    return activePlaylist.steps[state.stepIndex];
+  }, [activePlaylist, state.stepIndex]);
 
+  // --- Effekte (Timeouts und Kickstarts) ---
   useEffect(() => {
-    if (history.length === 0 && allSlides.length > 0) {
+    if (state.history.length === 0 && allSlides.length > 0) {
       logger.debug("Kickstarting initial slide");
       const timeoutId = setTimeout(next, NEXT_TICK_TIMEOUT);
       return () => clearTimeout(timeoutId);
     }
-  }, [history.length, allSlides.length, next]);
+  }, [state.history.length, allSlides.length, next]);
 
   useEffect(() => {
     if (hasUrgent && currentSlide?.display_options?.is_urgent !== true) {
@@ -173,23 +70,21 @@ export const useSlideshowEngine = (): SlideshowEngine => {
   useEffect(() => {
     logger.info("Playlist changed, resetting engine pointers");
     const timeoutId = setTimeout(() => {
-      setStepIndex(0);
-      setStepCountPointer(0);
-      setDisplayedStepInfo(null);
+      dispatch({ type: "RESET_PLAYLIST" });
       next();
     }, 0);
-
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, [activePlaylist?.id]);
 
+  // --- Fallback, wenn keine Playlist da ist ---
   if (!activePlaylist) {
     return {
       currentSlide: null,
       next,
       previous,
-      togglePause: () => setIsPaused((p) => !p),
-      isPaused,
+      togglePause,
+      isPaused: state.isPaused,
       isUrgent: false,
       toastSlides: [],
       duration: 10,
@@ -197,23 +92,24 @@ export const useSlideshowEngine = (): SlideshowEngine => {
     };
   }
 
+  // --- Return an die UI ---
   return {
     currentSlide,
     next,
     previous,
     togglePause,
-    isPaused,
+    isPaused: state.isPaused,
     isUrgent: currentSlide?.display_options?.is_urgent === true,
     toastSlides,
     duration: currentStep?.duration || 10,
     stepInfo:
-      displayedStepInfo &&
-      activePlaylist &&
-      displayedStepInfo.stepIndex < activePlaylist.steps.length
+      state.displayedStepInfo &&
+      state.displayedStepInfo.stepIndex < activePlaylist.steps.length
         ? {
-            type: activePlaylist.steps[displayedStepInfo.stepIndex].type,
-            current: displayedStepInfo.stepCountPointer + 1,
-            total: activePlaylist.steps[displayedStepInfo.stepIndex].count,
+            type: activePlaylist.steps[state.displayedStepInfo.stepIndex].type,
+            current: state.displayedStepInfo.stepCountPointer + 1,
+            total:
+              activePlaylist.steps[state.displayedStepInfo.stepIndex].count,
             playlistName: activePlaylist.name,
           }
         : null,

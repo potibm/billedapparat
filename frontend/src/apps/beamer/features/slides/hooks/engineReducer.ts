@@ -1,4 +1,4 @@
-import { Playlist, PlaylistStep } from "@core/config/config.schemas";
+import { Playlist } from "@core/config/config.schemas";
 import { Slide } from "../types/slide.schema";
 import {
   pickWeightedSlide,
@@ -44,7 +44,10 @@ export type EngineAction =
     };
 
 // Der Reducer: Nimmt den alten State + Aktion -> gibt neuen State zurück (Pure Function!)
-export const engineReducer = (state: EngineState, action: EngineAction): EngineState => {
+export const engineReducer = (
+  state: EngineState,
+  action: EngineAction,
+): EngineState => {
   switch (action.type) {
     case "TOGGLE_PAUSE":
       return { ...state, isPaused: !state.isPaused };
@@ -64,7 +67,8 @@ export const engineReducer = (state: EngineState, action: EngineAction): EngineS
       };
 
     case "NEXT": {
-      const { hasUrgent, urgentSlides, activePlaylist, getByType } = action.payload;
+      const { hasUrgent, urgentSlides, activePlaylist, getByType } =
+        action.payload;
 
       // 1. Guards
       if (state.isPaused || !activePlaylist?.steps) return state;
@@ -80,19 +84,28 @@ export const engineReducer = (state: EngineState, action: EngineAction): EngineS
       if (hasUrgent) {
         const selected = pickWeightedSlide(urgentSlides);
         if (selected && selected.id !== currentlyShownId) {
-          const newHistory = [...state.history, selected.id].slice(-HISTORY_LIMIT);
+          const newHistory = [...state.history, selected.id].slice(
+            -HISTORY_LIMIT,
+          );
           return {
             ...state,
             history: newHistory,
-            historyPointer: Math.min(state.historyPointer + 1, HISTORY_LIMIT - 1),
+            historyPointer: Math.min(
+              state.historyPointer + 1,
+              HISTORY_LIMIT - 1,
+            ),
           };
         }
         return state;
       }
 
       // 4. Reguläre Playlist-Logik
-      const result = findNextValidStep(activePlaylist.steps, state.stepIndex, getByType);
-      
+      const result = findNextValidStep(
+        activePlaylist.steps,
+        state.stepIndex,
+        getByType,
+      );
+
       if (!result) return state; // Keine Slides gefunden (Logging machen wir im Hook)
 
       const { step, index: foundIndex, candidates } = result;
@@ -108,7 +121,12 @@ export const engineReducer = (state: EngineState, action: EngineAction): EngineS
 
       // 5. Slide auswählen
       const sorted = sortSlides(candidates, step.order);
-      const selected = selectNextSlide(sorted, step, currentStepCountPointer, currentlyShownId);
+      const selected = selectNextSlide(
+        sorted,
+        step,
+        currentStepCountPointer,
+        currentlyShownId,
+      );
 
       if (!selected) return state;
 
@@ -123,7 +141,7 @@ export const engineReducer = (state: EngineState, action: EngineAction): EngineS
 
       // 7. Neuen State zurückgeben
       const newHistory = [...state.history, selected.id].slice(-HISTORY_LIMIT);
-      
+
       return {
         ...state,
         stepIndex: nextStepIndex,

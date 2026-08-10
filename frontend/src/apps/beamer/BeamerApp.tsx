@@ -10,6 +10,9 @@ import { ToastManager } from "./features/slides/components/ToastManager";
 import { useAppConfig } from "@core/config/useConfig";
 import * as Sentry from "@sentry/react";
 import { slideStore } from "./features/slides/store/slideStore";
+import { useKeyboardControls } from "./features/slides/hooks/useKeyboardControls";
+import { useAutoplay } from "./features/slides/hooks/useAutoplay";
+import { DebugOverlay } from "./components/DebugOverlay";
 
 export const BeamerApp = () => {
   const {
@@ -18,6 +21,7 @@ export const BeamerApp = () => {
     previous,
     togglePause,
     isUrgent,
+    isPaused,
     toastSlides,
     duration,
     stepInfo,
@@ -26,14 +30,17 @@ export const BeamerApp = () => {
   const { version, environment } = useAppConfig();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // 1. Globale Verbindung
   useEffect(() => {
     slideStore.connect();
-
-    return () => {
-      slideStore.disconnect();
-    };
+    return () => slideStore.disconnect();
   }, []);
 
+  // 2. Logik-Hooks aufrufen (Der Code bleibt sauber!)
+  useKeyboardControls(next, previous, togglePause);
+  useAutoplay(next, duration, isPaused, isUrgent, !!currentSlide);
+
+  // 3. UI Helper
   const allowOverlay =
     currentSlide?.display_options.allow_social_overlay ?? false;
 
@@ -45,36 +52,13 @@ export const BeamerApp = () => {
   }, [currentSlide, isUrgent]);
 
   const transition = useMemo(() => {
-    const ease: "easeOut" | "easeInOut" = isUrgent ? "easeOut" : "easeInOut";
     return {
       duration: isUrgent ? 0.2 : 0.8,
-      ease,
+      ease: (isUrgent ? "easeOut" : "easeInOut") as "easeOut" | "easeInOut",
     };
   }, [isUrgent]);
 
-  // Keyboard controls
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") next();
-      if (e.key === "ArrowLeft") previous();
-      if (e.key === " " || e.key === "Spacebar") {
-        e.preventDefault();
-        togglePause();
-      }
-    };
-    globalThis.addEventListener("keydown", handleKeyDown);
-    return () => globalThis.removeEventListener("keydown", handleKeyDown);
-  }, [next, previous, togglePause]);
-
-  useEffect(() => {
-    if (isUrgent || !currentSlide) return;
-
-    // duration is in seconds in the config, we need milliseconds
-    const timer = setInterval(next, duration * 1000);
-
-    return () => clearInterval(timer);
-  }, [next, isUrgent, currentSlide, duration]);
-
+  // 4. Render Logik
   if (!currentSlide) {
     return (
       <div className="bg-black h-screen flex items-center justify-center text-slate-700">
@@ -110,15 +94,13 @@ export const BeamerApp = () => {
 
       <ToastManager toastSlides={toastSlides} allowOverlay={allowOverlay} />
 
-      {environment !== "production" && (
-        <div className="absolute bottom-2 right-2 text-[10px] text-white/20 pointer-events-none font-mono">
-          {environment} | v{version} |{" "}
-          {isUrgent
-            ? "URGENT"
-            : `${stepInfo?.playlistName} | ${stepInfo?.type} (${stepInfo?.current}/${stepInfo?.total})`}{" "}
-          | {activeAnimation} | {duration}s
-        </div>
-      )}
+      <DebugOverlay
+        isUrgent={isUrgent}
+        stepInfo={stepInfo}
+        activeAnimation={activeAnimation}
+        duration={duration}
+        isPaused={isPaused}
+      />
     </div>
   );
 };

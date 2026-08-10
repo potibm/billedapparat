@@ -33,15 +33,19 @@ export const useSlideManager = () => {
   // The `[tick]` dependency is crucial: Every time the store mutates (tick increases),
   // these functions evaluate fresh data from the store.
 
+  // eslint-disable-next-line @eslint-react/exhaustive-deps
   const slides = useMemo(() => slideStore.getSlides(), [tick]);
 
+  // eslint-disable-next-line @eslint-react/exhaustive-deps
   const getById = useCallback((id: number) => slideStore.getById(id), [tick]);
 
   const getByType = useCallback(
     (type: string) => slideStore.getByType(type),
+    // eslint-disable-next-line @eslint-react/exhaustive-deps
     [tick],
   );
 
+  // eslint-disable-next-line @eslint-react/exhaustive-deps
   const getUrgent = useCallback(() => slideStore.getUrgent(), [tick]);
 
   return {
