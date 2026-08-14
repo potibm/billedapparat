@@ -10,12 +10,12 @@ Each config item will need a `type` (of slide, news or timetable) and an `api_ke
 
 ## Mastodon
 
-You will need to create an application unter Preferences > Development.
+Login to your Mastodon Server. You will need to create an application unter Preferences > Development.
 
 Give it a name like "Billedapparat", provide a website and redirect url and chose as scope:
 
 - read:notifications
-- read:statuse
+- read:statuses
 
 Copy the "Your access token" after saving.
 
