@@ -36,9 +36,6 @@ export const useSlideManager = () => {
   // eslint-disable-next-line @eslint-react/exhaustive-deps
   const slides = useMemo(() => slideStore.getSlides(), [tick]);
 
-  // eslint-disable-next-line @eslint-react/exhaustive-deps
-  const getById = useCallback((id: number) => slideStore.getById(id), [tick]);
-
   const getByType = useCallback(
     (type: string) => slideStore.getByType(type),
     // eslint-disable-next-line @eslint-react/exhaustive-deps
@@ -50,7 +47,6 @@ export const useSlideManager = () => {
 
   return {
     slides,
-    getById,
     getByType,
     getUrgent,
   };
