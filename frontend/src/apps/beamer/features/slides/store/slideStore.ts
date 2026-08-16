@@ -7,6 +7,10 @@ const logger = createLogger("Slides");
 type SlideDictionary = Record<number, Slide>;
 type Listener = () => void;
 
+const sortByPriorityDesc = (a: Slide, b: Slide) =>
+  Number(b.display_options?.priority || 0) -
+  Number(a.display_options?.priority || 0);
+
 /**
  * SlideStore (Framework-Agnostic State Manager)
  *
@@ -57,11 +61,7 @@ export class SlideStore {
   public getByType(type: string): Slide[] {
     return this.getSlides()
       .filter((s) => s.content.type === type && s.status === "active")
-      .sort(
-        (a, b) =>
-          Number(b.display_options?.priority || 0) -
-          Number(a.display_options?.priority || 0),
-      );
+      .sort(sortByPriorityDesc);
   }
 
   public getUrgent(): Slide[] {
@@ -72,11 +72,7 @@ export class SlideStore {
           s.display_options.is_urgent &&
           s.status === "active",
       )
-      .sort(
-        (a, b) =>
-          Number(b.display_options?.priority || 0) -
-          Number(a.display_options?.priority || 0),
-      );
+      .sort(sortByPriorityDesc);
   }
 
   // --- 3. State Mutations ---
