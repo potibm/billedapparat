@@ -23,10 +23,10 @@ Path aliases (vite + tsconfig): `@core`, `@splash`, `@admin`.
 
 ## Architecture & Decisions (ADRs)
 
-Always consult `doc/architecture/` before proposing structural changes. 
+Always consult `doc/architecture/` before proposing structural changes.
 Key concepts (Ubiquitous Language) established in ADRs:
 
-- **Hub**: The Go backend. Purely a data aggregator/filter. Does *not* manage content creation.
+- **Hub**: The Go backend. Purely a data aggregator/filter. Does _not_ manage content creation.
 - **Collector**: External processes (can be other languages) pushing data to the Hub via REST.
 - **Beamer**: The "Smart Client" React frontend. Handles all playback, engine logic, and DOM rendering.
 - **Playlists**: Declarative config rules defining content sequences. Resolves hardware topology issues (1 screen vs. 2 screens).
