@@ -85,6 +85,8 @@ export const BeamerApp = () => {
         activeAnimation={activeAnimation}
         duration={duration}
         isPaused={isPaused}
+        version={version}
+        environment={environment}
       />
     </div>
   );

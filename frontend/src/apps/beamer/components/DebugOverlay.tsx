@@ -1,5 +1,3 @@
-import { useAppConfig } from "@core/config/useConfig";
-
 interface DebugOverlayProps {
   isUrgent: boolean;
   stepInfo: {
@@ -11,6 +9,8 @@ interface DebugOverlayProps {
   activeAnimation: string;
   duration: number;
   isPaused: boolean;
+  version: string;
+  environment: string;
 }
 
 export const DebugOverlay = ({
@@ -19,9 +19,9 @@ export const DebugOverlay = ({
   activeAnimation,
   duration,
   isPaused,
+  version,
+  environment,
 }: DebugOverlayProps) => {
-  const { version, environment } = useAppConfig();
-
   if (environment === "production") return null;
 
   return (
