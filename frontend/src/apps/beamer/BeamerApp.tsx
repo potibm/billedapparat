@@ -1,18 +1,20 @@
-import { useEffect, useRef, useMemo } from "react";
-import { useSlideshowEngine } from "./features/slides/hooks/useSlideshowEngine";
-import { SlideRenderer } from "./features/slides/components/SlideRenderer";
+import { useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  animations,
-  AnimationType,
-} from "./features/animations/types/animations.schemas";
-import { ToastManager } from "./features/slides/components/ToastManager";
+import { animations } from "./features/animations/types/animations.schemas";
 import { useAppConfig } from "@core/config/useConfig";
 import * as Sentry from "@sentry/react";
-import { slideStore } from "./features/slides/store/slideStore";
-import { useKeyboardControls } from "./features/slides/hooks/useKeyboardControls";
+
+// hooks
 import { useAutoplay } from "./features/slides/hooks/useAutoplay";
+import { useKeyboardControls } from "./features/slides/hooks/useKeyboardControls";
+import { useSSEConnection } from "./features/slides/hooks/useSSEConnection";
+import { getSlideAnimation } from "./features/slides/utils/getSlideAnimation";
+import { useSlideshowEngine } from "./features/slides/hooks/useSlideshowEngine";
+
+// components
 import { DebugOverlay } from "./components/DebugOverlay";
+import { SlideRenderer } from "./features/slides/components/SlideRenderer";
+import { ToastManager } from "./features/slides/components/ToastManager";
 
 export const BeamerApp = () => {
   const {
@@ -25,40 +27,23 @@ export const BeamerApp = () => {
     toastSlides,
     duration,
     stepInfo,
+    allowOverlay,
   } = useSlideshowEngine();
 
   const { version, environment } = useAppConfig();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 1. Globale Verbindung
-  useEffect(() => {
-    slideStore.connect();
-    return () => slideStore.disconnect();
-  }, []);
-
-  // 2. Logik-Hooks aufrufen (Der Code bleibt sauber!)
+  // 1. side effects and logic hooks
+  useSSEConnection();
   useKeyboardControls(next, previous, togglePause);
   useAutoplay(next, duration, isPaused, isUrgent, !!currentSlide);
 
-  // 3. UI Helper
-  const allowOverlay =
-    currentSlide?.display_options.allow_social_overlay ?? false;
+  const { activeAnimation, transition } = getSlideAnimation(
+    currentSlide,
+    isUrgent,
+  );
 
-  const activeAnimation = useMemo(() => {
-    if (!currentSlide) return "fade";
-    if (isUrgent) return "urgent";
-    const keys = Object.keys(animations) as AnimationType[];
-    return keys[Math.floor(Math.random() * keys.length)];
-  }, [currentSlide, isUrgent]);
-
-  const transition = useMemo(() => {
-    return {
-      duration: isUrgent ? 0.2 : 0.8,
-      ease: (isUrgent ? "easeOut" : "easeInOut") as "easeOut" | "easeInOut",
-    };
-  }, [isUrgent]);
-
-  // 4. Render Logik
+  // 2. render logic
   if (!currentSlide) {
     return (
       <div className="bg-black h-screen flex items-center justify-center text-slate-700">
