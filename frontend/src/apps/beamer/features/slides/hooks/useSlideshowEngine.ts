@@ -13,7 +13,6 @@ export const useSlideshowEngine = (): SlideshowEngine => {
   const { getByType, getUrgent, slides: allSlides } = useSlideManager();
   const activePlaylist = useCurrentPlaylist();
 
-  // Unser neuer, zentraler State!
   const [state, dispatch] = useReducer(engineReducer, initialEngineState);
 
   const urgentSlides = getUrgent();
@@ -21,8 +20,6 @@ export const useSlideshowEngine = (): SlideshowEngine => {
   const toastSlides = getByType("social.text");
 
   // --- Actions ---
-  // Durch den Reducer brauchen diese Funktionen keine Dependency-Arrays
-  // mehr, die sich ständig ändern.
   const next = useCallback(() => {
     dispatch({
       type: "NEXT",
@@ -33,7 +30,7 @@ export const useSlideshowEngine = (): SlideshowEngine => {
   const previous = useCallback(() => dispatch({ type: "PREVIOUS" }), []);
   const togglePause = useCallback(() => dispatch({ type: "TOGGLE_PAUSE" }), []);
 
-  // --- Abgeleitete Daten (Derived State) ---
+  // --- Derived State ---
   const currentSlide = useMemo(() => {
     const id = state.history[state.historyPointer];
     return allSlides.find((s) => s.id === id) || null;
@@ -44,7 +41,7 @@ export const useSlideshowEngine = (): SlideshowEngine => {
     return activePlaylist.steps[state.stepIndex];
   }, [activePlaylist, state.stepIndex]);
 
-  // --- Effekte (Timeouts und Kickstarts) ---
+  // --- Effects ---
   useEffect(() => {
     if (state.history.length === 0 && allSlides.length > 0) {
       logger.debug("Kickstarting initial slide");
@@ -77,7 +74,7 @@ export const useSlideshowEngine = (): SlideshowEngine => {
     // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, [activePlaylist?.id]);
 
-  // --- Fallback, wenn keine Playlist da ist ---
+  // --- fallback in case there is no playlist ---
   if (!activePlaylist) {
     return {
       currentSlide: null,
@@ -86,13 +83,13 @@ export const useSlideshowEngine = (): SlideshowEngine => {
       togglePause,
       isPaused: state.isPaused,
       isUrgent: false,
+      allowOverlay: true,
       toastSlides: [],
       duration: 10,
       stepInfo: null,
     };
   }
 
-  // --- Return an die UI ---
   return {
     currentSlide,
     next,
@@ -100,6 +97,7 @@ export const useSlideshowEngine = (): SlideshowEngine => {
     togglePause,
     isPaused: state.isPaused,
     isUrgent: currentSlide?.display_options?.is_urgent === true,
+    allowOverlay: currentSlide?.display_options?.allow_social_overlay ?? false,
     toastSlides,
     duration: currentStep?.duration || 10,
     stepInfo:

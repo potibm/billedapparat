@@ -14,6 +14,8 @@ export interface SlideshowEngine {
   isPaused: boolean;
   /** Flag indicating whether the current slide is an urgent slide */
   isUrgent: boolean;
+  /** Flag indicating the current slide allows overlays with toasts  */
+  allowOverlay: boolean;
   /** List of slides to be displayed as overlays/toasts */
   toastSlides: Slide[];
   /** The display duration of the current slide in seconds */
