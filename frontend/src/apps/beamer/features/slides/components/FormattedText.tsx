@@ -17,8 +17,8 @@ export function FormattedText({
     const regex = /(https?:\/\/[^\s]+|@[a-zA-Z0-9_.-]+|#[a-zA-Z0-9äöüÄÖÜß_]+)/g;
     const rawParts = text.split(regex);
 
-    return rawParts.map((part) => ({
-      id: crypto.randomUUID(),
+    return rawParts.map((part, index) => ({
+      id: `text-part-${index}`,
       content: part,
     }));
   }, [text]);
@@ -27,10 +27,12 @@ export function FormattedText({
 
   return (
     <div
-      className={`formatted-text text-gray-300 whitespace-normal ${className}`}
+      className={`formatted-text text-gray-300 whitespace-normal ${className ?? ""}`}
     >
       {parts.map((partObj) => {
         const { id, content } = partObj;
+
+        if (!content) return null;
 
         const isUrl = new RegExp(/^https?:\/\//).exec(content);
         if (isUrl) {
