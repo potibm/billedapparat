@@ -26,6 +26,9 @@ const sortByPriorityDesc = (a: Slide, b: Slide) =>
  */
 export class SlideStore {
   private slideMap: SlideDictionary = {};
+
+  private slideArray: Slide[] = [];
+
   private readonly listeners: Set<Listener> = new Set();
   private evtSource: EventSource | null = null;
 
@@ -45,13 +48,15 @@ export class SlideStore {
    * Notifies all active subscribers about a state mutation.
    */
   private notify() {
+    this.slideArray = Object.values(this.slideMap);
+
     this.listeners.forEach((listener) => listener());
   }
 
   // --- 2. State Access (Queries) ---
 
   public getSlides(): Slide[] {
-    return Object.values(this.slideMap);
+    return this.slideArray;
   }
 
   public getById(id: number): Slide | null {

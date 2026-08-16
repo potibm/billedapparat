@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSyncExternalStore, useCallback } from "react";
 import { slideStore } from "../store/slideStore";
+
+const subscribe = slideStore.subscribe.bind(slideStore);
 
 /**
  * useSlideManager (React Bridge)
@@ -14,36 +16,14 @@ import { slideStore } from "../store/slideStore";
  * - It does NOT hold the actual slide data in a `useState` array (to avoid memory duplication and complex sync issues).
  */
 export const useSlideManager = () => {
-  // We use a simple counter to force a React re-render when the external store notifies us.
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    // Subscribe to store mutations
-    const unsubscribe = slideStore.subscribe(() => {
-      setTick((t) => t + 1); // Triggers a re-render
-    });
-
-    // Cleanup subscription on unmount
-    return () => {
-      unsubscribe();
-    };
-  }, []);
-
-  // --- Memoized State Getters ---
-  // The `[tick]` dependency is crucial: Every time the store mutates (tick increases),
-  // these functions evaluate fresh data from the store.
-
-  // eslint-disable-next-line @eslint-react/exhaustive-deps
-  const slides = useMemo(() => slideStore.getSlides(), [tick]);
+  const slides = useSyncExternalStore(subscribe, () => slideStore.getSlides());
 
   const getByType = useCallback(
     (type: string) => slideStore.getByType(type),
-    // eslint-disable-next-line @eslint-react/exhaustive-deps
-    [tick],
+    [slides],
   );
 
-  // eslint-disable-next-line @eslint-react/exhaustive-deps
-  const getUrgent = useCallback(() => slideStore.getUrgent(), [tick]);
+  const getUrgent = useCallback(() => slideStore.getUrgent(), [slides]);
 
   return {
     slides,
