@@ -9,7 +9,7 @@ import {
 
 const HISTORY_LIMIT = 50;
 
-// Unser gebündelter State
+// The bundled engine state
 export interface EngineState {
   stepIndex: number;
   stepCountPointer: number;
@@ -43,7 +43,7 @@ export type EngineAction =
       };
     };
 
-// Der Reducer: Nimmt den alten State + Aktion -> gibt neuen State zurück (Pure Function!)
+// The reducer: takes old state + action -> returns new state (pure function)
 export const engineReducer = (
   state: EngineState,
   action: EngineAction,
@@ -73,7 +73,7 @@ export const engineReducer = (
       // 1. Guards
       if (state.isPaused || !activePlaylist?.steps) return state;
 
-      // 2. History Navigation (Wir sind in der Vergangenheit und gehen einen Schritt vor)
+      // 2. History navigation (we are in the past and move one step forward)
       if (state.historyPointer < state.history.length - 1) {
         return { ...state, historyPointer: state.historyPointer + 1 };
       }
@@ -99,18 +99,18 @@ export const engineReducer = (
         return state;
       }
 
-      // 4. Reguläre Playlist-Logik
+      // 4. Regular playlist logic
       const result = findNextValidStep(
         activePlaylist.steps,
         state.stepIndex,
         getByType,
       );
 
-      if (!result) return state; // Keine Slides gefunden (Logging machen wir im Hook)
+      if (!result) return state; // No slides found (logging is handled in the hook)
 
       const { step, index: foundIndex, candidates } = result;
 
-      // Haben wir einen neuen Step gefunden? Dann Pointers anpassen.
+      // Found a new step? Then adjust pointers.
       let currentStepIndex = state.stepIndex;
       let currentStepCountPointer = state.stepCountPointer;
 
@@ -119,7 +119,7 @@ export const engineReducer = (
         currentStepCountPointer = 0;
       }
 
-      // 5. Slide auswählen
+      // 5. Select slide
       const sorted = sortSlides(candidates, step.order);
       const selected = selectNextSlide(
         sorted,
@@ -130,7 +130,7 @@ export const engineReducer = (
 
       if (!selected) return state;
 
-      // 6. Pointer hochzählen (advanceStepPointers Logik)
+      // 6. Increment pointers (advanceStepPointers logic)
       let nextStepIndex = currentStepIndex;
       let nextCountPointer = currentStepCountPointer + 1;
 
@@ -139,7 +139,7 @@ export const engineReducer = (
         nextCountPointer = 0;
       }
 
-      // 7. Neuen State zurückgeben
+      // 7. Return new state
       const newHistory = [...state.history, selected.id].slice(-HISTORY_LIMIT);
 
       return {

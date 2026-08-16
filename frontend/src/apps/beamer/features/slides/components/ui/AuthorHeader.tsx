@@ -5,7 +5,7 @@ interface AuthorHeaderProps {
   username?: string | null;
   avatarUrl?: string | null;
   createdAt?: string | null;
-  className?: string; // Erlaubt uns, BEM-Klassen oder Layout-Abstände von außen reinzugeben
+  className?: string; // Allows passing BEM classes or layout spacing from the outside
 }
 
 export const AuthorHeader = ({

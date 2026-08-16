@@ -8,7 +8,7 @@ export function useAutoplay(
   hasCurrentSlide: boolean,
 ) {
   useEffect(() => {
-    // Wenn pausiert, dringend oder kein Slide da: Timer stoppen!
+    // When paused, urgent, or no slide present: stop the timer
     if (isPaused || isUrgent || !hasCurrentSlide) return;
 
     const timer = setInterval(next, duration * 1000);

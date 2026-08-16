@@ -8,7 +8,7 @@ import type { Slide } from "../types/slide.schema";
 import type { Playlist } from "@core/config/config.schemas";
 import * as logic from "../utils/slideshow.logic";
 
-// 1. Wir mocken die komplexe Business-Logik, da wir hier nur die State-Machine testen wollen
+// 1. Mock the complex business logic because we only want to test the state machine here
 vi.mock("../utils/slideshow.logic", () => ({
   pickWeightedSlide: vi.fn(),
   sortSlides: vi.fn(),
@@ -20,7 +20,7 @@ describe("engineReducer", () => {
   let baseState: EngineState;
 
   beforeEach(() => {
-    // Vor jedem Test einen sauberen Zustand herstellen
+    // Reset to a clean state before each test
     baseState = { ...initialEngineState };
     vi.clearAllMocks();
   });
@@ -53,14 +53,14 @@ describe("engineReducer", () => {
       const stateWithHistory: EngineState = {
         ...baseState,
         history: [100, 101, 102],
-        historyPointer: 2, // Wir sind aktuell beim letzten Slide (102)
+        historyPointer: 2, // We are currently at the last slide (102)
       };
 
       const newState = engineReducer(stateWithHistory, { type: "PREVIOUS" });
 
-      // Der Pointer sollte eins zurückgehen
+      // Pointer should move back by one
       expect(newState.historyPointer).toBe(1);
-      // Die History selbst darf sich nicht verändern
+      // The history itself must not change
       expect(newState.history).toEqual([100, 101, 102]);
     });
 
@@ -68,11 +68,11 @@ describe("engineReducer", () => {
       const stateWithHistory: EngineState = {
         ...baseState,
         history: [100, 101, 102],
-        historyPointer: 0, // Wir sind schon ganz vorne
+        historyPointer: 0, // We are already at the beginning
       };
 
       const newState = engineReducer(stateWithHistory, { type: "PREVIOUS" });
-      expect(newState.historyPointer).toBe(0); // Bleibt bei 0
+      expect(newState.historyPointer).toBe(0); // Stays at 0
     });
   });
 
@@ -98,7 +98,7 @@ describe("engineReducer", () => {
       const stateWithHistory: EngineState = {
         ...baseState,
         history: [100, 101, 102],
-        historyPointer: 0, // Wir sind beim ersten Slide, haben aber schon 3 gesehen
+        historyPointer: 0, // We are at the first slide but have already seen 3
       };
 
       const newState = engineReducer(stateWithHistory, {
@@ -106,14 +106,14 @@ describe("engineReducer", () => {
         payload: defaultPayload,
       });
 
-      // Pointer geht einfach eins vor, keine neue Slide-Berechnung nötig
+      // Pointer simply moves forward, no new slide calculation needed
       expect(newState.historyPointer).toBe(1);
       expect(logic.findNextValidStep).not.toHaveBeenCalled();
     });
 
     it("should pick an urgent slide if hasUrgent is true", () => {
       const urgentSlide = { id: 999 } as Slide;
-      // Wir sagen unserer Mock-Funktion, was sie zurückgeben soll
+      // Tell our mock function what to return
       vi.mocked(logic.pickWeightedSlide).mockReturnValue(urgentSlide);
 
       const newState = engineReducer(baseState, {
@@ -127,7 +127,7 @@ describe("engineReducer", () => {
 
       expect(logic.pickWeightedSlide).toHaveBeenCalled();
       expect(newState.history).toContain(999);
-      expect(newState.historyPointer).toBe(0); // Erstes Element in der neuen History
+      expect(newState.historyPointer).toBe(0); // First element in the new history
     });
   });
 });

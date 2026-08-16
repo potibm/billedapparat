@@ -28,14 +28,14 @@ class MockEventSource {
     this.listeners = {};
   }
 
-  // Hilfsfunktion für unsere Tests, um Server-Events zu simulieren
+  // Helper to simulate server-sent events in tests
   emit(eventName: string, data: unknown) {
     const callbacks = this.listeners[eventName] || [];
     callbacks.forEach((cb) => cb({ data: JSON.stringify(data) }));
   }
 }
 
-// EventSource global im Test-Environment verfügbar machen
+// Make EventSource available globally in the test environment
 globalThis.EventSource = MockEventSource as unknown as typeof EventSource;
 
 // --- 2. Testdaten (Dummy Slides) ---
@@ -80,7 +80,7 @@ describe("SlideStore", () => {
   let store: SlideStore;
 
   beforeEach(() => {
-    // Vor jedem Test einen frischen Store erstellen
+    // Create a fresh store before each test
     store = new SlideStore();
   });
 
@@ -102,12 +102,12 @@ describe("SlideStore", () => {
     const mockSSE = (store as unknown as { evtSource: MockEventSource })
       .evtSource;
 
-    // Simuliere ein INIT Event vom Server
+    // Simulate an INIT event from the server
     mockSSE.emit("INIT", [mockSlide1, mockUrgentSlideLowPrio]);
 
     expect(store.getSlides()).toHaveLength(2);
     expect(store.getById(1)).toEqual(mockSlide1);
-    expect(subscriber).toHaveBeenCalledTimes(1); // Observer Pattern funktioniert!
+    expect(subscriber).toHaveBeenCalledTimes(1); // Observer pattern works
   });
 
   it("should handle CREATE event to add a new slide", () => {
@@ -126,10 +126,10 @@ describe("SlideStore", () => {
     const mockSSE = (store as unknown as { evtSource: MockEventSource })
       .evtSource;
 
-    // Zuerst initialisieren
+    // Initialize first
     mockSSE.emit("INIT", [mockSlide1]);
 
-    // Dann updaten
+    // Then update
     const updatedSlide = {
       ...mockSlide1,
       status: "inactive",
@@ -148,7 +148,7 @@ describe("SlideStore", () => {
     mockSSE.emit("INIT", [mockSlide1]);
     expect(store.getSlides()).toHaveLength(1);
 
-    // Event feuert nur die ID
+    // Event only fires the ID
     mockSSE.emit("DELETE", 1);
 
     expect(store.getSlides()).toHaveLength(0);
@@ -160,7 +160,7 @@ describe("SlideStore", () => {
     const mockSSE = (store as unknown as { evtSource: MockEventSource })
       .evtSource;
 
-    // Wir laden 3 Slides: Ein normales Bild, und zwei Urgent-News mit unterschiedlicher Prio
+    // Load 3 slides: a regular image and two urgent news items with different priorities
     mockSSE.emit("INIT", [
       mockSlide1,
       mockUrgentSlideLowPrio,
@@ -169,12 +169,12 @@ describe("SlideStore", () => {
 
     const urgentSlides = store.getUrgent();
 
-    // Sollte das normale Bild (mockSlide1) herausgefiltert haben
+    // Should have filtered out the regular image (mockSlide1)
     expect(urgentSlides).toHaveLength(2);
 
-    // Sollte nach Priorität absteigend sortiert sein (HighPrio zuerst)
-    expect(urgentSlides[0].id).toBe(3); // id: 3 hat Prio 99
-    expect(urgentSlides[1].id).toBe(2); // id: 2 hat Prio 5
+    // Should be sorted by priority descending (high priority first)
+    expect(urgentSlides[0].id).toBe(3); // id: 3 has priority 99
+    expect(urgentSlides[1].id).toBe(2); // id: 2 has priority 5
   });
 
   it("should correctly unsubscribe listeners", () => {
@@ -185,14 +185,14 @@ describe("SlideStore", () => {
     const mockSSE = (store as unknown as { evtSource: MockEventSource })
       .evtSource;
 
-    // Ein Event auslösen -> Subscriber sollte aufgerufen werden
+    // Trigger an event -> subscriber should be called
     mockSSE.emit("CREATE", mockSlide1);
     expect(subscriber).toHaveBeenCalledTimes(1);
 
     // Abmelden
     unsubscribe();
 
-    // Noch ein Event auslösen -> Subscriber darf NICHT nochmal aufgerufen werden
+    // Trigger another event -> subscriber must NOT be called again
     mockSSE.emit("CREATE", mockUrgentSlideLowPrio);
     expect(subscriber).toHaveBeenCalledTimes(1);
   });
