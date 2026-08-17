@@ -33,7 +33,7 @@ func TestTimetableToSlide_SinglePage(t *testing.T) {
 
 	slide := g.timetableToSlide(events, date, "2026-05-25", 0, 1)
 
-	assert.Equal(t, "Timetable Monday", slide.Content.Title)
+	assert.Equal(t, "Monday", slide.Content.Title)
 	assert.NotContains(t, slide.Content.Title, "/")
 	assert.Equal(t, domain.TypeTimetable, slide.Content.Type)
 	assert.Equal(t, domain.StatusActive, slide.Status)
@@ -59,7 +59,7 @@ func TestTimetableToSlide_MultiPage(t *testing.T) {
 	slide := g.timetableToSlide(events, date, "2026-05-25", 1, 2)
 
 	// subID 1 + 1 = page 2, total 2 → "2/2"
-	assert.Equal(t, "Timetable Monday 2/2", slide.Content.Title)
+	assert.Equal(t, "Monday 2/2", slide.Content.Title)
 	assert.Equal(t, 1, *slide.ExternalSubID)
 }
 
