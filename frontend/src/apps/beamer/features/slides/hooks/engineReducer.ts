@@ -17,6 +17,15 @@ export interface EngineState {
   history: number[];
   historyPointer: number;
   isPaused: boolean;
+  /**
+   * Counts consecutive NEXT actions that did not advance the engine
+   * (because no candidates were available in the playlist). Reset on any
+   * successful advance or explicit RESET_PLAYLIST. A watcher in
+   * `useSlideshowEngine` dispatches RESET_PLAYLIST when this exceeds a
+   * small threshold, so the Beamer can fall back to STANDBY instead of
+   * remaining stuck on an inactive slide.
+   */
+  recoveryAttempts: number;
 }
 
 export const initialEngineState: EngineState = {
@@ -26,6 +35,7 @@ export const initialEngineState: EngineState = {
   history: [],
   historyPointer: -1,
   isPaused: false,
+  recoveryAttempts: 0,
 };
 
 // All allowed actions
@@ -48,11 +58,15 @@ export const engineReducer = (
 ): EngineState => {
   switch (action.type) {
     case "TOGGLE_PAUSE":
-      return { ...state, isPaused: !state.isPaused };
+      return { ...state, isPaused: !state.isPaused, recoveryAttempts: 0 };
 
     case "PREVIOUS":
       if (state.historyPointer > 0) {
-        return { ...state, historyPointer: state.historyPointer - 1 };
+        return {
+          ...state,
+          historyPointer: state.historyPointer - 1,
+          recoveryAttempts: 0,
+        };
       }
       return state;
 
@@ -64,6 +78,7 @@ export const engineReducer = (
         displayedStepInfo: null,
         history: [],
         historyPointer: -1,
+        recoveryAttempts: 0,
       };
 
     case "NEXT": {
@@ -74,7 +89,11 @@ export const engineReducer = (
 
       // 2. History navigation (we are in the past and move one step forward)
       if (state.historyPointer < state.history.length - 1) {
-        return { ...state, historyPointer: state.historyPointer + 1 };
+        return {
+          ...state,
+          historyPointer: state.historyPointer + 1,
+          recoveryAttempts: 0,
+        };
       }
 
       const currentlyShownId = state.history[state.historyPointer];
@@ -102,7 +121,10 @@ export const engineReducer = (
         pureGetByType,
       );
 
-      if (!result) return state; // No slides found; keep state unchanged
+      if (!result) {
+        // No valid step found; count this as a recovery attempt.
+        return { ...state, recoveryAttempts: state.recoveryAttempts + 1 };
+      }
 
       const { step, index: foundIndex, candidates } = result;
 
@@ -124,7 +146,10 @@ export const engineReducer = (
         currentlyShownId,
       );
 
-      if (!selected) return state;
+      if (!selected) {
+        // Step exists but selection returned no candidate; count as recovery.
+        return { ...state, recoveryAttempts: state.recoveryAttempts + 1 };
+      }
 
       // 6. Increment pointers (advanceStepPointers logic)
       let nextStepIndex = currentStepIndex;
@@ -148,6 +173,7 @@ export const engineReducer = (
         },
         history: newHistory,
         historyPointer: Math.min(state.historyPointer + 1, HISTORY_LIMIT - 1),
+        recoveryAttempts: 0,
       };
     }
 

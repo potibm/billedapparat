@@ -297,4 +297,52 @@ describe("BeamerApp", () => {
 
     expect(screen.getByText(/PAUSED/i)).toBeDefined();
   });
+
+  it("should fall back to STANDBY when the displayed slide goes inactive via SSE (regression for stuck-inactive bug)", async () => {
+    // Regression test for review finding #7. The real bug scenario:
+    // backend marks the currently-displayed slide `inactive`. SlideRenderer
+    // returns null for inactive slides, so the user stares at a blank
+    // background. Before the fix, BeamerApp's `if (!currentSlide)` branch
+    // doesn't trigger (currentSlide is still the slide object — just
+    // status=inactive), so STANDBY never renders.
+    //
+    // Fix: engineReducer increments `recoveryAttempts` on every NEXT that
+    // finds no candidates. useSlideshowEngine has a watchdog that
+    // dispatches RESET_PLAYLIST once the count reaches the threshold.
+    // After RESET, history is empty -> currentSlide becomes null ->
+    // BeamerApp renders STANDBY.
+    const slide = makeSlide(1, "news", "live");
+    seedStoreWithSlides([slide]);
+
+    renderBeamerAt();
+    await advanceInitialTick();
+
+    // Confirm we are NOT on STANDBY yet: a slide is being displayed.
+    expect(screen.queryByText("STANDBY")).toBeNull();
+
+    // Mark the displayed slide inactive via SSE UPDATE. This is the
+    // scenario the watchdog was designed for: the slide still exists,
+    // it still sits in history, but rendering it produces nothing.
+    const inactiveSlide = {
+      ...slide,
+      status: "inactive",
+    } as Slide;
+    await act(async () => {
+      lastMockSSE!.emit("UPDATE", inactiveSlide);
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    // Without the watchdog, currentSlide is still set (slide exists),
+    // so we render an empty frame from SlideRenderer returning null for
+    // inactive slides. With the watchdog, repeated NEXTs bump the
+    // recovery counter and trip RESET_PLAYLIST, clearing history.
+    // Trigger enough NEXTS to exceed STUCK_THRESHOLD.
+    for (let i = 0; i < 10; i += 1) {
+      await act(async () => {
+        fireEvent.keyDown(document.body, { key: "ArrowRight" });
+      });
+    }
+
+    expect(screen.getByText("STANDBY")).toBeInTheDocument();
+  });
 });

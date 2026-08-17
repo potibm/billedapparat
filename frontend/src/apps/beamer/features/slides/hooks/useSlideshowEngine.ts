@@ -7,6 +7,9 @@ import { SlideshowEngine } from "../types/slideshow.types";
 import { engineReducer, initialEngineState } from "./engineReducer";
 
 const NEXT_TICK_TIMEOUT = 0;
+// After how many consecutive NEXT actions that did not advance the engine
+// do we declare it stuck and fall back to STANDBY via RESET_PLAYLIST?
+const STUCK_THRESHOLD = 3;
 const logger = createLogger("Slideshow");
 
 export const useSlideshowEngine = (): SlideshowEngine => {
@@ -54,6 +57,22 @@ export const useSlideshowEngine = (): SlideshowEngine => {
       return () => clearTimeout(timeoutId);
     }
   }, [currentSlide, next]);
+
+  // Watchdog: if the engine has failed to advance N consecutive times AND
+  // has nothing playable to show, fall back to STANDBY by resetting the
+  // playlist. Without this, `currentSlide === null` (e.g. backend deleted
+  // the displayed slide) or a stuck history pointer left the user staring
+  // at a black screen indefinitely.
+  useEffect(() => {
+    const isStuck = !currentSlide || currentSlide.status !== "active";
+    if (isStuck && state.recoveryAttempts >= STUCK_THRESHOLD) {
+      logger.warn(
+        "Engine stuck: recoveryAttempts=%d, resetting playlist",
+        state.recoveryAttempts,
+      );
+      dispatch({ type: "RESET_PLAYLIST" });
+    }
+  }, [currentSlide, state.recoveryAttempts]);
 
   useEffect(() => {
     logger.info("Playlist changed, resetting engine pointers");

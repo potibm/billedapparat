@@ -201,7 +201,10 @@ describe("engineReducer", () => {
       expect(newState.historyPointer).toBe(3);
     });
 
-    it("should return state unchanged when findNextValidStep returns null", () => {
+    it("should increment recoveryAttempts when findNextValidStep returns null", () => {
+      // Watchdog data point: when the engine has nothing to play but is
+      // being asked to advance, it should signal that via recoveryAttempts
+      // so a watcher effect can dispatch RESET_PLAYLIST after a threshold.
       const stateWithHistory: EngineState = {
         ...baseState,
         history: [1, 2, 3],
@@ -222,7 +225,114 @@ describe("engineReducer", () => {
         },
       });
 
-      expect(newState).toEqual(stateWithHistory);
+      expect(newState.recoveryAttempts).toBe(1);
+      // Everything else stays put.
+      expect(newState.history).toEqual(stateWithHistory.history);
+      expect(newState.historyPointer).toBe(2);
+      expect(newState.stepIndex).toBe(stateWithHistory.stepIndex);
+    });
+
+    it("should increment recoveryAttempts when selectNextSlide returns null", () => {
+      // Same watchdog signal for the second stuck path: a step exists but
+      // no candidate satisfies the selection constraints.
+      const stateWithHistory: EngineState = {
+        ...baseState,
+        history: [1, 2, 3],
+        historyPointer: 2,
+      };
+
+      vi.mocked(logic.findNextValidStep).mockReturnValue({
+        step: { type: "news", order: "asc", count: 1, duration: 10 },
+        index: 0,
+        candidates: [],
+      });
+      vi.mocked(logic.sortSlides).mockReturnValue([]);
+      vi.mocked(logic.selectNextSlide).mockReturnValue(null);
+
+      const newState = engineReducer(stateWithHistory, {
+        type: "NEXT",
+        payload: {
+          activePlaylist: {
+            id: 1,
+            name: "Test",
+            steps: [{ type: "news", order: "asc", count: 1, duration: 10 }],
+          } as Playlist,
+          activeSlides: [],
+        },
+      });
+
+      expect(newState.recoveryAttempts).toBe(1);
+    });
+
+    it("should reset recoveryAttempts on a successful NEXT", () => {
+      const stateWithHistory: EngineState = {
+        ...baseState,
+        history: [1, 2],
+        historyPointer: 1,
+        recoveryAttempts: 3,
+      };
+
+      vi.mocked(logic.findNextValidStep).mockReturnValue({
+        step: { type: "news", order: "asc", count: 1, duration: 10 },
+        index: 0,
+        candidates: [{ id: 999 } as Slide],
+      });
+      vi.mocked(logic.sortSlides).mockReturnValue([{ id: 999 } as Slide]);
+      vi.mocked(logic.selectNextSlide).mockReturnValue({ id: 999 } as Slide);
+
+      const newState = engineReducer(stateWithHistory, {
+        type: "NEXT",
+        payload: {
+          activePlaylist: {
+            id: 1,
+            name: "Test",
+            steps: [{ type: "news", order: "asc", count: 1, duration: 10 }],
+          } as Playlist,
+          activeSlides: [{ id: 999 } as Slide],
+        },
+      });
+
+      expect(newState.recoveryAttempts).toBe(0);
+      expect(newState.history).toEqual([1, 2, 999]);
+    });
+
+    it("should reset recoveryAttempts on RESET_PLAYLIST", () => {
+      const dirtyState: EngineState = {
+        ...baseState,
+        history: [1, 2, 3],
+        historyPointer: 2,
+        recoveryAttempts: 5,
+      };
+
+      const newState = engineReducer(dirtyState, { type: "RESET_PLAYLIST" });
+
+      expect(newState.recoveryAttempts).toBe(0);
+      expect(newState.history).toEqual([]);
+    });
+
+    it("should reset recoveryAttempts on PREVIOUS", () => {
+      const stateWithHistory: EngineState = {
+        ...baseState,
+        history: [1, 2, 3],
+        historyPointer: 2,
+        recoveryAttempts: 4,
+      };
+
+      const newState = engineReducer(stateWithHistory, { type: "PREVIOUS" });
+
+      expect(newState.recoveryAttempts).toBe(0);
+    });
+
+    it("should reset recoveryAttempts on TOGGLE_PAUSE", () => {
+      const state: EngineState = {
+        ...baseState,
+        recoveryAttempts: 7,
+      };
+
+      const newState = engineReducer(state, { type: "TOGGLE_PAUSE" });
+
+      expect(newState.recoveryAttempts).toBe(0);
+      expect(newState.isPaused).toBe(true);
     });
 
     it("should map a virtual 'urgent' playlist step to activeSlides filtered by is_urgent", () => {
