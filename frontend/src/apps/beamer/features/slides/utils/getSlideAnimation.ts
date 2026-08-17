@@ -23,6 +23,14 @@ export const getSlideAnimation = (
   }
 
   const keys = Object.keys(animations) as AnimationType[];
+  if (keys.length === 0) {
+    // Defensive fallback: if no animations are registered, behave like the
+    // no-slide case to avoid `x % 0` and `undefined` lookups downstream.
+    return {
+      activeAnimation: "fade" as AnimationType,
+      transition: { duration: 0.8, ease: "easeInOut" as const },
+    };
+  }
   const deterministicIndex = (currentSlide.id * 13) % keys.length;
 
   return {

@@ -28,7 +28,7 @@ export const initialEngineState: EngineState = {
   isPaused: false,
 };
 
-// Alle erlaubten Aktionen
+// All allowed actions
 export type EngineAction =
   | { type: "TOGGLE_PAUSE" }
   | { type: "PREVIOUS" }

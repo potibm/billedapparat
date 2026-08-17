@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { animations } from "./features/animations/types/animations.schemas";
 import { useAppConfig } from "@core/config/useConfig";
@@ -31,7 +30,6 @@ export const BeamerApp = () => {
   } = useSlideshowEngine();
 
   const { version, environment } = useAppConfig();
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // 1. side effects and logic hooks
   useSSEConnection();
@@ -59,7 +57,6 @@ export const BeamerApp = () => {
 
   return (
     <div
-      ref={containerRef}
       className={`h-screen w-screen overflow-hidden bg-black ${
         isUrgent ? "ring-inset ring-12 ring-red-600" : ""
       }`}
