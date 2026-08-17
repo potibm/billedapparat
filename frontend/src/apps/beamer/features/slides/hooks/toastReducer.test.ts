@@ -138,6 +138,9 @@ describe("toastReducer", () => {
     });
 
     it("should preserve pending entries that survive the incoming filter", () => {
+      // Slide 2 is already pending and is still in the incoming payload.
+      // It must remain in pendingSlides — and must NOT be duplicated,
+      // even though it is not yet in seenIds.
       const state: ToastState = {
         seenIds: new Set([1]),
         activeToasts: [],
@@ -149,10 +152,7 @@ describe("toastReducer", () => {
         payload: [makeSlide(2)],
       });
 
-      // 2 is in both pending and incoming, and not yet in seenIds,
-      // so the reducer adds it again (a duplication quirk documented below).
-      // For now we just snapshot the exact current behavior.
-      expect(next.pendingSlides.map((s) => s.id)).toEqual([2, 2]);
+      expect(next.pendingSlides.map((s) => s.id)).toEqual([2]);
     });
 
     it("should preserve pending entries that survive and add unseen incoming as new", () => {
@@ -160,8 +160,8 @@ describe("toastReducer", () => {
       // - nextPending (filter incoming) = [3]
       // - newSlides (incoming but not in seenIds) = [3, 4]
       //   (1 was already in seenIds, so excluded)
-      // - nextPending = [...nextPending, ...newSlides] = [3, 3, 4]
-      //   (3 is duplicated — see the documented quirk test below.)
+      // - The reducer dedupes newSlides against nextPending, so 3 is
+      //   not appended again. Final pendingSlides = [3, 4].
       const state: ToastState = {
         seenIds: new Set([1]),
         activeToasts: [],
@@ -173,18 +173,17 @@ describe("toastReducer", () => {
         payload: [makeSlide(1), makeSlide(3), makeSlide(4)],
       });
 
-      expect(next.pendingSlides.map((s) => s.id)).toEqual([3, 3, 4]);
+      expect(next.pendingSlides.map((s) => s.id)).toEqual([3, 4]);
     });
 
-    it("DOCUMENTS: appends incoming slides without deduping against pending (current bug-shaped behavior)", () => {
-      // If a slide is BOTH pending and not yet in seenIds, it will appear
-      // twice in the resulting pending list because the reducer appends
-      // the entire `newSlides` array without checking for overlap with
-      // the surviving `nextPending`.
-      //
-      // This is captured here so the behavior is observable; if the reducer
-      // is fixed to dedupe, this test should be updated rather than silently
-      // passing a wrong expectation.
+    it("should not duplicate a slide that exists in both pendingSlides and incomingSlides when not yet in seenIds", () => {
+      // Regression test for the duplication bug from
+      // `.opencode/reviews/refactor-beamer-review.md` (High severity):
+      // before the fix, a slide in both pendingSlides and incomingSlides
+      // (but not yet in seenIds) would appear twice in the resulting
+      // pending list. On the next TICK both copies would get promoted to
+      // activeToasts for the full TOAST_DURATION_SEC, causing the same
+      // toast to display twice ~30s apart.
       const state: ToastState = {
         seenIds: new Set([1]),
         activeToasts: [],
@@ -196,7 +195,7 @@ describe("toastReducer", () => {
         payload: [makeSlide(2)],
       });
 
-      expect(next.pendingSlides).toHaveLength(2);
+      expect(next.pendingSlides).toHaveLength(1);
       expect(next.pendingSlides.every((s) => s.id === 2)).toBe(true);
     });
 

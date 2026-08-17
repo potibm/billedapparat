@@ -55,7 +55,12 @@ export const toastReducer = (
 
       // 4. Add slides into the queue
       if (newSlides.length > 0) {
-        nextPending = [...nextPending, ...newSlides];
+        const nextPendingIds = new Set(nextPending.map((s) => s.id));
+        const dedupedNew = newSlides.filter((s) => !nextPendingIds.has(s.id));
+
+        if (dedupedNew.length > 0) {
+          nextPending = [...nextPending, ...dedupedNew];
+        }
       }
 
       return {

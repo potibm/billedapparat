@@ -17,30 +17,23 @@ The conditional logic is moved one layer up into the data fetching layer (`useCu
 2. **If urgent slides exist:** It builds a "virtual playlist" object on the fly containing only these urgent slides and returns it.
 3. **If NO urgent slides exist:** It returns the regular scheduled playlist.
 
-### Concept Code for Context
+### 3. The Interceptor Hook (`useCurrentPlaylist`)
 
-```typescript
-export const useCurrentPlaylist = () => {
-  const { getUrgent } = useSlideManager();
-  const urgentSlides = getUrgent();
-  const regularPlaylist = useRegularPlaylistLogic();
-
-  // The Interceptor
-  if (urgentSlides.length > 0) {
-    return {
-      id: "virtual-urgent-playlist",
-      name: "Urgent Override",
-      steps: [
-        {
-          type: "news",
-          count: urgentSlides.length,
-          order: "priority",
-          duration: 10,
-        },
-      ],
-    };
-  }
-
-  return regularPlaylist;
-};
-```
+`````typescript
+if (urgentSlides.length > 0) {
+  // Override regular playlist with a virtual urgent playlist
+  return {
+    id: -1, // Ensures the engine detects a playlist change
+    name: "Urgent Override",
+    steps: [
+      {
+        type: "urgent", // Special internal type mapped in the engine
+        count: 1,       // Engine handles looping natively
+        order: "desc",
+        duration: 10,
+      }
+    ]
+  };
+}
+````
+`````
