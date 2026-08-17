@@ -10,6 +10,21 @@ vi.mock("./useSlideManager", () => ({
   useSlideManager: vi.fn(),
 }));
 
+// `vi.mock` factories are hoisted above imports, so we use `vi.hoisted` to
+// create a shared mock-logger object that survives the hoisting.
+const { mockLogger } = vi.hoisted(() => ({
+  mockLogger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+vi.mock("@core/logger/logger", () => ({
+  createLogger: () => mockLogger,
+}));
+
 import { useSlideManager } from "./useSlideManager";
 const mockUseSlideManager = vi.mocked(useSlideManager);
 
@@ -69,6 +84,10 @@ const renderUseCurrentPlaylist = (path: string) =>
 
 beforeEach(() => {
   mockUseSlideManager.mockReset();
+  mockLogger.debug.mockReset();
+  mockLogger.info.mockReset();
+  mockLogger.warn.mockReset();
+  mockLogger.error.mockReset();
 });
 
 describe("useCurrentPlaylist", () => {
@@ -180,5 +199,94 @@ describe("useCurrentPlaylist", () => {
 
     expect(getUrgent).toHaveBeenCalled();
     expect(result.current?.id).toBe(2); // normal playlist, not overridden
+  });
+
+  describe("urgent transition logging", () => {
+    it("should log once on first render when urgent slides appear", () => {
+      mockUseSlideManager.mockReturnValue({
+        slides: [makeUrgentSlide(1)],
+        getByType: vi.fn(() => []),
+        getUrgent: vi.fn(() => [makeUrgentSlide(1)]),
+      });
+
+      renderUseCurrentPlaylist("/beamer");
+
+      expect(mockLogger.info).toHaveBeenCalledTimes(1);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        "Urgent slides active! Intercepting normal playlist.",
+      );
+    });
+
+    it("should NOT log repeatedly across renders while urgent remains true", () => {
+      mockUseSlideManager.mockReturnValue({
+        slides: [makeUrgentSlide(1)],
+        getByType: vi.fn(() => []),
+        getUrgent: vi.fn(() => [makeUrgentSlide(1)]),
+      });
+
+      const { rerender } = renderUseCurrentPlaylist("/beamer");
+
+      // Force several re-renders; the previous-bug behavior would have
+      // logged on every render.
+      rerender();
+      rerender();
+      rerender();
+
+      expect(mockLogger.info).toHaveBeenCalledTimes(1);
+    });
+
+    it("should log again when urgent slides reappear after a clean state", () => {
+      // First render: no urgent.
+      mockUseSlideManager.mockReturnValue({
+        slides: [makeNonUrgentSlide(1)],
+        getByType: vi.fn(() => []),
+        getUrgent: vi.fn(() => []),
+      });
+      const { rerender } = renderUseCurrentPlaylist("/beamer");
+      expect(mockLogger.info).not.toHaveBeenCalled();
+
+      // Second render: urgent slides appear.
+      mockUseSlideManager.mockReturnValue({
+        slides: [makeUrgentSlide(1)],
+        getByType: vi.fn(() => []),
+        getUrgent: vi.fn(() => [makeUrgentSlide(1)]),
+      });
+      rerender();
+      expect(mockLogger.info).toHaveBeenCalledTimes(1);
+
+      // Third render: still urgent — no second log.
+      rerender();
+      expect(mockLogger.info).toHaveBeenCalledTimes(1);
+
+      // Fourth render: urgent cleared — ref still resets for a future log.
+      mockUseSlideManager.mockReturnValue({
+        slides: [makeNonUrgentSlide(1)],
+        getByType: vi.fn(() => []),
+        getUrgent: vi.fn(() => []),
+      });
+      rerender();
+      expect(mockLogger.info).toHaveBeenCalledTimes(1);
+
+      // Fifth render: urgent again — emits the second info log.
+      mockUseSlideManager.mockReturnValue({
+        slides: [makeUrgentSlide(2)],
+        getByType: vi.fn(() => []),
+        getUrgent: vi.fn(() => [makeUrgentSlide(2)]),
+      });
+      rerender();
+      expect(mockLogger.info).toHaveBeenCalledTimes(2);
+    });
+
+    it("should not log anything at info level when no urgent slides are present", () => {
+      mockUseSlideManager.mockReturnValue({
+        slides: [makeNonUrgentSlide(1)],
+        getByType: vi.fn(() => []),
+        getUrgent: vi.fn(() => []),
+      });
+
+      renderUseCurrentPlaylist("/beamer");
+
+      expect(mockLogger.info).not.toHaveBeenCalled();
+    });
   });
 });

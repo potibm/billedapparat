@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useAppConfig } from "@core/config/useConfig";
 import { createLogger } from "@core/logger/logger";
@@ -34,8 +34,17 @@ export const useCurrentPlaylist = () => {
     return found;
   }, [id, playlists]);
 
-  if (urgentSlides.length > 0) {
-    logger.info("Urgent slides active! Intercepting normal playlist.");
+  // One-shot transition log: emit `info` only when urgent state flips, not
+  // on every render. Without this guard, SSE updates (which trigger React
+  // re-renders via useSyncExternalStore) would spam the info channel.
+  const prevHadUrgentRef = useRef(false);
+  const hasUrgent = urgentSlides.length > 0;
+
+  if (hasUrgent) {
+    if (!prevHadUrgentRef.current) {
+      logger.info("Urgent slides active! Intercepting normal playlist.");
+      prevHadUrgentRef.current = true;
+    }
 
     return {
       id: -1,
@@ -51,5 +60,6 @@ export const useCurrentPlaylist = () => {
     };
   }
 
+  prevHadUrgentRef.current = false;
   return regularPlaylist;
 };
