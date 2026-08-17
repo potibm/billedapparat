@@ -34,12 +34,14 @@ describe("engineReducer", () => {
       expect(state2.isPaused).toBe(false);
     });
 
-    it("should reset the playlist pointers", () => {
+    it("should reset the playlist pointers and clear history", () => {
       const dirtyState: EngineState = {
         ...baseState,
         stepIndex: 5,
         stepCountPointer: 2,
         displayedStepInfo: { stepIndex: 5, stepCountPointer: 2 },
+        history: [100, 101, 102],
+        historyPointer: 2,
       };
 
       const newState = engineReducer(dirtyState, { type: "RESET_PLAYLIST" });
@@ -47,6 +49,8 @@ describe("engineReducer", () => {
       expect(newState.stepIndex).toBe(0);
       expect(newState.stepCountPointer).toBe(0);
       expect(newState.displayedStepInfo).toBeNull();
+      expect(newState.history).toEqual([]);
+      expect(newState.historyPointer).toBe(-1);
     });
 
     it("should navigate to the PREVIOUS slide in history", () => {
@@ -128,6 +132,44 @@ describe("engineReducer", () => {
       expect(logic.pickWeightedSlide).toHaveBeenCalled();
       expect(newState.history).toContain(999);
       expect(newState.historyPointer).toBe(0); // First element in the new history
+    });
+
+    it("should NOT replay old history when NEXT follows RESET_PLAYLIST (regression)", () => {
+      // State mid-history: pointer is not at the end, so the NEXT handler
+      // would normally short-circuit into the history-replay branch.
+      const stateWithHistory: EngineState = {
+        ...baseState,
+        history: [100, 101, 102],
+        historyPointer: 1,
+      };
+
+      const mockFreshSlide = { id: 999 } as Slide;
+      vi.mocked(logic.findNextValidStep).mockReturnValue({
+        step: {
+          type: "news",
+          order: "asc",
+          count: 1,
+          duration: 10,
+        },
+        index: 0,
+        candidates: [mockFreshSlide],
+      });
+      vi.mocked(logic.sortSlides).mockReturnValue([mockFreshSlide]);
+      vi.mocked(logic.selectNextSlide).mockReturnValue(mockFreshSlide);
+
+      const resetState = engineReducer(stateWithHistory, {
+        type: "RESET_PLAYLIST",
+      });
+      const newState = engineReducer(resetState, {
+        type: "NEXT",
+        payload: defaultPayload,
+      });
+
+      // The reducer must have asked for a fresh slide — proof it did not
+      // replay a stale slide from the previous playlist's history.
+      expect(logic.findNextValidStep).toHaveBeenCalledTimes(1);
+      expect(newState.history).toEqual([999]);
+      expect(newState.historyPointer).toBe(0);
     });
   });
 });

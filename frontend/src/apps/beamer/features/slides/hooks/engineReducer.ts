@@ -64,6 +64,8 @@ export const engineReducer = (
         stepIndex: 0,
         stepCountPointer: 0,
         displayedStepInfo: null,
+        history: [],
+        historyPointer: -1,
       };
 
     case "NEXT": {
@@ -106,7 +108,7 @@ export const engineReducer = (
         getByType,
       );
 
-      if (!result) return state; // No slides found (logging is handled in the hook)
+      if (!result) return state; // No slides found; keep state unchanged
 
       const { step, index: foundIndex, candidates } = result;
 
