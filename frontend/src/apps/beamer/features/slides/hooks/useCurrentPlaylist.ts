@@ -12,7 +12,6 @@ export const useCurrentPlaylist = () => {
 
   const { getUrgent } = useSlideManager();
   const urgentSlides = getUrgent();
-  logger.debug("Urgent slides", "count", urgentSlides.length);
 
   const regularPlaylist = useMemo(() => {
     if (!playlists || playlists.length === 0) {

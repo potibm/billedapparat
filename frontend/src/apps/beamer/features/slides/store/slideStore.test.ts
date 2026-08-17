@@ -119,7 +119,6 @@ describe("SlideStore", () => {
     store.subscribe(subscriber);
     store.connect();
 
-    // DE05 3705 0198 0011 1026 54
     const mockSSE = (store as unknown as { evtSource: MockEventSource })
       .evtSource;
 
