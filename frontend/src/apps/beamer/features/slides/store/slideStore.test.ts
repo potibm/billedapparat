@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { SlideStore } from "./slideStore";
 import type { Slide } from "../types/slide.schema";
 
-// --- 1. Mocking der EventSource API ---
+// 1. Mocking the EventSource API
 interface MessageEvent {
   data: string;
 }
@@ -10,11 +10,18 @@ interface MessageEvent {
 type EventCallback = (event: MessageEvent) => void;
 
 class MockEventSource {
+  public static instances: MockEventSource[] = [];
+  public static readonly CONNECTING = 0;
+  public static readonly OPEN = 1;
+  public static readonly CLOSED = 2;
   public url: string;
+  public readyState: number = MockEventSource.OPEN;
   public listeners: Record<string, EventCallback[]> = {};
+  public onerror: (() => void) | null = null;
 
   constructor(url: string) {
     this.url = url;
+    MockEventSource.instances.push(this);
   }
 
   addEventListener(eventName: string, callback: EventCallback) {
@@ -25,6 +32,7 @@ class MockEventSource {
   }
 
   close() {
+    this.readyState = MockEventSource.CLOSED;
     this.listeners = {};
   }
 
@@ -33,12 +41,24 @@ class MockEventSource {
     const callbacks = this.listeners[eventName] || [];
     callbacks.forEach((cb) => cb({ data: JSON.stringify(data) }));
   }
+
+  // Helper to push pre-serialized strings (e.g. malformed JSON).
+  emitRaw(eventName: string, rawData: string) {
+    const callbacks = this.listeners[eventName] || [];
+    callbacks.forEach((cb) => cb({ data: rawData }));
+  }
+
+  // Helper to simulate an error event from the EventSource.
+  triggerError() {
+    this.readyState = MockEventSource.CLOSED;
+    this.onerror?.();
+  }
 }
 
 // Make EventSource available globally in the test environment
 globalThis.EventSource = MockEventSource as unknown as typeof EventSource;
 
-// --- 2. Testdaten (Dummy Slides) ---
+// 2. Dummy slides for tests
 const mockSlide1: Slide = {
   id: 1,
   status: "active",
@@ -75,13 +95,14 @@ const mockUrgentSlideHighPrio: Slide = {
   },
 } as Slide;
 
-// --- 3. Die eigentlichen Tests ---
+// 3. Actual tests
 describe("SlideStore", () => {
   let store: SlideStore;
 
   beforeEach(() => {
     // Create a fresh store before each test
     store = new SlideStore();
+    MockEventSource.instances = [];
   });
 
   afterEach(() => {
@@ -189,11 +210,114 @@ describe("SlideStore", () => {
     mockSSE.emit("CREATE", mockSlide1);
     expect(subscriber).toHaveBeenCalledTimes(1);
 
-    // Abmelden
+    // Unsubscribe
     unsubscribe();
 
     // Trigger another event -> subscriber must NOT be called again
     mockSSE.emit("CREATE", mockUrgentSlideLowPrio);
     expect(subscriber).toHaveBeenCalledTimes(1);
+  });
+
+  it("should rebuild the cached slides array on every notify", () => {
+    store.connect();
+    const mockSSE = (store as unknown as { evtSource: MockEventSource })
+      .evtSource;
+
+    mockSSE.emit("INIT", [mockSlide1]);
+    const before = store.getSlides();
+
+    mockSSE.emit("UPDATE", mockSlide1);
+    const after = store.getSlides();
+
+    // `notify()` rebuilds the array each time, so references differ.
+    // The cache exists so callers can rely on the array identity between
+    // notifications.
+    expect(before).not.toBe(after);
+    expect(after).toHaveLength(1);
+  });
+
+  describe("SSE safety", () => {
+    it("should not throw when receiving malformed JSON", () => {
+      store.connect();
+      const mockSSE = (store as unknown as { evtSource: MockEventSource })
+        .evtSource;
+
+      expect(() => mockSSE.emitRaw("CREATE", "not json at all{")).not.toThrow();
+      // Nothing was stored
+      expect(store.getSlides()).toEqual([]);
+      // And no subscriber was notified either
+      expect(store.getById(1)).toBeNull();
+    });
+
+    it("should not throw when receiving JSON that fails Zod validation", () => {
+      store.connect();
+      const mockSSE = (store as unknown as { evtSource: MockEventSource })
+        .evtSource;
+
+      // Valid JSON but missing required schema fields
+      expect(() =>
+        mockSSE.emitRaw("CREATE", JSON.stringify({ id: 1, wrong: "shape" })),
+      ).not.toThrow();
+      expect(store.getSlides()).toEqual([]);
+    });
+
+    it("should still process valid events after a malformed one", () => {
+      store.connect();
+      const mockSSE = (store as unknown as { evtSource: MockEventSource })
+        .evtSource;
+
+      mockSSE.emitRaw("CREATE", "<<<invalid>>>");
+      mockSSE.emit("CREATE", mockSlide1);
+
+      expect(store.getSlides()).toHaveLength(1);
+      expect(store.getById(1)).toEqual(mockSlide1);
+    });
+  });
+
+  describe("SSE reconnect", () => {
+    it("should schedule a reconnect after onerror with CLOSED readyState", () => {
+      vi.useFakeTimers();
+      try {
+        store.connect();
+        const firstSSE = (store as unknown as { evtSource: MockEventSource })
+          .evtSource;
+        expect(MockEventSource.instances).toHaveLength(1);
+
+        // Simulate a server drop
+        firstSSE.triggerError();
+        expect(firstSSE.readyState).toBe(MockEventSource.CLOSED);
+
+        // 5s timer not yet fired
+        vi.advanceTimersByTime(4999);
+        expect(MockEventSource.instances).toHaveLength(1);
+
+        // 5s timer fires -> a fresh EventSource is constructed via connect()
+        vi.advanceTimersByTime(1);
+        expect(MockEventSource.instances).toHaveLength(2);
+        const secondSSE = MockEventSource.instances[1];
+        expect(secondSSE).not.toBe(firstSSE);
+        expect(secondSSE.url).toBe(firstSSE.url);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("should clear the pending reconnect timer when disconnect() is called", () => {
+      vi.useFakeTimers();
+      try {
+        store.connect();
+        const mockSSE = (store as unknown as { evtSource: MockEventSource })
+          .evtSource;
+
+        mockSSE.triggerError();
+        store.disconnect();
+
+        // Even waiting far longer than 5s, the pending reconnect must NOT fire.
+        vi.advanceTimersByTime(30_000);
+        expect(MockEventSource.instances).toHaveLength(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 });

@@ -32,6 +32,8 @@ export class SlideStore {
   private readonly listeners: Set<Listener> = new Set();
   private evtSource: EventSource | null = null;
 
+  private reconnectTimeout: number | null = null;
+
   // --- 1. Reactivity (Observer Pattern) ---
 
   /**
@@ -49,7 +51,6 @@ export class SlideStore {
    */
   private notify() {
     this.slideArray = Object.values(this.slideMap);
-
     this.listeners.forEach((listener) => listener());
   }
 
@@ -101,6 +102,36 @@ export class SlideStore {
     this.notify();
   }
 
+  // --- Helper: Safe Parse & Validate ---
+  private parseAndValidate<T>(
+    eventName: string,
+    rawData: string,
+    schema: z.ZodType<T>,
+  ): T | null {
+    try {
+      const parsedJson = JSON.parse(rawData); // <-- Try/Catch fängt das JSON-Problem
+      const validation = schema.safeParse(parsedJson);
+
+      if (validation.success) {
+        return validation.data;
+      } else {
+        logger.warn(
+          `Failed to validate ${eventName} event`,
+          "error",
+          validation.error,
+        );
+        return null;
+      }
+    } catch (error) {
+      logger.error(
+        `Failed to parse JSON in ${eventName} event`,
+        "error",
+        error,
+      );
+      return null;
+    }
+  }
+
   // --- 4. Network / SSE Connection ---
 
   /**
@@ -113,36 +144,46 @@ export class SlideStore {
     this.evtSource = new EventSource("/api/stream");
 
     this.evtSource.addEventListener("INIT", (e: MessageEvent) => {
-      const parsed = z.array(slideSchema).safeParse(JSON.parse(e.data));
-      logger.debug("Received INIT event", "count", parsed.data?.length);
-      if (parsed.success) {
-        this.initSlides(parsed.data);
-      } else {
-        logger.warn("Failed to parse INIT event", "error", parsed.error);
+      const data = this.parseAndValidate("INIT", e.data, z.array(slideSchema));
+      if (data) {
+        logger.debug("Received INIT event", "count", data.length);
+        this.initSlides(data);
       }
     });
 
     this.evtSource.addEventListener("CREATE", (e: MessageEvent) => {
-      const parsed = slideSchema.safeParse(JSON.parse(e.data));
-      logger.debug("Received CREATE event", "id", parsed.data?.id);
-      if (parsed.success) {
-        this.upsertSlide(parsed.data);
-      } else {
-        logger.warn("Failed to parse CREATE event", "error", parsed.error);
+      const data = this.parseAndValidate("CREATE", e.data, slideSchema);
+      if (data) {
+        logger.debug("Received CREATE event", "id", data.id);
+        this.upsertSlide(data);
       }
     });
 
     this.evtSource.addEventListener("UPDATE", (e: MessageEvent) => {
-      const parsed = slideSchema.safeParse(JSON.parse(e.data));
-      logger.debug("Received UPDATE event", "id", parsed.data?.id);
-      if (parsed.success) this.upsertSlide(parsed.data);
+      const data = this.parseAndValidate("UPDATE", e.data, slideSchema);
+      if (data) {
+        logger.debug("Received UPDATE event", "id", data.id);
+        this.upsertSlide(data);
+      }
     });
 
     this.evtSource.addEventListener("DELETE", (e: MessageEvent) => {
-      const parsed = z.number().safeParse(JSON.parse(e.data));
-      logger.debug("Received DELETE event", "id", parsed.data);
-      if (parsed.success) this.deleteSlide(parsed.data);
+      const data = this.parseAndValidate("DELETE", e.data, z.number());
+      if (data) {
+        logger.debug("Received DELETE event", "id", data);
+        this.deleteSlide(data);
+      }
     });
+
+    this.evtSource.onerror = () => {
+      logger.warn("SSE connection lost. Attempting to reconnect...");
+
+      if (this.evtSource?.readyState === EventSource.CLOSED) {
+        this.disconnect();
+        if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+        this.reconnectTimeout = window.setTimeout(() => this.connect(), 5000);
+      }
+    };
   }
 
   /**
@@ -152,6 +193,10 @@ export class SlideStore {
     if (this.evtSource) {
       this.evtSource.close();
       this.evtSource = null;
+    }
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
     }
   }
 }

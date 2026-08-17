@@ -20,10 +20,10 @@ export const useSlideManager = () => {
 
   const getByType = useCallback(
     (type: string) => slideStore.getByType(type),
-    [slides],
+    [],
   );
 
-  const getUrgent = useCallback(() => slideStore.getUrgent(), [slides]);
+  const getUrgent = useCallback(() => slideStore.getUrgent(), []);
 
   return {
     slides,
