@@ -200,10 +200,9 @@ describe("toastReducer", () => {
       expect(next.pendingSlides.every((s) => s.id === 2)).toBe(true);
     });
 
-    it("should not modify seenIds for slides that are gone", () => {
-      // Note: this documents the CURRENT behavior — a known memory leak
-      // flagged in `.opencode/reviews/beamer-refactor-2026-08-16.md` (Bug #3).
-      // If we ever prune seenIds, this test will need updating.
+    it("should prune seenIds for slides no longer in the incoming payload", () => {
+      // Regression test for Bug #3 from `.opencode/reviews/beamer-refactor-2026-08-16.md`:
+      // seenIds used to grow unbounded because the reducer only added, never pruned.
       const state: ToastState = {
         ...EMPTY_STATE,
         seenIds: new Set([1, 2, 3]),
@@ -214,9 +213,11 @@ describe("toastReducer", () => {
         payload: [makeSlide(1)], // 2 and 3 disappeared
       });
 
-      // seenIds still contains 2 and 3 (no pruning)
-      expect(next.seenIds.has(2)).toBe(true);
-      expect(next.seenIds.has(3)).toBe(true);
+      // 1 is still incoming, so it stays; 2 and 3 are pruned.
+      expect(next.seenIds.has(1)).toBe(true);
+      expect(next.seenIds.has(2)).toBe(false);
+      expect(next.seenIds.has(3)).toBe(false);
+      expect(next.seenIds.size).toBe(1);
     });
   });
 

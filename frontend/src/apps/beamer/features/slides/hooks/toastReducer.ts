@@ -40,6 +40,9 @@ export const toastReducer = (
 
       // 2. Update seenIds
       const nextSeenIds = new Set(state.seenIds);
+      nextSeenIds.forEach((id) => {
+        if (!incomingIds.has(id)) nextSeenIds.delete(id);
+      });
       newSlides.forEach((s) => nextSeenIds.add(s.id));
 
       // 3. Remove old/deleted slides from active & pending

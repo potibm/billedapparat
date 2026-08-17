@@ -1,8 +1,8 @@
 import { Playlist } from "@core/config/config.schemas";
 import { Slide } from "../types/slide.schema";
 import {
-  pickWeightedSlide,
   sortSlides,
+  sortByPriorityDesc,
   selectNextSlide,
   findNextValidStep,
 } from "../utils/slideshow.logic";
@@ -36,10 +36,8 @@ export type EngineAction =
   | {
       type: "NEXT";
       payload: {
-        hasUrgent: boolean;
-        urgentSlides: Slide[];
         activePlaylist: Playlist | null;
-        getByType: (type: string) => Slide[];
+        activeSlides: Slide[];
       };
     };
 
@@ -69,8 +67,7 @@ export const engineReducer = (
       };
 
     case "NEXT": {
-      const { hasUrgent, urgentSlides, activePlaylist, getByType } =
-        action.payload;
+      const { activePlaylist, activeSlides } = action.payload;
 
       // 1. Guards
       if (state.isPaused || !activePlaylist?.steps) return state;
@@ -82,30 +79,27 @@ export const engineReducer = (
 
       const currentlyShownId = state.history[state.historyPointer];
 
-      // 3. Urgent Override
-      if (hasUrgent) {
-        const selected = pickWeightedSlide(urgentSlides);
-        if (selected && selected.id !== currentlyShownId) {
-          const newHistory = [...state.history, selected.id].slice(
-            -HISTORY_LIMIT,
-          );
-          return {
-            ...state,
-            history: newHistory,
-            historyPointer: Math.min(
-              state.historyPointer + 1,
-              HISTORY_LIMIT - 1,
-            ),
-          };
+      const pureGetByType = (type: string) => {
+        // for the virtual urgent playlist
+        if (type === "urgent") {
+          return activeSlides
+            .filter(
+              (s) =>
+                s.display_options?.is_urgent === true && s.status === "active",
+            )
+            .sort(sortByPriorityDesc);
         }
-        return state;
-      }
 
-      // 4. Regular playlist logic
+        return activeSlides
+          .filter((s) => s.content.type === type && s.status === "active")
+          .sort(sortByPriorityDesc);
+      };
+
+      // 3. Regular playlist logic
       const result = findNextValidStep(
         activePlaylist.steps,
         state.stepIndex,
-        getByType,
+        pureGetByType,
       );
 
       if (!result) return state; // No slides found; keep state unchanged

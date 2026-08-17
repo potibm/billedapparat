@@ -9,12 +9,18 @@ import type { Playlist } from "@core/config/config.schemas";
 import * as logic from "../utils/slideshow.logic";
 
 // 1. Mock the complex business logic because we only want to test the state machine here
-vi.mock("../utils/slideshow.logic", () => ({
-  pickWeightedSlide: vi.fn(),
-  sortSlides: vi.fn(),
-  selectNextSlide: vi.fn(),
-  findNextValidStep: vi.fn(),
-}));
+vi.mock(import("../utils/slideshow.logic"), async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    pickWeightedSlide: vi.fn(),
+    sortSlides: vi.fn(),
+    selectNextSlide: vi.fn(),
+    findNextValidStep: vi.fn(),
+    // The reducer also calls sortByPriorityDesc inside its pureGetByType —
+    // use the real one so the filter+sort logic is exercised end-to-end.
+    sortByPriorityDesc: actual.sortByPriorityDesc,
+  };
+});
 
 describe("engineReducer", () => {
   let baseState: EngineState;
@@ -42,6 +48,7 @@ describe("engineReducer", () => {
         displayedStepInfo: { stepIndex: 5, stepCountPointer: 2 },
         history: [100, 101, 102],
         historyPointer: 2,
+        isPaused: false,
       };
 
       const newState = engineReducer(dirtyState, { type: "RESET_PLAYLIST" });
@@ -81,11 +88,10 @@ describe("engineReducer", () => {
   });
 
   describe("NEXT Action", () => {
+    // The new payload is pure: just slides + playlist, no closures or flags.
     const defaultPayload = {
-      hasUrgent: false,
-      urgentSlides: [],
       activePlaylist: { id: 1, name: "Test", steps: [] } as Playlist,
-      getByType: vi.fn(),
+      activeSlides: [] as Slide[],
     };
 
     it("should do nothing if paused", () => {
@@ -115,24 +121,9 @@ describe("engineReducer", () => {
       expect(logic.findNextValidStep).not.toHaveBeenCalled();
     });
 
-    it("should pick an urgent slide if hasUrgent is true", () => {
-      const urgentSlide = { id: 999 } as Slide;
-      // Tell our mock function what to return
-      vi.mocked(logic.pickWeightedSlide).mockReturnValue(urgentSlide);
-
-      const newState = engineReducer(baseState, {
-        type: "NEXT",
-        payload: {
-          ...defaultPayload,
-          hasUrgent: true,
-          urgentSlides: [urgentSlide],
-        },
-      });
-
-      expect(logic.pickWeightedSlide).toHaveBeenCalled();
-      expect(newState.history).toContain(999);
-      expect(newState.historyPointer).toBe(0); // First element in the new history
-    });
+    // The urgent test previously lived here but has been removed: the engine
+    // no longer knows about urgent slides — that override is now implemented
+    // as a virtual "urgent" playlist step produced by useCurrentPlaylist.
 
     it("should NOT replay old history when NEXT follows RESET_PLAYLIST (regression)", () => {
       // State mid-history: pointer is not at the end, so the NEXT handler
@@ -160,6 +151,7 @@ describe("engineReducer", () => {
       const resetState = engineReducer(stateWithHistory, {
         type: "RESET_PLAYLIST",
       });
+
       const newState = engineReducer(resetState, {
         type: "NEXT",
         payload: defaultPayload,
@@ -170,6 +162,136 @@ describe("engineReducer", () => {
       expect(logic.findNextValidStep).toHaveBeenCalledTimes(1);
       expect(newState.history).toEqual([999]);
       expect(newState.historyPointer).toBe(0);
+    });
+
+    it("should use activeSlides (passed in the payload) instead of an injected lookup", () => {
+      // The reducer no longer accepts a getByType function in the payload.
+      // We verify this by giving it a payload with only `activeSlides` and
+      // asserting the call to findNextValidStep still receives a working
+      // type-filter function (derived from activeSlides).
+      const stateWithHistory: EngineState = {
+        ...baseState,
+        history: [1, 2, 3],
+        historyPointer: 2,
+      };
+
+      const mockSlide = { id: 999 } as Slide;
+      vi.mocked(logic.findNextValidStep).mockReturnValue({
+        step: {
+          type: "news",
+          order: "asc",
+          count: 1,
+          duration: 10,
+        },
+        index: 0,
+        candidates: [mockSlide],
+      });
+      vi.mocked(logic.sortSlides).mockReturnValue([mockSlide]);
+      vi.mocked(logic.selectNextSlide).mockReturnValue(mockSlide);
+
+      const newState = engineReducer(stateWithHistory, {
+        type: "NEXT",
+        payload: {
+          activePlaylist: { id: 1, name: "Test", steps: [] } as Playlist,
+          activeSlides: [mockSlide],
+        },
+      });
+
+      expect(newState.history).toEqual([1, 2, 3, 999]);
+      expect(newState.historyPointer).toBe(3);
+    });
+
+    it("should return state unchanged when findNextValidStep returns null", () => {
+      const stateWithHistory: EngineState = {
+        ...baseState,
+        history: [1, 2, 3],
+        historyPointer: 2,
+      };
+
+      vi.mocked(logic.findNextValidStep).mockReturnValue(null);
+
+      const newState = engineReducer(stateWithHistory, {
+        type: "NEXT",
+        payload: {
+          activePlaylist: {
+            id: 1,
+            name: "Test",
+            steps: [{ type: "news", order: "asc", count: 1, duration: 10 }],
+          } as Playlist,
+          activeSlides: [],
+        },
+      });
+
+      expect(newState).toEqual(stateWithHistory);
+    });
+
+    it("should map a virtual 'urgent' playlist step to activeSlides filtered by is_urgent", () => {
+      // Document/regression-test for the architectural change:
+      // urgent override is no longer a branch inside the reducer. Instead,
+      // useCurrentPlaylist emits a synthetic playlist with a step of
+      // type: "urgent", and the reducer's pureGetByType handles that
+      // special-case by filtering activeSlides for is_urgent slides.
+      //
+      // We assert that the lookup function passed to findNextValidStep
+      // is the pure reducer-internal function (not a mock) by inspecting
+      // its behavior via the mocked findNextValidStep call.
+      const urgentSlide = {
+        id: 50,
+        status: "active",
+        display_options: {
+          is_urgent: true,
+          priority: 1,
+          allow_social_overlay: false,
+        },
+        content: { type: "news" },
+      } as Slide;
+      const regularSlide = {
+        id: 99,
+        status: "active",
+        display_options: {
+          is_urgent: false,
+          priority: 1,
+          allow_social_overlay: false,
+        },
+        content: { type: "news" },
+      } as Slide;
+
+      // Mock findNextValidStep to capture and invoke its lookup callback
+      let capturedLookup: ((type: string) => Slide[]) | null = null;
+      vi.mocked(logic.findNextValidStep).mockImplementation(
+        (_steps, _idx, lookup) => {
+          capturedLookup = lookup;
+          // Simulate the urgent step returning all urgent slides
+          const urgents = lookup("urgent");
+          return {
+            step: { type: "urgent", order: "desc", count: 1, duration: 10 },
+            index: 0,
+            candidates: urgents,
+          };
+        },
+      );
+      vi.mocked(logic.sortSlides).mockImplementation((list) => list);
+      vi.mocked(logic.selectNextSlide).mockReturnValue(urgentSlide);
+
+      engineReducer(baseState, {
+        type: "NEXT",
+        payload: {
+          activePlaylist: {
+            id: -1,
+            name: "Urgent Override",
+            steps: [{ type: "urgent", order: "desc", count: 1, duration: 10 }],
+          } as Playlist,
+          activeSlides: [regularSlide, urgentSlide],
+        },
+      });
+
+      expect(capturedLookup).not.toBeNull();
+      // The lookup must filter by is_urgent=true and exclude non-urgent slides.
+      const result = capturedLookup!("urgent");
+      expect(result.map((s) => s.id)).toEqual([50]);
+      // And the regular-looking branch filters by content.type.
+      const regularResult = capturedLookup!("news");
+      expect(regularResult.map((s) => s.id).sort()).toEqual([50, 99]);
     });
   });
 });

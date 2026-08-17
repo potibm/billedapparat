@@ -1,15 +1,12 @@
 import { z } from "zod";
 import { slideSchema, type Slide } from "../types/slide.schema";
 import { createLogger } from "@core/logger/logger";
+import { sortByPriorityDesc } from "../utils/slideshow.logic";
 
 const logger = createLogger("Slides");
 
 type SlideDictionary = Record<number, Slide>;
 type Listener = () => void;
-
-const sortByPriorityDesc = (a: Slide, b: Slide) =>
-  Number(b.display_options?.priority || 0) -
-  Number(a.display_options?.priority || 0);
 
 /**
  * SlideStore (Framework-Agnostic State Manager)
