@@ -62,7 +62,7 @@ func (g *timetableGenerator) timetableToSlide(
 ) domain.Slide {
 	subIDRef := subID
 
-	title := "Timetable " + date.Format("Monday")
+	title := date.Format("Monday")
 	if totalPages > 1 {
 		title += fmt.Sprintf(" %d/%d", subID+1, totalPages)
 	}

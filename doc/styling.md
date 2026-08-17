@@ -87,11 +87,12 @@ Each slide type follows the BEM naming convention: `.slide-{type}__{element}`. U
 
 ### Social (`slide-social`)
 
-| Class                     | Element                                 |
-| ------------------------- | --------------------------------------- |
-| `.slide-social`           | Root container                          |
-| `.slide-social__media`    | Wrapper around the media image          |
-| `.slide-social__image`    | The media image (`<img>`)               |
-| `.slide-social__header`   | Author header (avatar, name, timestamp) |
-| `.slide-social__body`     | The post text content                   |
-| `.slide-social__fallback` | Shown when no body content exists       |
+| Class                      | Element                                 |
+| -------------------------- | --------------------------------------- |
+| `.slide-social`            | Root container                          |
+| `.slide-social__container` | Wrapper for content layout              |
+| `.slide-social__media`     | Wrapper around the media image          |
+| `.slide-social__image`     | The media image (`<img>`)               |
+| `.slide-social__header`    | Author header (avatar, name, timestamp) |
+| `.slide-social__body`      | The post text content                   |
+| `.slide-social__fallback`  | Shown when no body content exists       |
