@@ -9,7 +9,7 @@ import (
 )
 
 func TestSlideMapping(t *testing.T) {
-	now := time.Now().Truncate(time.Second) // DBs speichern oft keine Nanosekunden
+	now := time.Now().Truncate(time.Second) // DBs often don't store nanoseconds
 	extID := "ext_123"
 	source := "mastodon"
 	subID := 1
@@ -74,7 +74,7 @@ func TestSlideMapping(t *testing.T) {
 	})
 
 	t.Run("Minimal Mapping: Nil handling", func(t *testing.T) {
-		// Teste was passiert wenn Author und Media fehlen
+		// Test what happens when Author and Media are missing
 		minDomain := &domain.Slide{
 			ID:     1,
 			Status: domain.StatusPending,

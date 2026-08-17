@@ -5,7 +5,7 @@ import {
   createBrowserRouter,
   RouterProvider,
   RouteObject,
-} from "react-router-dom"; // react-router-dom ist für Webprojekte Standard
+} from "react-router-dom"; // react-router-dom is the standard for web projects
 import { AdminApp } from "../apps/admin/Admin";
 import { BeamerApp } from "../apps/beamer/BeamerApp";
 

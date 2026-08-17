@@ -7,11 +7,11 @@ import (
 )
 
 type ProblemDetails struct {
-	Type     string `json:"type"`               // URI zur Fehler-Dokumentation (oft "about:blank")
-	Title    string `json:"title"`              // Kurze, menschenlesbare Zusammenfassung
-	Status   int    `json:"status"`             // Der HTTP Status Code
-	Detail   string `json:"detail,omitempty"`   // Spezifische Infos zu diesem Fehler
-	Instance string `json:"instance,omitempty"` // URI des konkreten Requests
+	Type     string `json:"type"`               // URI for error documentation (often "about:blank")
+	Title    string `json:"title"`              // Short, human-readable summary
+	Status   int    `json:"status"`             // The HTTP status code
+	Detail   string `json:"detail,omitempty"`   // Specific information about this error
+	Instance string `json:"instance,omitempty"` // URI of the specific request
 }
 
 func respondWithProblem(c *gin.Context, status int, title, detail string) {

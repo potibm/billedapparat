@@ -141,4 +141,39 @@ describe("Slideshow Logic Utils", () => {
       expect(result?.id).toBe(10);
     });
   });
+
+  describe("sortByPriorityDesc", () => {
+    const make = (id: number, priority: number | undefined): Slide =>
+      ({
+        id,
+        display_options:
+          priority === undefined
+            ? ({} as Slide["display_options"])
+            : { priority },
+      }) as Slide;
+
+    it("should sort slides with priority descending (highest first)", () => {
+      const input = [make(1, 1), make(2, 5), make(3, 3)];
+      const sorted = [...input].sort(logic.sortByPriorityDesc);
+
+      expect(sorted.map((s) => s.id)).toEqual([2, 3, 1]);
+    });
+
+    it("should treat missing priority as 0", () => {
+      const input = [make(1, undefined), make(2, 2), make(3, 0)];
+      const sorted = [...input].sort(logic.sortByPriorityDesc);
+
+      // id 2 (priority 2) first, then id 1 and id 3 are tied at 0 — order is stable
+      expect(sorted[0].id).toBe(2);
+      expect([sorted[1].id, sorted[2].id].sort()).toEqual([1, 3]);
+    });
+
+    it("should be a pure comparator (input order unchanged)", () => {
+      const input = [make(1, 1), make(2, 5), make(3, 3)];
+      const snapshot = input.map((s) => s.id);
+      [...input].sort(logic.sortByPriorityDesc);
+
+      expect(input.map((s) => s.id)).toEqual(snapshot);
+    });
+  });
 });

@@ -93,3 +93,7 @@ export const sortSlides = (
   }
   return list;
 };
+
+export const sortByPriorityDesc = (a: Slide, b: Slide) =>
+  Number(b.display_options?.priority || 0) -
+  Number(a.display_options?.priority || 0);

@@ -1,138 +1,33 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
-import { z } from "zod";
-import { slideSchema, type Slide } from "../types/slide.schema";
-import { createLogger } from "@core/logger/logger";
+import { useSyncExternalStore, useCallback } from "react";
+import { slideStore } from "../store/slideStore";
 
-type SlideDictionary = Record<number, Slide>;
+const subscribe = slideStore.subscribe.bind(slideStore);
+const getSnapshot = slideStore.getSlides.bind(slideStore);
 
-const logger = createLogger("Slides");
-
+/**
+ * useSlideManager (React Bridge)
+ *
+ * WHAT IT DOES:
+ * - Acts as a bridge between the framework-agnostic `slideStore` and the React component tree.
+ * - Subscribes to store updates and forces a React re-render ONLY when the store data actually mutates.
+ * - Exposes memoized getter functions to safely retrieve slides without triggering infinite render loops.
+ *
+ * WHAT IT DOES NOT DO:
+ * - It does NOT manage the SSE connection (this is handled globally by `slideStore.connect()`).
+ * - It does NOT hold the actual slide data in a `useState` array (to avoid memory duplication and complex sync issues).
+ */
 export const useSlideManager = () => {
-  const [slideMap, setSlideMap] = useState<SlideDictionary>({});
-
-  const initSlides = useCallback((slides: Slide[]) => {
-    const newMap: SlideDictionary = {};
-    slides.forEach((s) => (newMap[s.id] = s));
-    setSlideMap(newMap);
-  }, []);
-
-  const upsertSlide = useCallback((slide: Slide) => {
-    setSlideMap((prev) => ({ ...prev, [slide.id]: slide }));
-  }, []);
-
-  const deleteSlide = useCallback((id: number) => {
-    setSlideMap((prev) => {
-      const newMap = { ...prev };
-      delete newMap[id];
-      return newMap;
-    });
-  }, []);
-
-  useEffect(() => {
-    const evtSource = new EventSource("/api/stream");
-
-    const handleInit = (e: MessageEvent) => {
-      const parsed = z.array(slideSchema).safeParse(JSON.parse(e.data));
-      logger.debug(
-        "Received INIT event",
-        "count",
-        parsed.data?.length,
-        "rawData",
-        e.data,
-      );
-      if (parsed.error) {
-        logger.warn(
-          "Failed to parse INIT event",
-          "error",
-          parsed.error,
-          "rawData",
-          e.data,
-        );
-      }
-      if (parsed.success) initSlides(parsed.data);
-    };
-
-    const handleCreate = (e: MessageEvent) => {
-      const parsed = slideSchema.safeParse(JSON.parse(e.data));
-      logger.debug("Received CREATE event", "id", parsed.data?.id);
-      if (parsed.error) {
-        logger.warn(
-          "Failed to parse CREATE event",
-          "error",
-          parsed.error,
-          "rawData",
-          e.data,
-        );
-      }
-      if (parsed.success) upsertSlide(parsed.data);
-    };
-
-    const handleUpdate = (e: MessageEvent) => {
-      const parsed = slideSchema.safeParse(JSON.parse(e.data));
-      logger.debug("Received UPDATE event", "id", parsed.data?.id);
-      if (parsed.success) upsertSlide(parsed.data);
-    };
-
-    const handleDelete = (e: MessageEvent) => {
-      const id = z.number().parse(JSON.parse(e.data));
-      logger.debug("Received DELETE event", "id", id);
-      deleteSlide(id);
-    };
-
-    evtSource.addEventListener("INIT", handleInit);
-    evtSource.addEventListener("CREATE", handleCreate);
-    evtSource.addEventListener("UPDATE", handleUpdate);
-    evtSource.addEventListener("DELETE", handleDelete);
-
-    return () => {
-      evtSource.removeEventListener("INIT", handleInit);
-      evtSource.removeEventListener("CREATE", handleCreate);
-      evtSource.removeEventListener("UPDATE", handleUpdate);
-      evtSource.removeEventListener("DELETE", handleDelete);
-      evtSource.close();
-    };
-  }, [initSlides, upsertSlide, deleteSlide]);
-
-  const allSlides = useMemo(() => Object.values(slideMap), [slideMap]);
-
-  const getById = useCallback(
-    (id: number) => {
-      return slideMap[id] || null;
-    },
-    [slideMap],
-  );
+  const slides = useSyncExternalStore(subscribe, getSnapshot);
 
   const getByType = useCallback(
-    (type: string) => {
-      return allSlides
-        .filter((s) => s.content.type === type && s.status === "active")
-        .sort((a, b) => {
-          const prioA = Number(a.display_options?.priority || 0);
-          const prioB = Number(b.display_options?.priority || 0);
-          return prioB - prioA;
-        });
-    },
-    [allSlides],
+    (type: string) => slideStore.getByType(type),
+    [],
   );
 
-  const getUrgent = useCallback(() => {
-    return allSlides
-      .filter(
-        (s) =>
-          s.content.type === "news" &&
-          s.display_options.is_urgent &&
-          s.status === "active",
-      )
-      .sort((a, b) => {
-        const prioA = Number(a.display_options?.priority || 0);
-        const prioB = Number(b.display_options?.priority || 0);
-        return prioB - prioA;
-      });
-  }, [allSlides]);
+  const getUrgent = useCallback(() => slideStore.getUrgent(), []);
 
   return {
-    slides: allSlides,
-    getById,
+    slides,
     getByType,
     getUrgent,
   };

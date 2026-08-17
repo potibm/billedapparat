@@ -16,3 +16,4 @@ backend/tmp
 *.log
 infra/.certs/
 docker-compose.override.yaml
+.opencode/

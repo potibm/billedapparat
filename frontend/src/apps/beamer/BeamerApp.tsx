@@ -1,14 +1,19 @@
-import { useEffect, useRef, useMemo } from "react";
-import { useSlideshowEngine } from "./features/slides/hooks/useSlideshowEngine";
-import { SlideRenderer } from "./features/slides/components/SlideRenderer";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  animations,
-  AnimationType,
-} from "./features/animations/types/animations.schemas";
-import { ToastManager } from "./features/slides/components/ToastManager";
+import { animations } from "./features/animations/types/animations.schemas";
 import { useAppConfig } from "@core/config/useConfig";
 import * as Sentry from "@sentry/react";
+
+// hooks
+import { useAutoplay } from "./features/slides/hooks/useAutoplay";
+import { useKeyboardControls } from "./features/slides/hooks/useKeyboardControls";
+import { useSSEConnection } from "./features/slides/hooks/useSSEConnection";
+import { getSlideAnimation } from "./features/slides/utils/getSlideAnimation";
+import { useSlideshowEngine } from "./features/slides/hooks/useSlideshowEngine";
+
+// components
+import { DebugOverlay } from "./components/DebugOverlay";
+import { SlideRenderer } from "./features/slides/components/SlideRenderer";
+import { ToastManager } from "./features/slides/components/ToastManager";
 
 export const BeamerApp = () => {
   const {
@@ -17,55 +22,26 @@ export const BeamerApp = () => {
     previous,
     togglePause,
     isUrgent,
+    isPaused,
     toastSlides,
     duration,
     stepInfo,
+    allowOverlay,
   } = useSlideshowEngine();
 
   const { version, environment } = useAppConfig();
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  const allowOverlay =
-    currentSlide?.display_options.allow_social_overlay ?? false;
+  // 1. side effects and logic hooks
+  useSSEConnection();
+  useKeyboardControls(next, previous, togglePause);
+  useAutoplay(next, duration, isPaused, isUrgent, !!currentSlide);
 
-  const activeAnimation = useMemo(() => {
-    if (!currentSlide) return "fade";
-    if (isUrgent) return "urgent";
-    const keys = Object.keys(animations) as AnimationType[];
-    return keys[Math.floor(Math.random() * keys.length)];
-  }, [currentSlide, isUrgent]);
+  const { activeAnimation, transition } = getSlideAnimation(
+    currentSlide,
+    isUrgent,
+  );
 
-  const transition = useMemo(() => {
-    const ease: "easeOut" | "easeInOut" = isUrgent ? "easeOut" : "easeInOut";
-    return {
-      duration: isUrgent ? 0.2 : 0.8,
-      ease,
-    };
-  }, [isUrgent]);
-
-  // Keyboard controls
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") next();
-      if (e.key === "ArrowLeft") previous();
-      if (e.key === " " || e.key === "Spacebar") {
-        e.preventDefault();
-        togglePause();
-      }
-    };
-    globalThis.addEventListener("keydown", handleKeyDown);
-    return () => globalThis.removeEventListener("keydown", handleKeyDown);
-  }, [next, previous, togglePause]);
-
-  useEffect(() => {
-    if (isUrgent || !currentSlide) return;
-
-    // duration is in seconds in the config, we need milliseconds
-    const timer = setInterval(next, duration * 1000);
-
-    return () => clearInterval(timer);
-  }, [next, isUrgent, currentSlide, duration]);
-
+  // 2. render logic
   if (!currentSlide) {
     return (
       <div className="bg-black h-screen flex items-center justify-center text-slate-700">
@@ -81,7 +57,6 @@ export const BeamerApp = () => {
 
   return (
     <div
-      ref={containerRef}
       className={`h-screen w-screen overflow-hidden bg-black ${
         isUrgent ? "ring-inset ring-12 ring-red-600" : ""
       }`}
@@ -101,15 +76,15 @@ export const BeamerApp = () => {
 
       <ToastManager toastSlides={toastSlides} allowOverlay={allowOverlay} />
 
-      {environment !== "production" && (
-        <div className="absolute bottom-2 right-2 text-[10px] text-white/20 pointer-events-none font-mono">
-          {environment} | v{version} |{" "}
-          {isUrgent
-            ? "URGENT"
-            : `${stepInfo?.playlistName} | ${stepInfo?.type} (${stepInfo?.current}/${stepInfo?.total})`}{" "}
-          | {activeAnimation} | {duration}s
-        </div>
-      )}
+      <DebugOverlay
+        isUrgent={isUrgent}
+        stepInfo={stepInfo}
+        activeAnimation={activeAnimation}
+        duration={duration}
+        isPaused={isPaused}
+        version={version}
+        environment={environment}
+      />
     </div>
   );
 };

@@ -1,16 +1,19 @@
-import { useMemo, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useMemo, useRef } from "react";
+import { useParams } from "react-router-dom";
 import { useAppConfig } from "@core/config/useConfig";
 import { createLogger } from "@core/logger/logger";
+import { useSlideManager } from "./useSlideManager";
 
 const logger = createLogger("Playlist");
 
 export const useCurrentPlaylist = () => {
   const { playlists } = useAppConfig();
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
 
-  const activePlaylist = useMemo(() => {
+  const { getUrgent } = useSlideManager();
+  const urgentSlides = getUrgent();
+
+  const regularPlaylist = useMemo(() => {
     if (!playlists || playlists.length === 0) {
       logger.warn("No playlists available in config");
       return null;
@@ -31,22 +34,32 @@ export const useCurrentPlaylist = () => {
     return found;
   }, [id, playlists]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target !== document.body) return;
+  // One-shot transition log: emit `info` only when urgent state flips, not
+  // on every render. Without this guard, SSE updates (which trigger React
+  // re-renders via useSyncExternalStore) would spam the info channel.
+  const prevHadUrgentRef = useRef(false);
+  const hasUrgent = urgentSlides.length > 0;
 
-      const key = Number.parseInt(e.key, 10);
-      if (key >= 1 && key <= 9) {
-        const targetPlaylist = playlists.find((p) => p.id === key);
-        if (targetPlaylist) {
-          navigate(`/beamer/${targetPlaylist.id}`);
-        }
-      }
+  if (hasUrgent) {
+    if (!prevHadUrgentRef.current) {
+      logger.info("Urgent slides active! Intercepting normal playlist.");
+      prevHadUrgentRef.current = true;
+    }
+
+    return {
+      id: -1,
+      name: "Urgent Override",
+      steps: [
+        {
+          type: "urgent",
+          count: 1,
+          order: "desc",
+          duration: 10,
+        },
+      ],
     };
+  }
 
-    globalThis.addEventListener("keydown", handleKeyDown);
-    return () => globalThis.removeEventListener("keydown", handleKeyDown);
-  }, [playlists, navigate]);
-
-  return activePlaylist;
+  prevHadUrgentRef.current = false;
+  return regularPlaylist;
 };
