@@ -345,4 +345,62 @@ describe("BeamerApp", () => {
 
     expect(screen.getByText("STANDBY")).toBeInTheDocument();
   });
+
+  it("should report each slide's own step duration (not the next step's) in the engine", async () => {
+    // Regression test for the social-media 1-second-display bug.
+    //
+    // Playlist: [social.media: 2s, news: 10s]
+    // Bug:      useSlideshowEngine derived `duration` from
+    //           `state.stepIndex`, which is the *next* step to search from,
+    //           so social.media displayed for 10s (news's duration) and news
+    //           displayed for 2s (social.media's duration).
+    // Fix:      `currentStep` now reads from `state.displayedStepInfo.stepIndex`,
+    //           which is the step the displayed slide was actually picked from.
+    //
+    // We assert the DebugOverlay's `Xs` text matches the displayed slide's
+    // own step duration.
+    const debugConfig: AppConfig = {
+      ...testConfig,
+      playlists: [
+        {
+          id: 1,
+          name: "Social Media",
+          steps: [
+            { type: "social.media", order: "asc", count: 1, duration: 2 },
+            { type: "news", order: "asc", count: 1, duration: 10 },
+          ],
+        },
+      ],
+    };
+
+    const socialSlide = makeSlide(100, "social.media", "insta post");
+    const newsSlide = makeSlide(200, "news", "breaking news");
+    seedStoreWithSlides([socialSlide, newsSlide]);
+
+    render(
+      <ConfigContext value={debugConfig}>
+        <MemoryRouter initialEntries={["/beamer"]}>
+          <Routes>
+            <Route path="/beamer/:id?" element={<BeamerApp />} />
+          </Routes>
+        </MemoryRouter>
+      </ConfigContext>,
+    );
+
+    await advanceInitialTick();
+
+    // First slide to display is social.media (step 0, duration 2s).
+    // SocialSlide renders the body, not the title, so we assert via the body.
+    expect(screen.getByText("insta post")).toBeInTheDocument();
+    expect(screen.getByText(/2s/)).toBeInTheDocument();
+
+    // Advance to the news slide (step 1, duration 10s).
+    await act(async () => {
+      fireEvent.keyDown(document.body, { key: "ArrowRight" });
+    });
+
+    // NewsSlide renders the title as <h1>.
+    expect(screen.getByText("Title 200")).toBeInTheDocument();
+    expect(screen.getByText(/10s/)).toBeInTheDocument();
+  });
 });

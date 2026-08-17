@@ -38,9 +38,9 @@ export const useSlideshowEngine = (): SlideshowEngine => {
   }, [state.history, state.historyPointer, allSlides]);
 
   const currentStep = useMemo<PlaylistStep | undefined>(() => {
-    if (!activePlaylist) return undefined;
-    return activePlaylist.steps[state.stepIndex];
-  }, [activePlaylist, state.stepIndex]);
+    if (!activePlaylist || !state.displayedStepInfo) return undefined;
+    return activePlaylist.steps[state.displayedStepInfo.stepIndex];
+  }, [activePlaylist, state.displayedStepInfo]);
 
   // --- Effects ---
   useEffect(() => {
