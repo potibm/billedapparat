@@ -2,6 +2,7 @@ import { useSyncExternalStore, useCallback } from "react";
 import { slideStore } from "../store/slideStore";
 
 const subscribe = slideStore.subscribe.bind(slideStore);
+const getSnapshot = slideStore.getSlides.bind(slideStore);
 
 /**
  * useSlideManager (React Bridge)
@@ -16,7 +17,7 @@ const subscribe = slideStore.subscribe.bind(slideStore);
  * - It does NOT hold the actual slide data in a `useState` array (to avoid memory duplication and complex sync issues).
  */
 export const useSlideManager = () => {
-  const slides = useSyncExternalStore(subscribe, () => slideStore.getSlides());
+  const slides = useSyncExternalStore(subscribe, getSnapshot);
 
   const getByType = useCallback(
     (type: string) => slideStore.getByType(type),

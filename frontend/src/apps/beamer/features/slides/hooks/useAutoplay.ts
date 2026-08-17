@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export function useAutoplay(
   next: () => void,
@@ -7,11 +7,20 @@ export function useAutoplay(
   isUrgent: boolean,
   hasCurrentSlide: boolean,
 ) {
+  const nextRef = useRef(next);
+
+  useEffect(() => {
+    nextRef.current = next;
+  }, [next]);
+
   useEffect(() => {
     // When paused, urgent, or no slide present: stop the timer
     if (isPaused || isUrgent || !hasCurrentSlide) return;
 
-    const timer = setInterval(next, duration * 1000);
+    const timer = setInterval(() => {
+      nextRef.current();
+    }, duration * 1000);
+
     return () => clearInterval(timer);
-  }, [next, duration, isPaused, isUrgent, hasCurrentSlide]);
+  }, [duration, isPaused, isUrgent, hasCurrentSlide]);
 }

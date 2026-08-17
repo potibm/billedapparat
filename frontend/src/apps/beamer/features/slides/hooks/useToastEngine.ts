@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { Slide } from "../types/slide.schema";
 import { toastReducer, initToastState } from "./toastReducer";
 
@@ -9,9 +9,18 @@ export const useToastEngine = (toastSlides: Slide[], allowOverlay: boolean) => {
     initToastState,
   );
 
+  const prevIdsRef = useRef<string>("");
+
   // Effect 1: Push new slides into the reducer
   useEffect(() => {
-    dispatch({ type: "SYNC_SLIDES", payload: toastSlides });
+    // signature of current slides
+    const currentIds = toastSlides.map((s) => s.id).join(",");
+
+    // only dispatch, wenn the signature has changed
+    if (prevIdsRef.current !== currentIds) {
+      dispatch({ type: "SYNC_SLIDES", payload: toastSlides });
+      prevIdsRef.current = currentIds;
+    }
   }, [toastSlides]);
 
   // Effect 2: Timer tick
