@@ -1,7 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { slideStore } from "../store/slideStore";
 
-export const useSSEConnection = () => {
+export const useSSEStatus = () => {
+  return useSyncExternalStore(slideStore.subscribeStatus, slideStore.getStatus);
+};
+
+export const useSSELifecycle = () => {
   useEffect(() => {
     slideStore.connect();
     return () => {

@@ -87,11 +87,49 @@ Each slide type follows the BEM naming convention: `.slide-{type}__{element}`. U
 
 ### Social (`slide-social`)
 
-| Class                     | Element                                 |
-| ------------------------- | --------------------------------------- |
-| `.slide-social`           | Root container                          |
-| `.slide-social__media`    | Wrapper around the media image          |
-| `.slide-social__image`    | The media image (`<img>`)               |
-| `.slide-social__header`   | Author header (avatar, name, timestamp) |
-| `.slide-social__body`     | The post text content                   |
-| `.slide-social__fallback` | Shown when no body content exists       |
+| Class                      | Element                                 |
+| -------------------------- | --------------------------------------- |
+| `.slide-social`            | Root container                          |
+| `.slide-social__container` | Wrapper for content layout              |
+| `.slide-social__media`     | Wrapper around the media image          |
+| `.slide-social__image`     | The media image (`<img>`)               |
+| `.slide-social__header`    | Author header (avatar, name, timestamp) |
+| `.slide-social__body`      | The post text content                   |
+| `.slide-social__fallback`  | Shown when no body content exists       |
+
+#### Toasts (`toasts`)
+
+| Class                    | Element                                 |
+| ------------------------ | --------------------------------------- |
+| `.toast-overlay__item`   | Single toast item                       |
+| `.toast-overlay__header` | Author header (avatar, name, timestamp) |
+| `.toast-overlay__body`   | The post text content                   |
+
+#### Formatted text (inside `.slide-social__body` and `.toast-overlay__body`)
+
+| Class                      | Element                           |
+| -------------------------- | --------------------------------- |
+| `.formatted-text__hashtag` | Hashtags inside the messsage body |
+| `.formatted-text__link`    | Links inside the message body     |
+
+### Connection status overlay (`connectionstatus-overlay`)
+
+The bottom-left badge that surfaces the SSE connection state. Hidden when
+`connected`; shown as a pulsing orange dot while `connecting` and as a solid
+red dot when `disconnected`. Only rendered in non-production environments.
+
+| Class                                     | Element                                  |
+| ----------------------------------------- | ---------------------------------------- |
+| `.connectionstatus-overlay`               | Root container (bottom-left corner)      |
+| `.connectionstatus-overlay__disconnected` | Wrapper for the red "disconnected" dot   |
+| `.connectionstatus-overlay__connecting`   | Wrapper for the pulsing "connecting" dot |
+
+### Debug overlay (`debug-overlay`)
+
+Bottom-right status strip rendered in non-production environments. Shows
+environment, version, current playlist step, active slide animation, slide
+duration, and pause state. Intended for operators and developers, not users.
+
+| Class            | Element                              |
+| ---------------- | ------------------------------------ |
+| `.debug-overlay` | Root container (bottom-right corner) |

@@ -52,6 +52,9 @@ class MockEventSource {
   triggerError() {
     this.readyState = MockEventSource.CLOSED;
     this.onerror?.();
+    // Also notify any "error" listeners registered via addEventListener,
+    // matching how a real EventSource dispatches error events.
+    (this.listeners["error"] ?? []).forEach((cb) => cb({} as MessageEvent));
   }
 }
 
@@ -286,16 +289,50 @@ describe("SlideStore", () => {
         firstSSE.triggerError();
         expect(firstSSE.readyState).toBe(MockEventSource.CLOSED);
 
-        // 5s timer not yet fired
-        vi.advanceTimersByTime(4999);
+        // First reconnect uses ~1s base delay with ±20% jitter (800-1200ms).
+        // 500ms in: timer not yet fired.
+        vi.advanceTimersByTime(500);
         expect(MockEventSource.instances).toHaveLength(1);
 
-        // 5s timer fires -> a fresh EventSource is constructed via connect()
-        vi.advanceTimersByTime(1);
+        // 1000ms more (1500ms total): the timer fires and a fresh EventSource
+        // is constructed via connect().
+        vi.advanceTimersByTime(1000);
         expect(MockEventSource.instances).toHaveLength(2);
         const secondSSE = MockEventSource.instances[1];
         expect(secondSSE).not.toBe(firstSSE);
         expect(secondSSE.url).toBe(firstSSE.url);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("should back off exponentially across consecutive reconnect failures", () => {
+      vi.useFakeTimers();
+      vi.spyOn(Math, "random").mockReturnValue(0.5);
+      try {
+        store.connect();
+        const firstSSE = (store as unknown as { evtSource: MockEventSource })
+          .evtSource;
+
+        // 1st attempt -> base 1s
+        firstSSE.triggerError();
+        vi.advanceTimersByTime(2000);
+        const secondSSE = MockEventSource.instances[1];
+
+        // 2nd attempt -> base 2s
+        secondSSE.triggerError();
+        vi.advanceTimersByTime(1500);
+        expect(MockEventSource.instances).toHaveLength(2); // not yet
+        vi.advanceTimersByTime(1500);
+        expect(MockEventSource.instances).toHaveLength(3); // fired (~2-3s window)
+
+        // 3rd attempt -> base 4s
+        const thirdSSE = MockEventSource.instances[2];
+        thirdSSE.triggerError();
+        vi.advanceTimersByTime(3500);
+        expect(MockEventSource.instances).toHaveLength(3); // not yet
+        vi.advanceTimersByTime(2000);
+        expect(MockEventSource.instances).toHaveLength(4); // fired (~4-5s window)
       } finally {
         vi.useRealTimers();
       }

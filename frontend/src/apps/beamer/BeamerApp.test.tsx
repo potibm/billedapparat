@@ -193,7 +193,10 @@ beforeEach(() => {
   (slideStore as unknown as { slideMap: Record<number, unknown> }).slideMap =
     {};
   (slideStore as unknown as { slideArray: unknown[] }).slideArray = [];
-  (slideStore as unknown as { listeners: Set<unknown> }).listeners = new Set();
+  (slideStore as unknown as { dataListeners: Set<unknown> }).dataListeners =
+    new Set();
+  (slideStore as unknown as { statusListeners: Set<unknown> }).statusListeners =
+    new Set();
   lastMockSSE = null;
 });
 
@@ -402,5 +405,57 @@ describe("BeamerApp", () => {
     // NewsSlide renders the title as <h1>.
     expect(screen.getByText("Title 200")).toBeInTheDocument();
     expect(screen.getByText(/10s/)).toBeInTheDocument();
+  });
+
+  it("should reset the autoplay timer when advancing manually via keyboard", async () => {
+    // Regression test for the "manual next shows slide too briefly" bug.
+    //
+    // Bug: useAutoplay used `setInterval` keyed on `[duration, isPaused,
+    // isUrgent, hasCurrentSlide]`. When the user pressed ArrowRight late
+    // in the slide's display window, the reducer advanced `currentSlide`
+    // but the deps didn't change (duration is the same, paused/urgent/
+    // current unchanged), so the cleanup never ran. The new slide only
+    // displayed for the *remaining* time on the original interval.
+    //
+    // Fix: useAutoplay now uses `setTimeout` and depends on a `resetKey`
+    // (the current slide id), so the timer re-arms on every slide change.
+    //
+    // Test: step duration is 5s. We let 4s of auto-advance time elapse,
+    // then press ArrowRight (simulating a user manually advancing late in
+    // the cycle). With the bug, the original setInterval would fire just
+    // 1s later, replacing the new slide. With the fix, slide 2 must still
+    // be on screen 1.5s after the manual advance.
+    seedStoreWithSlides([
+      makeSlide(1, "news", "First"),
+      makeSlide(2, "news", "Second"),
+    ]);
+
+    renderBeamerAt();
+    await advanceInitialTick();
+
+    expect(screen.getByText("Title 1")).toBeInTheDocument();
+
+    // Burn 4s of the 5s duration so the original (un-reset) interval is
+    // about to fire. This is where the bug manifests: the manual advance
+    // happens with only 1s remaining on the old timer.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4000);
+    });
+    expect(screen.getByText("Title 1")).toBeInTheDocument();
+
+    // Manual advance to slide 2 with only 1s remaining on the original
+    // interval.
+    fireEvent.keyDown(document.body, { key: "ArrowRight" });
+    expect(screen.getByText("Title 2")).toBeInTheDocument();
+
+    // Advance 1.5s. With the bug, the original interval fires at +1s
+    // (total +5s from initial display) and replaces slide 2. With the
+    // fix, the timer was reset on the manual advance, so slide 2 still
+    // shows for another 3.5s.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+    expect(screen.getByText("Title 2")).toBeInTheDocument();
+    expect(screen.queryByText("Title 1")).not.toBeInTheDocument();
   });
 });

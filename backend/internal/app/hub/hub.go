@@ -127,7 +127,9 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 
 	s.StartMediaGarbageCollector(ctx)
+
 	s.StartCollectorTextGarbageCollector(ctx)
+	go s.streamer.StartPingLoop(ctx)
 
 	serverErr := make(chan error, 1)
 

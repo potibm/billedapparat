@@ -25,7 +25,7 @@ export const DebugOverlay = ({
   if (environment === "production") return null;
 
   return (
-    <div className="absolute bottom-2 right-2 text-[10px] text-white/20 pointer-events-none font-mono z-50">
+    <div className="debug-overlay absolute bottom-2 right-2 text-[10px] text-white/20 pointer-events-none font-mono z-50">
       {environment} | v{version} |{" "}
       {isUrgent
         ? "URGENT"
