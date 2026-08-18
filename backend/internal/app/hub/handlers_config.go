@@ -15,6 +15,7 @@ type AppConfigPublic struct {
 	Format             config.FormatConfig      `json:"format"`
 	Playlists          []config.PlaylistConfig  `json:"playlists"`
 	AdminURLs          config.ExternalAdminURLs `json:"admin_urls"`
+	Beamer             config.BeamerConfig      `json:"beamer"`
 	Auth               *config.AuthConfig       `json:"auth,omitempty"`
 }
 
@@ -39,6 +40,7 @@ func mapToPublicConfig(cfg *config.Config) AppConfigPublic {
 		Playlists:          cfg.Playlists,
 		Sentry:             cfg.Sentry,
 		AdminURLs:          cfg.AdminURLs,
+		Beamer:             cfg.Beamer,
 		Auth:               cfg.Auth,
 	}
 }

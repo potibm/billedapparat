@@ -99,6 +99,10 @@ type TimetableConfig struct {
 	EntriesPerSlide int `mapstructure:"entries_per_slide" validate:"omitempty,gt=0,lte=100"`
 }
 
+type BeamerConfig struct {
+	AllowedAnimations []string `mapstructure:"allowed_animations" validate:"omitempty,dive,oneof=fade slideRight zoomIn flip urgent"`
+}
+
 type Config struct {
 	App        AppConfig                  `mapstructure:"app"`
 	Format     FormatConfig               `mapstructure:"format"`
@@ -108,6 +112,7 @@ type Config struct {
 	Playlists  []PlaylistConfig           `mapstructure:"playlists"`
 	AdminURLs  ExternalAdminURLs          `mapstructure:"admin_urls"`
 	Timetable  TimetableConfig            `mapstructure:"timetable"`
+	Beamer     BeamerConfig               `mapstructure:"beamer"`
 	Auth       *AuthConfig                `mapstructure:"auth"       validate:"omitempty"`
 }
 

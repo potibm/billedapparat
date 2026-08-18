@@ -67,6 +67,8 @@ func InitViper() {
 
 	viper.SetDefault("timetable.entries_per_slide", 7) //nolint:mnd // matches generator default
 
+	viper.SetDefault("beamer.allowed_animations", []string{"fade", "slideRight", "zoomIn", "flip", "urgent"})
+
 	viper.RegisterAlias("sentry.environment", "app.env")
 	viper.RegisterAlias("sentry.version", "app.version")
 

@@ -38,6 +38,12 @@ export const ExternalAdminURLsSchema = z.object({
   news: z.url().or(z.literal("")).optional(),
 });
 
+export const BeamerConfigSchema = z.object({
+  allowed_animations: z
+    .array(z.enum(["fade", "slideRight", "zoomIn", "flip", "urgent"]))
+    .default(["fade", "slideRight", "zoomIn", "flip", "urgent"]),
+});
+
 export const AppConfigSchema = z.object({
   version: z.string(),
   environment: z.string(),
@@ -50,6 +56,9 @@ export const AppConfigSchema = z.object({
     .array(PlaylistSchema)
     .min(1, "At least one playlist must be defined"),
   admin_urls: ExternalAdminURLsSchema,
+  beamer: BeamerConfigSchema.default({
+    allowed_animations: ["fade", "slideRight", "zoomIn", "flip", "urgent"],
+  }),
   auth: z
     .object({
       type: z.enum(["oidc"]),
@@ -64,3 +73,4 @@ export type AppConfig = z.infer<typeof AppConfigSchema>;
 export type SentryConfig = z.infer<typeof SentrySchema>;
 export type Playlist = z.infer<typeof PlaylistSchema>;
 export type PlaylistStep = z.infer<typeof PlaylistStepSchema>;
+export type BeamerConfig = z.infer<typeof BeamerConfigSchema>;

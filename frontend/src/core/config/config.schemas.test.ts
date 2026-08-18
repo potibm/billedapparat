@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AppConfigSchema,
+  BeamerConfigSchema,
   PlaylistSchema,
   PlaylistStepSchema,
   ExternalAdminURLsSchema,
@@ -104,6 +105,49 @@ describe("config.schemas", () => {
     });
   });
 
+  describe("BeamerConfigSchema", () => {
+    it("should default allowed_animations to all five animations", () => {
+      const result = BeamerConfigSchema.safeParse({});
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.allowed_animations).toEqual([
+          "fade",
+          "slideRight",
+          "zoomIn",
+          "flip",
+          "urgent",
+        ]);
+      }
+    });
+
+    it("should accept a restricted allowed_animations list", () => {
+      const result = BeamerConfigSchema.safeParse({
+        allowed_animations: ["fade"],
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.allowed_animations).toEqual(["fade"]);
+      }
+    });
+
+    it("should accept an empty allowed_animations list", () => {
+      const result = BeamerConfigSchema.safeParse({
+        allowed_animations: [],
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.allowed_animations).toEqual([]);
+      }
+    });
+
+    it("should reject unknown animation keys", () => {
+      const result = BeamerConfigSchema.safeParse({
+        allowed_animations: ["fade", "spin"],
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
   describe("AppConfigSchema", () => {
     const validBase = {
       version: "1.0.0",
@@ -129,6 +173,9 @@ describe("config.schemas", () => {
       admin_urls: {
         timetable: "",
         news: "",
+      },
+      beamer: {
+        allowed_animations: ["fade", "slideRight", "zoomIn", "flip", "urgent"],
       },
     };
 
@@ -190,6 +237,21 @@ describe("config.schemas", () => {
         },
       });
       expect(result.success).toBe(false);
+    });
+
+    it("should default beamer.allowed_animations when the key is missing", () => {
+      const { beamer: _beamer, ...rest } = validBase;
+      const result = AppConfigSchema.safeParse(rest);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.beamer.allowed_animations).toEqual([
+          "fade",
+          "slideRight",
+          "zoomIn",
+          "flip",
+          "urgent",
+        ]);
+      }
     });
   });
 });

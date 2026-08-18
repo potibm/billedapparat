@@ -26,6 +26,9 @@ func TestMapToPublicConfig(t *testing.T) {
 		Playlists: []config.PlaylistConfig{
 			{ID: 1, Name: "Test Playlist"},
 		},
+		Beamer: config.BeamerConfig{
+			AllowedAnimations: []string{"fade"},
+		},
 	}
 
 	public := mapToPublicConfig(internalCfg)
@@ -38,6 +41,8 @@ func TestMapToPublicConfig(t *testing.T) {
 
 	assert.Len(t, public.Playlists, 1)
 	assert.Equal(t, "Test Playlist", public.Playlists[0].Name)
+
+	assert.Equal(t, []string{"fade"}, public.Beamer.AllowedAnimations)
 
 	payload, err := json.Marshal(public)
 	assert.NoError(t, err)

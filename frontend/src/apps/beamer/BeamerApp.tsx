@@ -30,7 +30,7 @@ export const BeamerApp = () => {
     allowOverlay,
   } = useSlideshowEngine();
 
-  const { version, environment } = useAppConfig();
+  const { version, environment, beamer } = useAppConfig();
 
   // 1. side effects and logic hooks
   useSSELifecycle();
@@ -47,6 +47,7 @@ export const BeamerApp = () => {
   const { activeAnimation, transition } = getSlideAnimation(
     currentSlide,
     isUrgent,
+    beamer.allowed_animations,
   );
 
   // 2. render logic
