@@ -306,7 +306,7 @@ export class SlideStore {
       this.RECONNECT_BASE_MS * 2 ** this.reconnectAttempts,
       this.RECONNECT_CAP_MS,
     );
-    const jitter = exp * (0.8 + Math.random() * 0.4);
+    const jitter = exp * (0.8 + Math.random() * 0.4); // NOSONAR
     this.reconnectAttempts += 1;
 
     this.reconnectTimeout = window.setTimeout(() => {

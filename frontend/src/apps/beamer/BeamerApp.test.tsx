@@ -445,9 +445,7 @@ describe("BeamerApp", () => {
 
     // Manual advance to slide 2 with only 1s remaining on the original
     // interval.
-    await act(async () => {
-      fireEvent.keyDown(document.body, { key: "ArrowRight" });
-    });
+    fireEvent.keyDown(document.body, { key: "ArrowRight" });
     expect(screen.getByText("Title 2")).toBeInTheDocument();
 
     // Advance 1.5s. With the bug, the original interval fires at +1s
