@@ -65,6 +65,8 @@ func InitViper() {
 	viper.SetDefault("admin_urls.timetable", "")
 	viper.SetDefault("admin_urls.news", "")
 
+	viper.SetDefault("timetable.entries_per_slide", 7) //nolint:mnd // matches generator default
+
 	viper.RegisterAlias("sentry.environment", "app.env")
 	viper.RegisterAlias("sentry.version", "app.version")
 
