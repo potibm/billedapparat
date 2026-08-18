@@ -96,3 +96,19 @@ Each slide type follows the BEM naming convention: `.slide-{type}__{element}`. U
 | `.slide-social__header`    | Author header (avatar, name, timestamp) |
 | `.slide-social__body`      | The post text content                   |
 | `.slide-social__fallback`  | Shown when no body content exists       |
+
+#### Toasts (`toasts`)
+
+| Class                      | Element                                 |
+| -------------------------- | --------------------------------------- |
+| `.toast-overlay__item`     | Single toast item                       |
+| `.toast-overlay__header`   | Author header (avatar, name, timestamp) |
+| `.toast-overlay__body`     | The post text content                   |
+
+
+#### Formatted text (inside `.slide-social__body`  and `.toast-overlay__body`)
+
+| Class                      | Element                                 |
+| -------------------------- | --------------------------------------- |
+| `.formatted-text__hashtag` | Hashtags inside the messsage body       |
+| `.formatted-text__link`    | Links inside the message body           |

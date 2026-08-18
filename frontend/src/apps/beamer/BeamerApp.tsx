@@ -34,7 +34,7 @@ export const BeamerApp = () => {
   // 1. side effects and logic hooks
   useSSEConnection();
   useKeyboardControls(next, previous, togglePause);
-  useAutoplay(next, duration, isPaused, isUrgent, !!currentSlide);
+  useAutoplay(next, duration, isPaused, isUrgent, !!currentSlide, currentSlide?.id);
 
   const { activeAnimation, transition } = getSlideAnimation(
     currentSlide,

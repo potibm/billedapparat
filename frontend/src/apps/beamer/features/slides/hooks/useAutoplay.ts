@@ -6,6 +6,7 @@ export function useAutoplay(
   isPaused: boolean,
   isUrgent: boolean,
   hasCurrentSlide: boolean,
+  resetKey: string | number | undefined,
 ) {
   const nextRef = useRef(next);
 
@@ -14,13 +15,12 @@ export function useAutoplay(
   }, [next]);
 
   useEffect(() => {
-    // When paused, urgent, or no slide present: stop the timer
     if (isPaused || isUrgent || !hasCurrentSlide) return;
 
-    const timer = setInterval(() => {
+    const timer = setTimeout(() => {
       nextRef.current();
     }, duration * 1000);
 
-    return () => clearInterval(timer);
-  }, [duration, isPaused, isUrgent, hasCurrentSlide]);
+    return () => clearTimeout(timer);
+  }, [duration, isPaused, isUrgent, hasCurrentSlide, resetKey]);
 }
