@@ -95,6 +95,10 @@ type ExternalAdminURLs struct {
 	News      string `json:"news"      mapstructure:"news"      validate:"omitempty,http_url"`
 }
 
+type TimetableConfig struct {
+	EntriesPerSlide int `mapstructure:"entries_per_slide" validate:"omitempty,gt=0,lte=100"`
+}
+
 type Config struct {
 	App        AppConfig                  `mapstructure:"app"`
 	Format     FormatConfig               `mapstructure:"format"`
@@ -103,6 +107,7 @@ type Config struct {
 	Collectors map[string]CollectorConfig `mapstructure:"collectors" validate:"dive"`
 	Playlists  []PlaylistConfig           `mapstructure:"playlists"`
 	AdminURLs  ExternalAdminURLs          `mapstructure:"admin_urls"`
+	Timetable  TimetableConfig            `mapstructure:"timetable"`
 	Auth       *AuthConfig                `mapstructure:"auth"       validate:"omitempty"`
 }
 
