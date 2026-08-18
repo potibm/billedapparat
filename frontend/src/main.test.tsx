@@ -57,6 +57,9 @@ const validConfig = {
     timetable: "",
     news: "",
   },
+  beamer: {
+    allowed_animations: ["fade", "slideRight", "zoomIn", "flip", "urgent"],
+  },
 };
 
 describe("bootstrapApp", () => {

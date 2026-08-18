@@ -151,6 +151,9 @@ const testConfig: AppConfig = {
     },
   ],
   admin_urls: {},
+  beamer: {
+    allowed_animations: ["fade", "slideRight", "zoomIn", "flip", "urgent"],
+  },
 };
 
 // ---------------------------------------------------------------------------
