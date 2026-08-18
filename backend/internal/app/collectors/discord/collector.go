@@ -102,7 +102,10 @@ func (c *Collector) handleMessageCreate(ctx context.Context, s *discordgo.Sessio
 		return
 	}
 
-	req := mapToIngestRequest(m.Message)
+	req, skip := mapToIngestRequest(m.Message, c.cfg.DropAttachments)
+	if skip {
+		return
+	}
 
 	c.metrics.EventsMatched.Add(ctx, 1, metric.WithAttributes(
 		attribute.String("collector", collectorName),

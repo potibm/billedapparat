@@ -5,13 +5,20 @@ import (
 	"github.com/potibm/billedapparat/internal/app/contracts"
 )
 
-func mapToIngestRequest(message *discordgo.Message) contracts.IngestSlideRequest {
+func mapToIngestRequest(message *discordgo.Message, dropAttachments bool) (contracts.IngestSlideRequest, bool) {
 	var mediaUrls []contracts.IngestSlideRequestMediaURL
-	for _, attachment := range message.Attachments {
-		mediaUrls = append(mediaUrls, contracts.IngestSlideRequestMediaURL{
-			ExternalURL: attachment.URL,
-			ContentType: attachment.ContentType,
-		})
+
+	if !dropAttachments {
+		for _, attachment := range message.Attachments {
+			mediaUrls = append(mediaUrls, contracts.IngestSlideRequestMediaURL{
+				ExternalURL: attachment.URL,
+				ContentType: attachment.ContentType,
+			})
+		}
+	}
+
+	if dropAttachments && len(message.Attachments) > 0 && message.Content == "" {
+		return contracts.IngestSlideRequest{}, true
 	}
 
 	displayName := message.Author.GlobalName
@@ -34,5 +41,5 @@ func mapToIngestRequest(message *discordgo.Message) contracts.IngestSlideRequest
 		},
 	}
 
-	return req
+	return req, false
 }

@@ -8,8 +8,9 @@ import (
 type Config struct {
 	config.CollectorConfig `mapstructure:",squash"`
 
-	BotToken  string `mapstructure:"bot_token"  validate:"required"`
-	ChannelID string `mapstructure:"channel_id" validate:"required"`
+	BotToken        string `mapstructure:"bot_token"        validate:"required"`
+	ChannelID       string `mapstructure:"channel_id"       validate:"required"`
+	DropAttachments bool   `mapstructure:"drop_attachments"`
 }
 
 func DefaultConfig(generatedAPIKey string) map[string]any {
@@ -19,8 +20,9 @@ func DefaultConfig(generatedAPIKey string) map[string]any {
 			Type:    config.CollectorDataTypeSlide,
 			APIKey:  generatedAPIKey,
 		},
-		BotToken:  "",
-		ChannelID: "0",
+		BotToken:        "",
+		ChannelID:       "0",
+		DropAttachments: false,
 	}
 
 	var result map[string]any
