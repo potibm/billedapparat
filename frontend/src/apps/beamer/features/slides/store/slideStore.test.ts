@@ -308,6 +308,7 @@ describe("SlideStore", () => {
 
     it("should back off exponentially across consecutive reconnect failures", () => {
       vi.useFakeTimers();
+      vi.spyOn(Math, "random").mockReturnValue(0.5);
       try {
         store.connect();
         const firstSSE = (store as unknown as { evtSource: MockEventSource })
