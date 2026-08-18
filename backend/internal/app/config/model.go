@@ -100,7 +100,7 @@ type TimetableConfig struct {
 }
 
 type BeamerConfig struct {
-	AllowedAnimations []string `mapstructure:"allowed_animations" validate:"omitempty,dive,oneof=fade slideRight zoomIn flip urgent"`
+	AllowedAnimations []string `json:"allowed_animations" mapstructure:"allowed_animations" validate:"omitempty,dive,oneof=fade slideRight zoomIn flip urgent"`
 }
 
 type Config struct {
