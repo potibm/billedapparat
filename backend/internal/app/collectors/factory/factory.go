@@ -8,6 +8,7 @@ import (
 	"github.com/potibm/billedapparat/internal/app/collectors/bluesky"
 	"github.com/potibm/billedapparat/internal/app/collectors/discord"
 	"github.com/potibm/billedapparat/internal/app/collectors/hubclient"
+	"github.com/potibm/billedapparat/internal/app/collectors/lorem"
 	"github.com/potibm/billedapparat/internal/app/collectors/mastodon"
 	"github.com/potibm/billedapparat/internal/app/collectors/pouet"
 	"github.com/potibm/billedapparat/internal/app/collectors/protokolapparat_news"
@@ -31,6 +32,8 @@ func Build(source string, v *viper.Viper, client *hubclient.HubClient) (collecto
 		return buildDiscord(v, client, validate)
 	case "twitch":
 		return buildTwitch(v, client, validate)
+	case "lorem":
+		return buildLorem(v, client, validate)
 	case "protokolapparat-news":
 		return buildProtokolapparatNews(v, client, validate)
 	case "protokolapparat-timetable":
@@ -58,6 +61,10 @@ func buildMastodon(v *viper.Viper, c *hubclient.HubClient, validate *validator.V
 
 func buildPouet(v *viper.Viper, c *hubclient.HubClient, validate *validator.Validate) (collectors.Collector, error) {
 	return buildCollector(v, c, validate, "Pouet", pouet.NewCollector)
+}
+
+func buildLorem(v *viper.Viper, c *hubclient.HubClient, validate *validator.Validate) (collectors.Collector, error) {
+	return buildCollector(v, c, validate, "Lorem", lorem.NewCollector)
 }
 
 func buildProtokolapparatNews(
