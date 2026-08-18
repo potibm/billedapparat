@@ -1,9 +1,11 @@
 package hub
 
 import (
+	"context"
 	"log/slog"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/potibm/billedapparat/internal/app/domain"
 	"github.com/stretchr/testify/assert"
@@ -136,4 +138,65 @@ func TestStreamer_ConcurrentOperations(t *testing.T) {
 
 	wg.Wait()
 	// No race detector errors expected
+}
+
+func TestStreamer_RunPingLoop_BroadcastsOnTick(t *testing.T) {
+	// Drives runPingLoop with a real ticker at a short interval and asserts
+	// that at least one PING event is broadcast to a connected client.
+	s := newTestStreamer()
+
+	ch := s.addClient()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	defer cancel()
+
+	ticker := time.NewTicker(10 * time.Millisecond)
+
+	done := make(chan struct{})
+
+	go func() {
+		s.runPingLoop(ctx, ticker)
+		close(done)
+	}()
+
+	select {
+	case msg := <-ch:
+		assert.Equal(t, string(domain.EventPing), msg.Event)
+	case <-time.After(time.Second):
+		t.Fatal("expected PING broadcast within 1s")
+	}
+
+	cancel()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("runPingLoop did not exit on ctx.Done()")
+	}
+}
+
+func TestStreamer_RunPingLoop_ExitsOnCtxCancel(t *testing.T) {
+	// Even when the ticker never fires, runPingLoop must exit promptly on
+	// ctx cancellation (no goroutine leak).
+	s := newTestStreamer()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	ticker := time.NewTicker(time.Hour) // intentionally far in the future
+
+	done := make(chan struct{})
+
+	go func() {
+		s.runPingLoop(ctx, ticker)
+		close(done)
+	}()
+
+	cancel()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("runPingLoop did not exit on ctx.Done()")
+	}
 }

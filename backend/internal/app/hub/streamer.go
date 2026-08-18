@@ -32,21 +32,9 @@ func NewStreamer(logger *slog.Logger) *Streamer {
 }
 
 func (s *Streamer) StartPingLoop(ctx context.Context) {
-	ticker := time.NewTicker(defaultPingInterval)
-	defer ticker.Stop()
-
 	s.logger.Info("Starting SSE ping loop", "interval", defaultPingInterval)
 
-	for {
-		select {
-		case <-ctx.Done():
-			s.logger.Info("Stopping SSE ping loop")
-
-			return
-		case <-ticker.C:
-			s.Broadcast(domain.EventPing, struct{}{})
-		}
-	}
+	s.runPingLoop(ctx, time.NewTicker(defaultPingInterval))
 }
 
 func (s *Streamer) Broadcast(event domain.StreamEvent, payload interface{}) {
@@ -63,6 +51,24 @@ func (s *Streamer) Broadcast(event domain.StreamEvent, payload interface{}) {
 		case ch <- msg:
 		default:
 			s.logger.Warn("Client channel full, dropping message")
+		}
+	}
+}
+
+// runPingLoop is the testable inner loop. Tests can pass a manually-driven
+// *time.Ticker to assert Broadcast is called on each tick without waiting
+// for real wall-clock time.
+func (s *Streamer) runPingLoop(ctx context.Context, ticker *time.Ticker) {
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			s.logger.Info("Stopping SSE ping loop")
+
+			return
+		case <-ticker.C:
+			s.Broadcast(domain.EventPing, struct{}{})
 		}
 	}
 }

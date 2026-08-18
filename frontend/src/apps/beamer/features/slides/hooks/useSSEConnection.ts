@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { slideStore } from "../store/slideStore";
 
 export const useSSEStatus = () => {
-  return useSyncExternalStore(slideStore.subscribe, slideStore.getStatus);
+  return useSyncExternalStore(slideStore.subscribeStatus, slideStore.getStatus);
 };
 
 export const useSSELifecycle = () => {

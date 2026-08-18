@@ -193,7 +193,10 @@ beforeEach(() => {
   (slideStore as unknown as { slideMap: Record<number, unknown> }).slideMap =
     {};
   (slideStore as unknown as { slideArray: unknown[] }).slideArray = [];
-  (slideStore as unknown as { listeners: Set<unknown> }).listeners = new Set();
+  (slideStore as unknown as { dataListeners: Set<unknown> }).dataListeners =
+    new Set();
+  (slideStore as unknown as { statusListeners: Set<unknown> }).statusListeners =
+    new Set();
   lastMockSSE = null;
 });
 

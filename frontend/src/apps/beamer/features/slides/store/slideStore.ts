@@ -28,36 +28,63 @@ export class SlideStore {
 
   private slideArray: Slide[] = [];
 
-  private readonly listeners: Set<Listener> = new Set();
+  // Two independent subscriber sets so that status changes don't trigger
+  // expensive slide-array recomputation for data subscribers, and vice
+  // versa. Keeps the Observer pattern clean: status changes are conceptually
+  // orthogonal to slide data.
+  private readonly dataListeners: Set<Listener> = new Set();
+  private readonly statusListeners: Set<Listener> = new Set();
   private evtSource: EventSource | null = null;
 
   private status: ConnectionStatus = "disconnected";
 
   private reconnectTimeout: number | null = null;
   private watchdogTimeout: number | null = null;
-  
   // NOTE: This interval must be at least 2x the server's ping interval (currently 10s).
   // The margin accounts for network jitter, latency, and browser background throttling.
   private readonly WATCHDOG_INTERVAL = 20000;
 
+  // Exponential-backoff parameters (with ±20% jitter) for reconnect attempts
+  // when the hub is unreachable. Reset to 0 on every successful message receipt.
+  private reconnectAttempts = 0;
+  private readonly RECONNECT_BASE_MS = 1000;
+  private readonly RECONNECT_CAP_MS = 30000;
+
   // --- 1. Reactivity (Observer Pattern) ---
 
   /**
-   * Subscribes a listener function to state changes.
+   * Subscribes a listener function to slide-data changes (INIT/CREATE/UPDATE/DELETE).
+   * Status changes do NOT fire this listener.
    * @param listener - Function to be called whenever the slide state updates.
    * @returns A cleanup function to unsubscribe.
    */
   public subscribe = (listener: Listener): (() => void) => {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    this.dataListeners.add(listener);
+    return () => this.dataListeners.delete(listener);
   };
 
   /**
-   * Notifies all active subscribers about a state mutation.
+   * Subscribes a listener function to connection-status changes.
+   * Slide-data changes do NOT fire this listener.
    */
-  private notify() {
+  public subscribeStatus = (listener: Listener): (() => void) => {
+    this.statusListeners.add(listener);
+    return () => this.statusListeners.delete(listener);
+  };
+
+  /**
+   * Notifies data subscribers about a slide mutation and rebuilds the cached array.
+   */
+  private notifyData() {
     this.slideArray = Object.values(this.slideMap);
-    this.listeners.forEach((listener) => listener());
+    this.dataListeners.forEach((listener) => listener());
+  }
+
+  /**
+   * Notifies status subscribers about a connection-status change.
+   */
+  private notifyStatus() {
+    this.statusListeners.forEach((listener) => listener());
   }
 
   // --- 2. State Access (Queries) ---
@@ -93,19 +120,19 @@ export class SlideStore {
     const newMap: SlideDictionary = {};
     slides.forEach((s) => (newMap[s.id] = s));
     this.slideMap = newMap;
-    this.notify();
+    this.notifyData();
   }
 
   private upsertSlide(slide: Slide) {
     this.slideMap = { ...this.slideMap, [slide.id]: slide };
-    this.notify();
+    this.notifyData();
   }
 
   private deleteSlide(id: number) {
     const newMap = { ...this.slideMap };
     delete newMap[id];
     this.slideMap = newMap;
-    this.notify();
+    this.notifyData();
   }
 
   // --- Helper: Safe Parse & Validate ---
@@ -160,6 +187,7 @@ export class SlideStore {
     const handleEvent = (handler: (e: MessageEvent) => void) => {
       return (e: MessageEvent) => {
         this.resetWatchdog(); // on every message: connection is alive
+        this.reconnectAttempts = 0; // stable: reset exponential backoff
         handler(e);
       };
     };
@@ -220,8 +248,18 @@ export class SlideStore {
       }),
     );
 
+    // We own reconnection on every `error` event (replacing the browser's
+    // native ~3s auto-reconnect and any Last-Event-ID resumption). The
+    // watchdog still drives forceReconnect after WATCHDOG_INTERVAL of
+    // silence, but we flip the visible status immediately on error so the
+    // overlay reflects reality instead of lying green for up to 20s.
     this.evtSource.addEventListener("error", () => {
       logger.warn("SSE error triggered (network or CORS issue).");
+
+      const wasOpen = this.evtSource?.readyState === EventSource.OPEN;
+      if (wasOpen) {
+        this.setStatus("connecting");
+      }
 
       this.forceReconnect();
     });
@@ -264,10 +302,23 @@ export class SlideStore {
 
     this.setStatus("connecting");
 
+    const exp = Math.min(
+      this.RECONNECT_BASE_MS * 2 ** this.reconnectAttempts,
+      this.RECONNECT_CAP_MS,
+    );
+    const jitter = exp * (0.8 + Math.random() * 0.4);
+    this.reconnectAttempts += 1;
+
     this.reconnectTimeout = window.setTimeout(() => {
-      logger.info("Attempting to reconnect SSE...");
+      logger.info(
+        "Attempting to reconnect SSE...",
+        "attempt",
+        this.reconnectAttempts,
+        "delay_ms",
+        Math.round(jitter),
+      );
       this.connect();
-    }, 5000);
+    }, jitter);
   }
 
   public getStatus = (): ConnectionStatus => {
@@ -277,7 +328,7 @@ export class SlideStore {
   private setStatus(newStatus: ConnectionStatus) {
     if (this.status !== newStatus) {
       this.status = newStatus;
-      this.notify(); // UI über den neuen Status informieren!
+      this.notifyStatus();
     }
   }
 }
