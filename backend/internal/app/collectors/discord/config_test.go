@@ -22,4 +22,5 @@ func TestDefaultConfig(t *testing.T) {
 	assert.Equal(t, config.CollectorDataTypeSlide, cfg.Type)
 	assert.Equal(t, "", cfg.BotToken)
 	assert.Equal(t, "0", cfg.ChannelID)
+	assert.False(t, cfg.DropAttachments)
 }
