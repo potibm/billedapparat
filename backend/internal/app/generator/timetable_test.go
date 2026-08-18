@@ -191,7 +191,7 @@ func (m *mockTimetableRepo) Sync(
 
 func TestGenerate_EmptyEvents(t *testing.T) {
 	repo := &mockTimetableRepo{events: domain.Timetable{}}
-	g := NewTimetableGenerator(repo, slog.Default())
+	g := NewTimetableGenerator(repo, slog.Default(), 0)
 
 	slides, err := g.Generate(context.Background())
 
@@ -205,8 +205,8 @@ func TestGenerate_OneDayWithinLimit(t *testing.T) {
 		{ExternalID: "e2", Title: "Event 2", StartTime: makeTime(11, 0), EndTime: makeTime(12, 0)},
 	}
 	repo := &mockTimetableRepo{events: events}
-	g := NewTimetableGenerator(repo, slog.Default())
-	g.entriesPerSlide = 5 // more than 2 events
+	// 5 entries per slide → both events fit on one slide
+	g := NewTimetableGenerator(repo, slog.Default(), 5)
 
 	slides, err := g.Generate(context.Background())
 
@@ -222,8 +222,8 @@ func TestGenerate_OneDayExceedingLimit(t *testing.T) {
 		{ExternalID: "e4", Title: "E4", StartTime: makeTime(12, 0), EndTime: makeTime(13, 0)},
 	}
 	repo := &mockTimetableRepo{events: events}
-	g := NewTimetableGenerator(repo, slog.Default())
-	g.entriesPerSlide = 2 // 4 events → 2 slides
+	// 2 entries per slide → 4 events → 2 slides
+	g := NewTimetableGenerator(repo, slog.Default(), 2)
 
 	slides, err := g.Generate(context.Background())
 
@@ -248,7 +248,7 @@ func TestGenerate_MultipleDays(t *testing.T) {
 		},
 	}
 	repo := &mockTimetableRepo{events: events}
-	g := NewTimetableGenerator(repo, slog.Default())
+	g := NewTimetableGenerator(repo, slog.Default(), 0)
 
 	slides, err := g.Generate(context.Background())
 
@@ -261,7 +261,7 @@ func TestGenerate_RepoError(t *testing.T) {
 	repo := &mockTimetableRepo{
 		err: assert.AnError,
 	}
-	g := NewTimetableGenerator(repo, slog.Default())
+	g := NewTimetableGenerator(repo, slog.Default(), 0)
 
 	slides, err := g.Generate(context.Background())
 

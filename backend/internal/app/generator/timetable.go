@@ -11,7 +11,7 @@ import (
 	"github.com/potibm/billedapparat/internal/app/repository"
 )
 
-const defaultEntriesPerSlide = 5
+const defaultEntriesPerSlide = 7
 
 type timetableGenerator struct {
 	timetableRepo   repository.TimetableEventRepository
@@ -19,11 +19,19 @@ type timetableGenerator struct {
 	entriesPerSlide int
 }
 
-func NewTimetableGenerator(timetableRepo repository.TimetableEventRepository, logger *slog.Logger) *timetableGenerator {
+func NewTimetableGenerator(
+	timetableRepo repository.TimetableEventRepository,
+	logger *slog.Logger,
+	entriesPerSlide int,
+) *timetableGenerator {
+	if entriesPerSlide <= 0 {
+		entriesPerSlide = defaultEntriesPerSlide
+	}
+
 	return &timetableGenerator{
 		timetableRepo:   timetableRepo,
 		logger:          logger,
-		entriesPerSlide: defaultEntriesPerSlide,
+		entriesPerSlide: entriesPerSlide,
 	}
 }
 
