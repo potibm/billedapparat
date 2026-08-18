@@ -17,6 +17,7 @@ const (
 	EventCreate StreamEvent = "CREATE"
 	EventUpdate StreamEvent = "UPDATE"
 	EventDelete StreamEvent = "DELETE"
+	EventPing   StreamEvent = "PING"
 
 	TypeSocialMedia SlideType = "social.media"
 	TypeSocialText  SlideType = "social.text"

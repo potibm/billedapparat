@@ -3,10 +3,12 @@ import { slideSchema, type Slide } from "../types/slide.schema";
 import { createLogger } from "@core/logger/logger";
 import { sortByPriorityDesc } from "../utils/slideshow.logic";
 
-const logger = createLogger("Slides");
+const logger = createLogger("Stream");
 
 type SlideDictionary = Record<number, Slide>;
 type Listener = () => void;
+
+export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 
 /**
  * SlideStore (Framework-Agnostic State Manager)
@@ -29,7 +31,14 @@ export class SlideStore {
   private readonly listeners: Set<Listener> = new Set();
   private evtSource: EventSource | null = null;
 
+  private status: ConnectionStatus = "disconnected";
+
   private reconnectTimeout: number | null = null;
+  private watchdogTimeout: number | null = null;
+  
+  // NOTE: This interval must be at least 2x the server's ping interval (currently 10s).
+  // The margin accounts for network jitter, latency, and browser background throttling.
+  private readonly WATCHDOG_INTERVAL = 20000;
 
   // --- 1. Reactivity (Observer Pattern) ---
 
@@ -38,10 +47,10 @@ export class SlideStore {
    * @param listener - Function to be called whenever the slide state updates.
    * @returns A cleanup function to unsubscribe.
    */
-  public subscribe(listener: Listener): () => void {
+  public subscribe = (listener: Listener): (() => void) => {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
-  }
+  };
 
   /**
    * Notifies all active subscribers about a state mutation.
@@ -106,7 +115,7 @@ export class SlideStore {
     schema: z.ZodType<T>,
   ): T | null {
     try {
-      const parsedJson = JSON.parse(rawData); // <-- Try/Catch fängt das JSON-Problem
+      const parsedJson = JSON.parse(rawData);
       const validation = schema.safeParse(parsedJson);
 
       if (validation.success) {
@@ -138,49 +147,84 @@ export class SlideStore {
   public connect() {
     if (this.evtSource) return; // Prevent multiple active connections
 
+    this.setStatus("connecting");
+
     this.evtSource = new EventSource("/api/stream");
+    this.resetWatchdog();
 
-    this.evtSource.addEventListener("INIT", (e: MessageEvent) => {
-      const data = this.parseAndValidate("INIT", e.data, z.array(slideSchema));
-      if (data) {
-        logger.debug("Received INIT event", "count", data.length);
-        this.initSlides(data);
-      }
+    this.evtSource.addEventListener("open", () => {
+      logger.info("SSE connection opened");
+      this.setStatus("connected");
     });
 
-    this.evtSource.addEventListener("CREATE", (e: MessageEvent) => {
-      const data = this.parseAndValidate("CREATE", e.data, slideSchema);
-      if (data) {
-        logger.debug("Received CREATE event", "id", data.id);
-        this.upsertSlide(data);
-      }
-    });
-
-    this.evtSource.addEventListener("UPDATE", (e: MessageEvent) => {
-      const data = this.parseAndValidate("UPDATE", e.data, slideSchema);
-      if (data) {
-        logger.debug("Received UPDATE event", "id", data.id);
-        this.upsertSlide(data);
-      }
-    });
-
-    this.evtSource.addEventListener("DELETE", (e: MessageEvent) => {
-      const data = this.parseAndValidate("DELETE", e.data, z.number());
-      if (data) {
-        logger.debug("Received DELETE event", "id", data);
-        this.deleteSlide(data);
-      }
-    });
-
-    this.evtSource.onerror = () => {
-      logger.warn("SSE connection lost. Attempting to reconnect...");
-
-      if (this.evtSource?.readyState === EventSource.CLOSED) {
-        this.disconnect();
-        if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
-        this.reconnectTimeout = window.setTimeout(() => this.connect(), 5000);
-      }
+    const handleEvent = (handler: (e: MessageEvent) => void) => {
+      return (e: MessageEvent) => {
+        this.resetWatchdog(); // on every message: connection is alive
+        handler(e);
+      };
     };
+
+    this.evtSource.addEventListener(
+      "PING",
+      handleEvent(() => {
+        // noop
+        logger.debug("PING event");
+      }),
+    );
+
+    this.evtSource.addEventListener(
+      "INIT",
+      handleEvent((e: MessageEvent) => {
+        const data = this.parseAndValidate(
+          "INIT",
+          e.data,
+          z.array(slideSchema),
+        );
+        if (data) {
+          logger.debug("Received INIT event", "count", data.length);
+          this.initSlides(data);
+        }
+      }),
+    );
+
+    this.evtSource.addEventListener(
+      "CREATE",
+      handleEvent((e: MessageEvent) => {
+        const data = this.parseAndValidate("CREATE", e.data, slideSchema);
+        if (data) {
+          logger.debug("Received CREATE event", "id", data.id);
+          this.upsertSlide(data);
+        }
+      }),
+    );
+
+    this.evtSource.addEventListener(
+      "UPDATE",
+      handleEvent((e: MessageEvent) => {
+        const data = this.parseAndValidate("UPDATE", e.data, slideSchema);
+        if (data) {
+          logger.debug("Received UPDATE event", "id", data.id);
+          this.upsertSlide(data);
+        }
+      }),
+    );
+
+    this.evtSource.addEventListener(
+      "DELETE",
+      handleEvent((e: MessageEvent) => {
+        const data = this.parseAndValidate("DELETE", e.data, z.number());
+        if (data) {
+          logger.debug("Received DELETE event", "id", data);
+          this.deleteSlide(data);
+        }
+      }),
+    );
+
+    this.evtSource.addEventListener("error", () => {
+      logger.warn("SSE error triggered (network or CORS issue).");
+
+      this.forceReconnect();
+    });
   }
 
   /**
@@ -194,6 +238,46 @@ export class SlideStore {
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
+    }
+    if (this.watchdogTimeout) {
+      window.clearTimeout(this.watchdogTimeout);
+      this.watchdogTimeout = null;
+    }
+    this.setStatus("disconnected");
+  }
+
+  private resetWatchdog() {
+    if (this.watchdogTimeout) {
+      window.clearTimeout(this.watchdogTimeout);
+    }
+
+    this.watchdogTimeout = window.setTimeout(() => {
+      logger.warn(
+        "SSE Watchdog timeout: No messages received. Reconnecting...",
+      );
+      this.forceReconnect();
+    }, this.WATCHDOG_INTERVAL);
+  }
+
+  private forceReconnect() {
+    this.disconnect();
+
+    this.setStatus("connecting");
+
+    this.reconnectTimeout = window.setTimeout(() => {
+      logger.info("Attempting to reconnect SSE...");
+      this.connect();
+    }, 5000);
+  }
+
+  public getStatus = (): ConnectionStatus => {
+    return this.status;
+  };
+
+  private setStatus(newStatus: ConnectionStatus) {
+    if (this.status !== newStatus) {
+      this.status = newStatus;
+      this.notify(); // UI über den neuen Status informieren!
     }
   }
 }

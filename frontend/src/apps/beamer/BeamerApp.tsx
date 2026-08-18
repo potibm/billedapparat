@@ -6,7 +6,7 @@ import * as Sentry from "@sentry/react";
 // hooks
 import { useAutoplay } from "./features/slides/hooks/useAutoplay";
 import { useKeyboardControls } from "./features/slides/hooks/useKeyboardControls";
-import { useSSEConnection } from "./features/slides/hooks/useSSEConnection";
+import { useSSELifecycle } from "./features/slides/hooks/useSSEConnection";
 import { getSlideAnimation } from "./features/slides/utils/getSlideAnimation";
 import { useSlideshowEngine } from "./features/slides/hooks/useSlideshowEngine";
 
@@ -14,6 +14,7 @@ import { useSlideshowEngine } from "./features/slides/hooks/useSlideshowEngine";
 import { DebugOverlay } from "./components/DebugOverlay";
 import { SlideRenderer } from "./features/slides/components/SlideRenderer";
 import { ToastManager } from "./features/slides/components/ToastManager";
+import { ConnectionStatusOverlay } from "./components/ConnectionStatusOverlay";
 
 export const BeamerApp = () => {
   const {
@@ -32,9 +33,16 @@ export const BeamerApp = () => {
   const { version, environment } = useAppConfig();
 
   // 1. side effects and logic hooks
-  useSSEConnection();
+  useSSELifecycle();
   useKeyboardControls(next, previous, togglePause);
-  useAutoplay(next, duration, isPaused, isUrgent, !!currentSlide, currentSlide?.id);
+  useAutoplay(
+    next,
+    duration,
+    isPaused,
+    isUrgent,
+    !!currentSlide,
+    currentSlide?.id,
+  );
 
   const { activeAnimation, transition } = getSlideAnimation(
     currentSlide,
@@ -75,6 +83,8 @@ export const BeamerApp = () => {
       </AnimatePresence>
 
       <ToastManager toastSlides={toastSlides} allowOverlay={allowOverlay} />
+
+      <ConnectionStatusOverlay />
 
       <DebugOverlay
         isUrgent={isUrgent}
