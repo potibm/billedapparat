@@ -92,7 +92,7 @@ func NewServer(cfg Config) (*Server, error) {
 		generator.NewTimetableGenerator(
 			cfg.TimetableEventRepo,
 			logger.With("component", "TimetableGenerator"),
-			cfg.Cfg.Timetable.EntriesPerSlide,
+			cfg.Cfg.Timetable.MaxEntriesPerSlide,
 		),
 	)
 

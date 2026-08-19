@@ -94,6 +94,7 @@ func fromDomainSlide(s *domain.Slide) *dbSlide {
 func (s *dbSlide) toDomain() *domain.Slide {
 	ds := &domain.Slide{
 		ID:            s.ID,
+		CreatedAt:     s.CreatedAt,
 		ExternalSubID: s.ExternalSubID,
 		Status:        domain.SlideStatus(s.Status),
 		Content: domain.Content{

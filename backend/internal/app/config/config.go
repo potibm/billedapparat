@@ -65,7 +65,7 @@ func InitViper() {
 	viper.SetDefault("admin_urls.timetable", "")
 	viper.SetDefault("admin_urls.news", "")
 
-	viper.SetDefault("timetable.entries_per_slide", 7) //nolint:mnd // matches generator default
+	viper.SetDefault("timetable.max_entries_per_slide", DefaultTimetableMaxEntriesPerSlide)
 
 	viper.SetDefault("beamer.allowed_animations", []string{"fade", "slideRight", "zoomIn", "flip", "urgent"})
 
