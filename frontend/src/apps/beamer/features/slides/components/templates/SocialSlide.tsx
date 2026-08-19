@@ -21,6 +21,7 @@ export const SocialSlide = ({ slide }: { slide: Slide }) => {
           username={slide.author?.username}
           avatarUrl={slide.author?.avatar?.local_url}
           createdAt={slide.origin_created_at}
+          source={slide.source}
           className="slide-social__header"
         />
 
