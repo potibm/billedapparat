@@ -1,5 +1,5 @@
 import { ImageEditPreviewField } from "@admin/components/fields/ImageEditPreviewField";
-import { ImageUploadInput } from "@admin/components/inputs/ImageUploadInput";
+import { MediaUploadInput } from "@admin/components/inputs/MediaUploadInput";
 import { PriorityInput } from "@admin/components/inputs/PriorityInput";
 import { StatusSelectInput } from "@admin/components/inputs/StatusSelectInput";
 import {
@@ -25,9 +25,16 @@ export const SponsorEdit = () => (
 
       <ImageEditPreviewField />
 
-      <ImageUploadInput label="Change Slide" />
+      <MediaUploadInput label="Change Slide" />
 
       <PriorityInput />
+
+      <NumberInput
+        source="display_options.duration"
+        label="Duration in seconds (0 = use playlist)"
+        step={0.5}
+        min={0}
+      />
 
       <BooleanInput
         source="display_options.allow_social_overlay"

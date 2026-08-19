@@ -71,6 +71,7 @@ const mockSlide1: Slide = {
     priority: 10,
     is_urgent: false,
     allow_social_overlay: false,
+    duration: 0,
   },
 } as Slide;
 
@@ -83,6 +84,7 @@ const mockUrgentSlideLowPrio: Slide = {
     priority: 5,
     is_urgent: true,
     allow_social_overlay: false,
+    duration: 0,
   },
 } as Slide;
 
@@ -95,6 +97,7 @@ const mockUrgentSlideHighPrio: Slide = {
     priority: 99,
     is_urgent: true,
     allow_social_overlay: false,
+    duration: 0,
   },
 } as Slide;
 

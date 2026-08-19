@@ -1,4 +1,4 @@
-import { ImageUploadInput } from "@admin/components/inputs/ImageUploadInput";
+import { MediaUploadInput } from "@admin/components/inputs/MediaUploadInput";
 import { PriorityInput } from "@admin/components/inputs/PriorityInput";
 import { StatusSelectInput } from "@admin/components/inputs/StatusSelectInput";
 import {
@@ -7,12 +7,17 @@ import {
   TextInput,
   required,
   BooleanInput,
+  NumberInput,
 } from "react-admin";
 
 export const SponsorCreate = () => (
   <Create title="Add Sponsor Screen">
     <SimpleForm
-      defaultValues={{ content: { type: "sponsor" }, status: "active" }}
+      defaultValues={{
+        content: { type: "sponsor" },
+        status: "active",
+        display_options: { duration: 0 },
+      }}
     >
       <TextInput
         source="content.title"
@@ -21,9 +26,16 @@ export const SponsorCreate = () => (
         fullWidth
       />
 
-      <ImageUploadInput label="Upload Slide" />
+      <MediaUploadInput label="Upload Slide" />
 
       <PriorityInput />
+
+      <NumberInput
+        source="display_options.duration"
+        label="Duration in seconds (0 = use playlist)"
+        step={0.5}
+        min={0}
+      />
 
       <BooleanInput
         source="display_options.allow_social_overlay"

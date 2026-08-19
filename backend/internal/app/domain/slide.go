@@ -77,9 +77,10 @@ type Content struct {
 }
 
 type DisplayOptions struct {
-	AllowSocialOverlay bool `json:"allow_social_overlay"`
-	Priority           int  `json:"priority"`
-	IsUrgent           bool `json:"is_urgent"`
+	AllowSocialOverlay bool    `json:"allow_social_overlay"`
+	Priority           int     `json:"priority"`
+	IsUrgent           bool    `json:"is_urgent"`
+	Duration           float32 `json:"duration"`
 }
 
 func (t SlideType) IsReadonly() bool {

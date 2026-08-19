@@ -37,6 +37,7 @@ export const slideSchema = z.object({
     priority: z.number(),
     is_urgent: z.boolean(),
     allow_social_overlay: z.boolean(),
+    duration: z.number().default(0),
   }),
 });
 

@@ -55,7 +55,7 @@ func (s *Server) internalImportDirectory(c *gin.Context) {
 
 	for _, file := range files {
 		ext := strings.ToLower(filepath.Ext(file.Name()))
-		if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".webp" {
+		if ext != ".jpg" && ext != ".jpeg" && ext != ".png" && ext != ".webp" && ext != ".mp4" {
 			continue
 		}
 
@@ -86,9 +86,22 @@ func (s *Server) processImportedFile(ctx context.Context, filePath string) (*dom
 	}
 	defer file.Close()
 
-	publicURL, err := media.ProcessAndSaveSlide(file)
+	ext := strings.ToLower(filepath.Ext(filePath))
+
+	var publicURL string
+
+	var mimeType string
+
+	if ext == ".mp4" {
+		publicURL, err = media.ProcessAndSaveVideo(file)
+		mimeType = "video/mp4"
+	} else {
+		publicURL, err = media.ProcessAndSaveSlide(file)
+		mimeType = "image/webp"
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to process image: %w", err)
+		return nil, fmt.Errorf("failed to process media: %w", err)
 	}
 
 	baseName := strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
@@ -100,7 +113,7 @@ func (s *Server) processImportedFile(ctx context.Context, filePath string) (*dom
 			Media: &domain.Media{
 				OriginalURL: "file://" + filePath,
 				LocalURL:    publicURL,
-				MimeType:    "image/webp",
+				MimeType:    mimeType,
 			},
 		},
 		DisplayOptions: domain.DisplayOptions{

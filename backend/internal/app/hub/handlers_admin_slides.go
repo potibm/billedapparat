@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -233,20 +234,44 @@ func (s *Server) parseMultipartSlide(c *gin.Context) (*domain.Slide, error) {
 	slide.DisplayOptions.Priority = priority
 	slide.DisplayOptions.AllowSocialOverlay = c.PostForm("display_options.allow_social_overlay") == "true"
 
-	_, fileErr := c.FormFile("image_upload")
+	if d, err := strconv.ParseFloat(c.PostForm("display_options.duration"), 32); err == nil {
+		slide.DisplayOptions.Duration = float32(d)
+	}
+
+	fileHeader, fileErr := c.FormFile("media_upload")
 	if fileErr != nil {
 		return &slide, nil
 	}
 
-	newPath, err := s.mediaProcessor.ProcessSlideImage(c, "image_upload")
-	if err != nil {
-		return nil, fmt.Errorf("failed to process image_upload: %w", err)
+	file, openErr := fileHeader.Open()
+	if openErr != nil {
+		return nil, fmt.Errorf("failed to open media_upload: %w", openErr)
+	}
+
+	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
+
+	var newPath string
+
+	var mimeType string
+
+	var processErr error
+
+	if ext == ".mp4" {
+		newPath, processErr = s.mediaProcessor.ProcessSlideVideo(file)
+		mimeType = "video/mp4"
+	} else {
+		newPath, processErr = s.mediaProcessor.ProcessSlideImage(file)
+		mimeType = "image/webp"
+	}
+
+	if processErr != nil {
+		return nil, fmt.Errorf("failed to process media_upload: %w", processErr)
 	}
 
 	if newPath != "" {
 		slide.Content.Media = &domain.Media{
 			LocalURL: newPath,
-			MimeType: "image/webp",
+			MimeType: mimeType,
 		}
 	}
 

@@ -37,6 +37,7 @@ type dbSlide struct {
 	AllowSocialOverlay bool
 	Priority           int
 	IsUrgent           bool
+	Duration           float32
 
 	// Metadata
 	OriginCreatedAt time.Time
@@ -60,6 +61,7 @@ func fromDomainSlide(s *domain.Slide) *dbSlide {
 		AllowSocialOverlay: s.DisplayOptions.AllowSocialOverlay,
 		IsUrgent:           s.DisplayOptions.IsUrgent,
 		Priority:           s.DisplayOptions.Priority,
+		Duration:           s.DisplayOptions.Duration,
 	}
 
 	if s.Author != nil {
@@ -108,6 +110,7 @@ func (s *dbSlide) toDomain() *domain.Slide {
 			AllowSocialOverlay: s.AllowSocialOverlay,
 			IsUrgent:           s.IsUrgent,
 			Priority:           s.Priority,
+			Duration:           s.Duration,
 		},
 		OriginCreatedAt: s.OriginCreatedAt,
 	}

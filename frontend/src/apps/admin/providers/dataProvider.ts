@@ -52,8 +52,9 @@ interface SlideFormData {
   };
   display_options?: {
     priority?: number | string;
+    duration?: number | string;
   };
-  image_upload?: {
+  media_upload?: {
     rawFile?: File;
   };
   [key: string]: unknown;
@@ -115,7 +116,7 @@ const handleFileUpload = async (
   const data = params.data as SlideFormData;
   const slideType = mappedType || data.content?.type || "slide";
 
-  if (!data.image_upload || !data.image_upload.rawFile) {
+  if (!data.media_upload || !data.media_upload.rawFile) {
     if (mappedType) {
       data.content = { ...data.content, type: slideType };
     }
@@ -139,8 +140,12 @@ const handleFileUpload = async (
     "display_options.priority",
     data.display_options?.priority?.toString() || "1",
   );
+  formData.append(
+    "display_options.duration",
+    data.display_options?.duration?.toString() || "0",
+  );
 
-  formData.append("image_upload", data.image_upload.rawFile);
+  formData.append("media_upload", data.media_upload.rawFile);
 
   const id = "id" in params ? params.id : "";
 
