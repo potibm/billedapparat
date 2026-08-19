@@ -32,10 +32,11 @@ export const SourceIcon = ({
   const IconComponent = iconMap[source];
 
   if (IconComponent) {
-    const sizeValue =
-      width !== undefined ? width : height !== undefined ? height : 16;
+    const sizeValue = width ?? height ?? 16;
     const size =
-      typeof sizeValue === "number" ? sizeValue : parseInt(String(sizeValue));
+      typeof sizeValue === "number"
+        ? sizeValue
+        : Number.parseInt(String(sizeValue));
     return (
       <IconComponent
         size={size}
