@@ -1,5 +1,5 @@
 import { ImageEditPreviewField } from "@admin/components/fields/ImageEditPreviewField";
-import { ImageUploadInput } from "@admin/components/inputs/ImageUploadInput";
+import { MediaUploadInput } from "@admin/components/inputs/MediaUploadInput";
 import { PriorityInput } from "@admin/components/inputs/PriorityInput";
 import { StatusSelectInput } from "@admin/components/inputs/StatusSelectInput";
 import {
@@ -25,7 +25,7 @@ export const SponsorEdit = () => (
 
       <ImageEditPreviewField />
 
-      <ImageUploadInput label="Change Slide" />
+      <MediaUploadInput label="Change Slide" />
 
       <PriorityInput />
 

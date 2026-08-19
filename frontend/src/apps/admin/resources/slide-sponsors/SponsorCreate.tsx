@@ -1,4 +1,4 @@
-import { ImageUploadInput } from "@admin/components/inputs/ImageUploadInput";
+import { MediaUploadInput } from "@admin/components/inputs/MediaUploadInput";
 import { PriorityInput } from "@admin/components/inputs/PriorityInput";
 import { StatusSelectInput } from "@admin/components/inputs/StatusSelectInput";
 import {
@@ -21,7 +21,7 @@ export const SponsorCreate = () => (
         fullWidth
       />
 
-      <ImageUploadInput label="Upload Slide" />
+      <MediaUploadInput label="Upload Slide" />
 
       <PriorityInput />
 

@@ -78,6 +78,7 @@ type Server struct {
 
 type MediaProcessor interface {
 	ProcessSlideImage(c *gin.Context, formField string) (string, error)
+	ProcessSlideVideo(c *gin.Context, formField string) (string, error)
 }
 
 func NewServer(cfg Config) (*Server, error) {

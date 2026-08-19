@@ -220,7 +220,7 @@ describe("dataProvider", () => {
           content: { title: "My Slide", body: "Body text" },
           author: { display_name: "Author" },
           display_options: { priority: 2 },
-          image_upload: { rawFile: file },
+          media_upload: { rawFile: file },
         },
       });
 
@@ -240,7 +240,7 @@ describe("dataProvider", () => {
       expect(formData.get("content.body")).toBe("Body text");
       expect(formData.get("author.display_name")).toBe("Author");
       expect(formData.get("display_options.priority")).toBe("2");
-      expect(formData.get("image_upload")).toBe(file);
+      expect(formData.get("media_upload")).toBe(file);
 
       expect(result).toEqual({ data: mockResponse });
     });
@@ -255,7 +255,7 @@ describe("dataProvider", () => {
       });
 
       await dataProvider.create("sponsor-slides", {
-        data: { image_upload: { rawFile: file } },
+        data: { media_upload: { rawFile: file } },
       });
 
       const fetchCall = (globalThis.fetch as Mock).mock.calls[0];
@@ -273,7 +273,7 @@ describe("dataProvider", () => {
       });
 
       await dataProvider.create("sponsor-slides", {
-        data: { image_upload: { rawFile: file } },
+        data: { media_upload: { rawFile: file } },
       });
 
       const fetchCall = (globalThis.fetch as Mock).mock.calls[0];
@@ -291,7 +291,7 @@ describe("dataProvider", () => {
       });
 
       await dataProvider.create("sponsor-slides", {
-        data: { image_upload: { rawFile: file } },
+        data: { media_upload: { rawFile: file } },
       });
 
       const fetchCall = (globalThis.fetch as Mock).mock.calls[0];
@@ -356,7 +356,7 @@ describe("dataProvider", () => {
         data: {
           status: "inactive",
           content: { title: "Updated" },
-          image_upload: { rawFile: file },
+          media_upload: { rawFile: file },
         },
         previousData: {},
       });
@@ -384,7 +384,7 @@ describe("dataProvider", () => {
 
       await expect(
         dataProvider.create("sponsor-slides", {
-          data: { image_upload: { rawFile: file } },
+          data: { media_upload: { rawFile: file } },
         }),
       ).rejects.toThrow("Something went wrong");
     });
@@ -401,7 +401,7 @@ describe("dataProvider", () => {
 
       await expect(
         dataProvider.create("sponsor-slides", {
-          data: { image_upload: { rawFile: file } },
+          data: { media_upload: { rawFile: file } },
         }),
       ).rejects.toThrow("Bad Gateway");
     });
