@@ -1,37 +1,20 @@
 package hub
 
 import (
-	"github.com/gin-gonic/gin"
+	"mime/multipart"
+
 	"github.com/potibm/billedapparat/internal/app/media"
 )
 
 type LocalDiskMediaProcessor struct{}
 
-func (lmp *LocalDiskMediaProcessor) ProcessSlideImage(c *gin.Context, fieldName string) (string, error) {
-	fileHeader, err := c.FormFile(fieldName)
-	if err != nil {
-		return "", err
-	}
-
-	file, err := fileHeader.Open()
-	if err != nil {
-		return "", err
-	}
+func (lmp *LocalDiskMediaProcessor) ProcessSlideImage(file multipart.File) (string, error) {
 	defer file.Close()
 
 	return media.ProcessAndSaveSlide(file)
 }
 
-func (lmp *LocalDiskMediaProcessor) ProcessSlideVideo(c *gin.Context, fieldName string) (string, error) {
-	fileHeader, err := c.FormFile(fieldName)
-	if err != nil {
-		return "", err
-	}
-
-	file, err := fileHeader.Open()
-	if err != nil {
-		return "", err
-	}
+func (lmp *LocalDiskMediaProcessor) ProcessSlideVideo(file multipart.File) (string, error) {
 	defer file.Close()
 
 	return media.ProcessAndSaveVideo(file)

@@ -10,6 +10,10 @@ import (
 	"github.com/potibm/billedapparat/internal/app/config"
 )
 
+const maxVideoSize = 100 << 20 // 100 MB
+
+const bytesPerMB = 1 << 20
+
 func ProcessAndSaveVideo(file io.Reader) (string, error) {
 	filename := fmt.Sprintf("slide_%s.mp4", uuid.New().String())
 	localFilePath := filepath.Join(config.MediaDirname, filename)
@@ -22,9 +26,25 @@ func ProcessAndSaveVideo(file io.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer out.Close()
 
-	if _, err := io.Copy(out, file); err != nil {
+	defer func() {
+		out.Close()
+
+		if err != nil {
+			os.Remove(localFilePath)
+		}
+	}()
+
+	limited := io.LimitReader(file, maxVideoSize+1)
+
+	n, err := io.Copy(out, limited)
+	if err != nil {
+		return "", err
+	}
+
+	if n > maxVideoSize {
+		err = fmt.Errorf("video file exceeds maximum size of %d MB", maxVideoSize/bytesPerMB)
+
 		return "", err
 	}
 

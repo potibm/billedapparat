@@ -7,8 +7,11 @@ export const MediaUploadInput = ({
   <FileInput
     source={source}
     label={label}
-    accept={{ "image/*,video/mp4": [".png", ".jpg", ".jpeg", ".webp", ".mp4"] }}
-    placeholder={<p>Drag the slide here or click to upload</p>}
+    accept={{
+      "image/*": [".png", ".jpg", ".jpeg", ".webp"],
+      "video/mp4": [".mp4"],
+    }}
+    placeholder={<p>Drag media here or click to upload</p>}
   >
     <FileField source="src" title="title" />
   </FileInput>

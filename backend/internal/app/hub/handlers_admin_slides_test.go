@@ -15,11 +15,11 @@ import (
 
 type MockMediaProcessor struct{}
 
-func (m *MockMediaProcessor) ProcessSlideImage(c *gin.Context, formField string) (string, error) {
+func (m *MockMediaProcessor) ProcessSlideImage(file multipart.File) (string, error) {
 	return "/media/fake-pfad-fuer-test.webp", nil
 }
 
-func (m *MockMediaProcessor) ProcessSlideVideo(c *gin.Context, formField string) (string, error) {
+func (m *MockMediaProcessor) ProcessSlideVideo(file multipart.File) (string, error) {
 	return "/media/fake-pfad-fuer-test.mp4", nil
 }
 

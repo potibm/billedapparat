@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -242,7 +243,12 @@ func (s *Server) parseMultipartSlide(c *gin.Context) (*domain.Slide, error) {
 		return &slide, nil
 	}
 
-	contentType := fileHeader.Header.Get("Content-Type")
+	file, openErr := fileHeader.Open()
+	if openErr != nil {
+		return nil, fmt.Errorf("failed to open media_upload: %w", openErr)
+	}
+
+	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
 
 	var newPath string
 
@@ -250,11 +256,11 @@ func (s *Server) parseMultipartSlide(c *gin.Context) (*domain.Slide, error) {
 
 	var processErr error
 
-	if strings.HasPrefix(contentType, "video/") {
-		newPath, processErr = s.mediaProcessor.ProcessSlideVideo(c, "media_upload")
-		mimeType = contentType
+	if ext == ".mp4" {
+		newPath, processErr = s.mediaProcessor.ProcessSlideVideo(file)
+		mimeType = "video/mp4"
 	} else {
-		newPath, processErr = s.mediaProcessor.ProcessSlideImage(c, "media_upload")
+		newPath, processErr = s.mediaProcessor.ProcessSlideImage(file)
 		mimeType = "image/webp"
 	}
 

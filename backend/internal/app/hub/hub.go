@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"log/slog"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
@@ -77,8 +78,8 @@ type Server struct {
 }
 
 type MediaProcessor interface {
-	ProcessSlideImage(c *gin.Context, formField string) (string, error)
-	ProcessSlideVideo(c *gin.Context, formField string) (string, error)
+	ProcessSlideImage(file multipart.File) (string, error)
+	ProcessSlideVideo(file multipart.File) (string, error)
 }
 
 func NewServer(cfg Config) (*Server, error) {
