@@ -101,11 +101,17 @@ func (g *timetableGenerator) timetableToSlide(
 		)
 	}
 
+	originCreatedAt := date
+	if len(t) > 0 {
+		originCreatedAt = t[0].StartTime
+	}
+
 	slide := domain.Slide{
-		Source:        g.Name(),
-		ExternalID:    dateStr,
-		ExternalSubID: &subIDRef,
-		Status:        domain.StatusActive,
+		Source:          g.Name(),
+		ExternalID:      dateStr,
+		ExternalSubID:   &subIDRef,
+		Status:          domain.StatusActive,
+		OriginCreatedAt: originCreatedAt,
 		Content: domain.Content{
 			Title: title,
 			Body:  body,

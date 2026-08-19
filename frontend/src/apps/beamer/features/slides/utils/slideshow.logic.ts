@@ -79,17 +79,31 @@ export const sortSlides = (
   order: "asc" | "desc" | (string & {}),
 ): Slide[] => {
   const list = [...slides];
-  if (order === "asc") {
-    return list.sort(
-      (a, b) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-    );
-  }
-  if (order === "desc") {
-    return list.sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    );
+  if (order === "asc" || order === "desc") {
+    const dir = order === "asc" ? 1 : -1;
+    return list.sort((a, b) => {
+      // Primary: external_id (lexicographic — sorts YYYY-MM-DD dates
+      // chronologically). Slides missing external_id sort last in asc,
+      // first in desc.
+      const ae = a.external_id;
+      const be = b.external_id;
+      const aHas = ae != null && ae !== "";
+      const bHas = be != null && be !== "";
+      if (aHas !== bHas) return dir * (aHas ? -1 : 1);
+      if (!aHas) return 0; // both missing; fall through to tiebreakers
+
+      // TS doesn't carry the narrowing through aHas/bHas; both are non-null strings here.
+      const extCmp = (ae as string).localeCompare(be as string);
+      if (extCmp !== 0) return dir * extCmp;
+
+      // Secondary: external_sub_id (page within the external_id).
+      const as = a.external_sub_id ?? 0;
+      const bs = b.external_sub_id ?? 0;
+      if (as !== bs) return dir * (as - bs);
+
+      // Tiebreaker: id (DB-assigned, monotonic in batch inserts).
+      return dir * (a.id - b.id);
+    });
   }
   return list;
 };

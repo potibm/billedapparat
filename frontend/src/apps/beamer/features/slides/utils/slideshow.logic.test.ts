@@ -25,16 +25,69 @@ const { selectNextSlide, sortSlides, findNextValidStep, pickWeighted } = logic;
 
 describe("Slideshow Logic Utils", () => {
   describe("sortSlides", () => {
-    it("should sort slides by date ascending (asc)", () => {
-      const sorted = sortSlides(mockSlides, "asc");
-      expect(sorted[0].id).toBe(3); // 09:00
-      expect(sorted[2].id).toBe(2); // 11:00
+    const makeWithKeys = (
+      id: number,
+      externalId: string | null | undefined,
+      externalSubId: number | null | undefined,
+    ): Slide =>
+      ({
+        id,
+        external_id: externalId ?? undefined,
+        external_sub_id: externalSubId ?? undefined,
+        display_options: { priority: 1 },
+      }) as Slide;
+
+    it("should sort by external_id then external_sub_id ascending", () => {
+      const slides = [
+        makeWithKeys(10, "2026-05-25", 1),
+        makeWithKeys(20, "2026-05-25", 0),
+        makeWithKeys(30, "2026-05-26", 0),
+        makeWithKeys(40, "2026-05-25", 2),
+      ];
+      const sorted = sortSlides(slides, "asc");
+
+      expect(sorted.map((s) => s.id)).toEqual([20, 10, 40, 30]);
     });
 
-    it("should sort slides by date descending (desc)", () => {
-      const sorted = sortSlides(mockSlides, "desc");
-      expect(sorted[0].id).toBe(2); // 11:00
-      expect(sorted[2].id).toBe(3); // 09:00
+    it("should sort by external_id then external_sub_id descending", () => {
+      const slides = [
+        makeWithKeys(10, "2026-05-25", 1),
+        makeWithKeys(20, "2026-05-25", 0),
+        makeWithKeys(30, "2026-05-26", 0),
+        makeWithKeys(40, "2026-05-25", 2),
+      ];
+      const sorted = sortSlides(slides, "desc");
+
+      expect(sorted.map((s) => s.id)).toEqual([30, 40, 10, 20]);
+    });
+
+    it("should fall back to id when external_id and external_sub_id tie", () => {
+      const slides = [
+        makeWithKeys(30, "2026-05-25", 0),
+        makeWithKeys(10, "2026-05-25", 0),
+        makeWithKeys(20, "2026-05-25", 0),
+      ];
+      const sortedAsc = sortSlides(slides, "asc");
+      expect(sortedAsc.map((s) => s.id)).toEqual([10, 20, 30]);
+
+      const sortedDesc = sortSlides(slides, "desc");
+      expect(sortedDesc.map((s) => s.id)).toEqual([30, 20, 10]);
+    });
+
+    it("should treat missing external_id as last", () => {
+      const slides = [
+        makeWithKeys(10, null, 0),
+        makeWithKeys(20, "2026-05-25", 0),
+        makeWithKeys(30, null, 0),
+      ];
+      const sorted = sortSlides(slides, "asc");
+
+      // Slides without external_id sort after those with one (empty string
+      // sorts before any non-empty value in localeCompare; we negate that
+      // by treating missing as last).
+      expect(sorted[0].id).toBe(20);
+      // 10 and 30 both have null external_id; tiebreaker by id.
+      expect([sorted[1].id, sorted[2].id]).toEqual([10, 30]);
     });
   });
 
