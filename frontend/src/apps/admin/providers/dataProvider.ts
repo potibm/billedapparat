@@ -52,6 +52,7 @@ interface SlideFormData {
   };
   display_options?: {
     priority?: number | string;
+    duration?: number | string;
   };
   media_upload?: {
     rawFile?: File;
@@ -138,6 +139,10 @@ const handleFileUpload = async (
   formData.append(
     "display_options.priority",
     data.display_options?.priority?.toString() || "1",
+  );
+  formData.append(
+    "display_options.duration",
+    data.display_options?.duration?.toString() || "0",
   );
 
   formData.append("media_upload", data.media_upload.rawFile);

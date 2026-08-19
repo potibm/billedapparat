@@ -7,12 +7,17 @@ import {
   TextInput,
   required,
   BooleanInput,
+  NumberInput,
 } from "react-admin";
 
 export const SponsorCreate = () => (
   <Create title="Add Sponsor Screen">
     <SimpleForm
-      defaultValues={{ content: { type: "sponsor" }, status: "active" }}
+      defaultValues={{
+        content: { type: "sponsor" },
+        status: "active",
+        display_options: { duration: 0 },
+      }}
     >
       <TextInput
         source="content.title"
@@ -24,6 +29,13 @@ export const SponsorCreate = () => (
       <MediaUploadInput label="Upload Slide" />
 
       <PriorityInput />
+
+      <NumberInput
+        source="display_options.duration"
+        label="Duration in seconds (0 = use playlist)"
+        step={0.5}
+        min={0}
+      />
 
       <BooleanInput
         source="display_options.allow_social_overlay"

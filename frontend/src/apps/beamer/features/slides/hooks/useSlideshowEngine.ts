@@ -109,7 +109,10 @@ export const useSlideshowEngine = (): SlideshowEngine => {
     isUrgent: currentSlide?.display_options?.is_urgent === true,
     allowOverlay: currentSlide?.display_options?.allow_social_overlay ?? false,
     toastSlides,
-    duration: currentStep?.duration || 10,
+    duration:
+      currentSlide && currentSlide.display_options?.duration > 0
+        ? currentSlide.display_options.duration
+        : currentStep?.duration || 10,
     stepInfo:
       state.displayedStepInfo &&
       state.displayedStepInfo.stepIndex < activePlaylist.steps.length

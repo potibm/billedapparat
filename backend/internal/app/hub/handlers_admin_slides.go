@@ -233,6 +233,10 @@ func (s *Server) parseMultipartSlide(c *gin.Context) (*domain.Slide, error) {
 	slide.DisplayOptions.Priority = priority
 	slide.DisplayOptions.AllowSocialOverlay = c.PostForm("display_options.allow_social_overlay") == "true"
 
+	if d, err := strconv.ParseFloat(c.PostForm("display_options.duration"), 32); err == nil {
+		slide.DisplayOptions.Duration = float32(d)
+	}
+
 	fileHeader, fileErr := c.FormFile("media_upload")
 	if fileErr != nil {
 		return &slide, nil

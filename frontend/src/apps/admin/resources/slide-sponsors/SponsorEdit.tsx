@@ -29,6 +29,13 @@ export const SponsorEdit = () => (
 
       <PriorityInput />
 
+      <NumberInput
+        source="display_options.duration"
+        label="Duration in seconds (0 = use playlist)"
+        step={0.5}
+        min={0}
+      />
+
       <BooleanInput
         source="display_options.allow_social_overlay"
         label="Allow social media overlay"
