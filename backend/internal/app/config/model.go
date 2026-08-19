@@ -95,8 +95,13 @@ type ExternalAdminURLs struct {
 	News      string `json:"news"      mapstructure:"news"      validate:"omitempty,http_url"`
 }
 
+// DefaultTimetableMaxEntriesPerSlide is the upper bound on entries per
+// timetable slide used when the operator does not configure one. It is
+// the source of truth for the Viper default registered in InitViper.
+const DefaultTimetableMaxEntriesPerSlide = 7
+
 type TimetableConfig struct {
-	EntriesPerSlide int `mapstructure:"entries_per_slide" validate:"omitempty,gt=0,lte=100"`
+	MaxEntriesPerSlide int `mapstructure:"max_entries_per_slide" validate:"gt=0,lte=100"`
 }
 
 type BeamerConfig struct {

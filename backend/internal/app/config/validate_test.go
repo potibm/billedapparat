@@ -43,6 +43,9 @@ func TestConfig_PlaylistDefaultsAndValidation(t *testing.T) {
 				},
 			},
 		},
+		Timetable: TimetableConfig{
+			MaxEntriesPerSlide: DefaultTimetableMaxEntriesPerSlide,
+		},
 		Auth: &AuthConfig{
 			Type:         "oidc",
 			Name:         "Dex",
@@ -189,4 +192,80 @@ func TestAPIConfig_Validate(t *testing.T) {
 
 	err = cfg.Validate("development")
 	assert.NoError(t, err)
+}
+
+func TestTimetableConfig_Validate(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  TimetableConfig
+		wantErr bool
+	}{
+		{
+			name: "valid value",
+			config: TimetableConfig{
+				MaxEntriesPerSlide: DefaultTimetableMaxEntriesPerSlide,
+			},
+			wantErr: false,
+		},
+		{
+			name: "zero is rejected (was silently accepted via omitempty)",
+			config: TimetableConfig{
+				MaxEntriesPerSlide: 0,
+			},
+			wantErr: true,
+		},
+		{
+			name: "negative is rejected",
+			config: TimetableConfig{
+				MaxEntriesPerSlide: -1,
+			},
+			wantErr: true,
+		},
+		{
+			name: "above upper bound is rejected",
+			config: TimetableConfig{
+				MaxEntriesPerSlide: 101,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				App: AppConfig{
+					GinMode:      "debug",
+					Environment:  "development",
+					LogLevel:     "info",
+					LogFormat:    "text",
+					DbFilename:   "test.db",
+					FrontendURL:  "http://localhost:3000",
+					CollectorURL: "http://localhost:8080",
+					Port:         8080,
+				},
+				Format: FormatConfig{
+					Date: DateFormatConfig{Locale: "da-DK"},
+				},
+				API: APIConfig{AdminAPIKey: "test-key-12345"},
+				Sentry: SentryConfig{
+					TraceSampleRate:         0.1,
+					ReplaySessionSampleRate: 0.1,
+					ReplayErrorSampleRate:   0.1,
+					Environment:             "development",
+					Version:                 "1.2.3",
+				},
+				Playlists: []PlaylistConfig{
+					{ID: 1, Name: "Default", Steps: []PlaylistStep{{Type: "sponsor"}}},
+				},
+				Timetable: tt.config,
+			}
+
+			err := cfg.Validate()
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }

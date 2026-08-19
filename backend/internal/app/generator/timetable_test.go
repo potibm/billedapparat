@@ -191,7 +191,7 @@ func (m *mockTimetableRepo) Sync(
 
 func TestGenerate_EmptyEvents(t *testing.T) {
 	repo := &mockTimetableRepo{events: domain.Timetable{}}
-	g := NewTimetableGenerator(repo, slog.Default(), 0)
+	g := NewTimetableGenerator(repo, slog.Default(), 7)
 
 	slides, err := g.Generate(context.Background())
 
@@ -248,7 +248,7 @@ func TestGenerate_MultipleDays(t *testing.T) {
 		},
 	}
 	repo := &mockTimetableRepo{events: events}
-	g := NewTimetableGenerator(repo, slog.Default(), 0)
+	g := NewTimetableGenerator(repo, slog.Default(), 7)
 
 	slides, err := g.Generate(context.Background())
 
@@ -261,7 +261,7 @@ func TestGenerate_RepoError(t *testing.T) {
 	repo := &mockTimetableRepo{
 		err: assert.AnError,
 	}
-	g := NewTimetableGenerator(repo, slog.Default(), 0)
+	g := NewTimetableGenerator(repo, slog.Default(), 7)
 
 	slides, err := g.Generate(context.Background())
 

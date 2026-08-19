@@ -97,3 +97,41 @@ func (t Timetable) Chunk(size int) []Timetable {
 
 	return chunks
 }
+
+// ChunkEvenly splits t into as few chunks as possible without any chunk
+// exceeding max items. Chunks are as evenly sized as possible (differ by
+// at most one item; the first chunks get the extra item to preserve
+// chronological order).
+//
+// Precondition: chunkSize > 0 (guaranteed by the config layer in production).
+// If chunkSize <= 0, the timetable is returned as a single chunk.
+func (t Timetable) ChunkEvenly(chunkSize int) []Timetable {
+	n := len(t)
+
+	if n == 0 {
+		return nil
+	}
+
+	if chunkSize <= 0 || chunkSize >= n {
+		return []Timetable{t}
+	}
+
+	chunks := (n + chunkSize - 1) / chunkSize // ceil(n / chunkSize) — minimum chunks needed
+	base := n / chunks
+	remainder := n % chunks // first `remainder` chunks get one extra item
+
+	result := make([]Timetable, 0, chunks)
+	start := 0
+
+	for i := 0; i < chunks; i++ {
+		size := base
+		if i < remainder {
+			size++
+		}
+
+		result = append(result, t[start:start+size])
+		start += size
+	}
+
+	return result
+}

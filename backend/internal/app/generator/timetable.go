@@ -11,27 +11,21 @@ import (
 	"github.com/potibm/billedapparat/internal/app/repository"
 )
 
-const defaultEntriesPerSlide = 7
-
 type timetableGenerator struct {
-	timetableRepo   repository.TimetableEventRepository
-	logger          *slog.Logger
-	entriesPerSlide int
+	timetableRepo      repository.TimetableEventRepository
+	logger             *slog.Logger
+	maxEntriesPerSlide int
 }
 
 func NewTimetableGenerator(
 	timetableRepo repository.TimetableEventRepository,
 	logger *slog.Logger,
-	entriesPerSlide int,
+	maxEntriesPerSlide int,
 ) *timetableGenerator {
-	if entriesPerSlide <= 0 {
-		entriesPerSlide = defaultEntriesPerSlide
-	}
-
 	return &timetableGenerator{
-		timetableRepo:   timetableRepo,
-		logger:          logger,
-		entriesPerSlide: entriesPerSlide,
+		timetableRepo:      timetableRepo,
+		logger:             logger,
+		maxEntriesPerSlide: maxEntriesPerSlide,
 	}
 }
 
@@ -50,7 +44,7 @@ func (g *timetableGenerator) Generate(ctx context.Context) ([]domain.Slide, erro
 	var slides []domain.Slide
 
 	for _, dayGroup := range dailyGroups {
-		chunks := dayGroup.Events.Chunk(g.entriesPerSlide)
+		chunks := dayGroup.Events.ChunkEvenly(g.maxEntriesPerSlide)
 
 		for pageIndex, chunk := range chunks {
 			slides = append(slides, g.timetableToSlide(chunk, dayGroup.Date, dayGroup.DateStr, pageIndex, len(chunks)))
