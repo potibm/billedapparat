@@ -3,6 +3,7 @@ import { z } from "zod";
 export const slideSchema = z.object({
   id: z.number(),
   status: z.string().default("active"),
+  source: z.string().nullish(),
   external_id: z.string().nullish(),
   external_sub_id: z.number().nullish(),
   origin_created_at: z.iso.datetime({ offset: true }).nullish(),
