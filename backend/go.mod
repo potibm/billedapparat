@@ -31,7 +31,7 @@ require (
 	github.com/samber/slog-multi v1.8.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.20.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.70.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.70.0
@@ -58,7 +58,6 @@ require (
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.7 // indirect
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.15 // indirect
@@ -84,7 +83,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
-	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/quic-go/quic-go v0.61.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
