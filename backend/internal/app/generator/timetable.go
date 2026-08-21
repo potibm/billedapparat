@@ -15,18 +15,26 @@ type timetableGenerator struct {
 	timetableRepo      repository.TimetableEventRepository
 	logger             *slog.Logger
 	maxEntriesPerSlide int
+	location           *time.Location
 }
 
 func NewTimetableGenerator(
 	timetableRepo repository.TimetableEventRepository,
 	logger *slog.Logger,
 	maxEntriesPerSlide int,
-) *timetableGenerator {
+	timezone string,
+) (*timetableGenerator, error) {
+	loc, err := time.LoadLocation(timezone)
+	if err != nil {
+		return nil, fmt.Errorf("invalid timezone %q: %w", timezone, err)
+	}
+
 	return &timetableGenerator{
 		timetableRepo:      timetableRepo,
 		logger:             logger,
 		maxEntriesPerSlide: maxEntriesPerSlide,
-	}
+		location:           loc,
+	}, nil
 }
 
 func (g *timetableGenerator) Name() string {
@@ -64,7 +72,7 @@ func (g *timetableGenerator) timetableToSlide(
 ) domain.Slide {
 	subIDRef := subID
 
-	title := date.Format("Monday")
+	title := date.In(g.location).Format("Monday")
 	if totalPages > 1 {
 		title += fmt.Sprintf(" %d/%d", subID+1, totalPages)
 	}
@@ -80,7 +88,7 @@ func (g *timetableGenerator) timetableToSlide(
 
 		endTimeStr := ""
 		if event.StartTime != event.EndTime {
-			endTimeStr = event.EndTime.Format("15:04")
+			endTimeStr = event.EndTime.In(g.location).Format("15:04")
 		}
 
 		category := ""
@@ -92,7 +100,7 @@ func (g *timetableGenerator) timetableToSlide(
 		}
 
 		body += fmt.Sprintf("| %s | %s | %s | %s | %s | %s |\n",
-			escapePipes(event.StartTime.Format("15:04")),
+			escapePipes(event.StartTime.In(g.location).Format("15:04")),
 			escapePipes(endTimeStr),
 			escapePipes(category),
 			escapePipes(categoryColor),

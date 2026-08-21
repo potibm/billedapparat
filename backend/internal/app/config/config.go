@@ -66,6 +66,7 @@ func InitViper() {
 	viper.SetDefault("admin_urls.news", "")
 
 	viper.SetDefault("timetable.max_entries_per_slide", DefaultTimetableMaxEntriesPerSlide)
+	viper.SetDefault("timetable.timezone", "UTC")
 
 	viper.SetDefault("beamer.allowed_animations", []string{"fade", "slideRight", "zoomIn", "flip", "urgent"})
 

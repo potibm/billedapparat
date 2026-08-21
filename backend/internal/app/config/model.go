@@ -101,7 +101,8 @@ type ExternalAdminURLs struct {
 const DefaultTimetableMaxEntriesPerSlide = 7
 
 type TimetableConfig struct {
-	MaxEntriesPerSlide int `mapstructure:"max_entries_per_slide" validate:"gt=0,lte=100"`
+	MaxEntriesPerSlide int    `mapstructure:"max_entries_per_slide" validate:"gt=0,lte=100"`
+	TimeZone           string `mapstructure:"timezone"              validate:"omitempty,timezone"`
 }
 
 type BeamerConfig struct {

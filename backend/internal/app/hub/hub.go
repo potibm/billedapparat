@@ -86,16 +86,22 @@ func NewServer(cfg Config) (*Server, error) {
 	logger := slog.Default()
 	streamer := NewStreamer(logger.With("component", "Streamer"))
 
+	timetableGen, err := generator.NewTimetableGenerator(
+		cfg.TimetableEventRepo,
+		logger.With("component", "TimetableGenerator"),
+		cfg.Cfg.Timetable.MaxEntriesPerSlide,
+		cfg.Cfg.Timetable.TimeZone,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create timetable generator: %w", err)
+	}
+
 	engine := generator.NewEngine(
 		cfg.SlideRepo,
 		streamer,
 		logger.With("component", "GeneratorEngine"),
 		generator.NewNewsGenerator(cfg.NewsRepo, logger.With("component", "NewsGenerator")),
-		generator.NewTimetableGenerator(
-			cfg.TimetableEventRepo,
-			logger.With("component", "TimetableGenerator"),
-			cfg.Cfg.Timetable.MaxEntriesPerSlide,
-		),
+		timetableGen,
 	)
 
 	mediaDownloader := NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader"))
