@@ -17,7 +17,7 @@ func makeTime(hour, minute int) time.Time {
 }
 
 func TestTimetableToSlide_SinglePage(t *testing.T) {
-	g := &timetableGenerator{logger: slog.Default()}
+	g := &timetableGenerator{logger: slog.Default(), location: time.UTC}
 
 	date := time.Date(2026, time.May, 25, 0, 0, 0, 0, time.UTC)
 	events := domain.Timetable{
@@ -44,7 +44,7 @@ func TestTimetableToSlide_SinglePage(t *testing.T) {
 }
 
 func TestTimetableToSlide_MultiPage(t *testing.T) {
-	g := &timetableGenerator{logger: slog.Default()}
+	g := &timetableGenerator{logger: slog.Default(), location: time.UTC}
 
 	date := time.Date(2026, time.May, 25, 0, 0, 0, 0, time.UTC)
 	events := domain.Timetable{
@@ -64,7 +64,7 @@ func TestTimetableToSlide_MultiPage(t *testing.T) {
 }
 
 func TestTimetableToSlide_NilLocation(t *testing.T) {
-	g := &timetableGenerator{logger: slog.Default()}
+	g := &timetableGenerator{logger: slog.Default(), location: time.UTC}
 
 	date := time.Date(2026, time.May, 25, 0, 0, 0, 0, time.UTC)
 	events := domain.Timetable{
@@ -84,7 +84,7 @@ func TestTimetableToSlide_NilLocation(t *testing.T) {
 }
 
 func TestTimetableToSlide_NilCategory(t *testing.T) {
-	g := &timetableGenerator{logger: slog.Default()}
+	g := &timetableGenerator{logger: slog.Default(), location: time.UTC}
 
 	date := time.Date(2026, time.May, 25, 0, 0, 0, 0, time.UTC)
 	events := domain.Timetable{
@@ -104,7 +104,7 @@ func TestTimetableToSlide_NilCategory(t *testing.T) {
 }
 
 func TestTimetableToSlide_StartTimeEqualsEndTime(t *testing.T) {
-	g := &timetableGenerator{logger: slog.Default()}
+	g := &timetableGenerator{logger: slog.Default(), location: time.UTC}
 
 	date := time.Date(2026, time.May, 25, 0, 0, 0, 0, time.UTC)
 	events := domain.Timetable{
@@ -124,7 +124,7 @@ func TestTimetableToSlide_StartTimeEqualsEndTime(t *testing.T) {
 }
 
 func TestTimetableToSlide_AllFields(t *testing.T) {
-	g := &timetableGenerator{logger: slog.Default()}
+	g := &timetableGenerator{logger: slog.Default(), location: time.UTC}
 
 	date := time.Date(2026, time.May, 25, 0, 0, 0, 0, time.UTC)
 	events := domain.Timetable{
@@ -191,7 +191,8 @@ func (m *mockTimetableRepo) Sync(
 
 func TestGenerate_EmptyEvents(t *testing.T) {
 	repo := &mockTimetableRepo{events: domain.Timetable{}}
-	g := NewTimetableGenerator(repo, slog.Default(), 7)
+	g, err := NewTimetableGenerator(repo, slog.Default(), 7, "UTC")
+	require.NoError(t, err)
 
 	slides, err := g.Generate(context.Background())
 
@@ -205,8 +206,8 @@ func TestGenerate_OneDayWithinLimit(t *testing.T) {
 		{ExternalID: "e2", Title: "Event 2", StartTime: makeTime(11, 0), EndTime: makeTime(12, 0)},
 	}
 	repo := &mockTimetableRepo{events: events}
-	// 5 entries per slide → both events fit on one slide
-	g := NewTimetableGenerator(repo, slog.Default(), 5)
+	g, err := NewTimetableGenerator(repo, slog.Default(), 5, "UTC")
+	require.NoError(t, err)
 
 	slides, err := g.Generate(context.Background())
 
@@ -222,14 +223,13 @@ func TestGenerate_OneDayExceedingLimit(t *testing.T) {
 		{ExternalID: "e4", Title: "E4", StartTime: makeTime(12, 0), EndTime: makeTime(13, 0)},
 	}
 	repo := &mockTimetableRepo{events: events}
-	// 2 entries per slide → 4 events → 2 slides
-	g := NewTimetableGenerator(repo, slog.Default(), 2)
+	g, err := NewTimetableGenerator(repo, slog.Default(), 2, "UTC")
+	require.NoError(t, err)
 
 	slides, err := g.Generate(context.Background())
 
 	require.NoError(t, err)
 	assert.Len(t, slides, 2)
-	// first slide should have pagination
 	assert.Contains(t, slides[0].Content.Title, "1/2")
 	assert.Contains(t, slides[1].Content.Title, "2/2")
 }
@@ -248,12 +248,12 @@ func TestGenerate_MultipleDays(t *testing.T) {
 		},
 	}
 	repo := &mockTimetableRepo{events: events}
-	g := NewTimetableGenerator(repo, slog.Default(), 7)
+	g, err := NewTimetableGenerator(repo, slog.Default(), 7, "UTC")
+	require.NoError(t, err)
 
 	slides, err := g.Generate(context.Background())
 
 	require.NoError(t, err)
-	// group by date → 2 days → 2 slides
 	assert.Len(t, slides, 2)
 }
 
@@ -261,10 +261,41 @@ func TestGenerate_RepoError(t *testing.T) {
 	repo := &mockTimetableRepo{
 		err: assert.AnError,
 	}
-	g := NewTimetableGenerator(repo, slog.Default(), 7)
+	g, err := NewTimetableGenerator(repo, slog.Default(), 7, "UTC")
+	require.NoError(t, err)
 
 	slides, err := g.Generate(context.Background())
 
 	assert.Error(t, err)
 	assert.Nil(t, slides)
+}
+
+func TestNewTimetableGenerator_InvalidTimezone(t *testing.T) {
+	repo := &mockTimetableRepo{}
+	_, err := NewTimetableGenerator(repo, slog.Default(), 7, "Invalid/Timezone")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid timezone")
+}
+
+func TestTimetableToSlide_TimezoneConversion(t *testing.T) {
+	berlin, err := time.LoadLocation("Europe/Berlin")
+	require.NoError(t, err)
+
+	g := &timetableGenerator{logger: slog.Default(), location: berlin}
+
+	utcTime := time.Date(2026, time.May, 25, 14, 0, 0, 0, time.UTC)
+	date := time.Date(2026, time.May, 25, 0, 0, 0, 0, time.UTC)
+	events := domain.Timetable{
+		{
+			ExternalID: "evt-1",
+			Title:      "Afternoon Event",
+			StartTime:  utcTime,
+			EndTime:    utcTime.Add(time.Hour),
+		},
+	}
+
+	slide := g.timetableToSlide(events, date, "2026-05-25", 0, 1)
+
+	assert.Contains(t, slide.Content.Body, "| 16:00 | 17:00 |")
 }
