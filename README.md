@@ -5,7 +5,7 @@
 > _Billedapparat_ is the Danish term for imaging device.
 
 > **Part of the Apparat Suite** ⚙️
-> This tool is part of a decoupled set of single-purpose event management tools built for demoparties. 
+> This tool is part of a decoupled set of single-purpose event management tools built for demoparties.
 > [➔ Read more about the full Apparat suite here](https://github.com/potibm/apparat)
 
 It is a party information system for the bigscreen at [demoparties](https://en.wikipedia.org/wiki/Demoscene#Parties). Based on earlier solutions (including [Partymeister](https://github.com/partymeister) and Tagwall) for [Evoke](https://www.evoke.eu/).
