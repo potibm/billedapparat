@@ -70,6 +70,7 @@ func NewServeCmd() *cobra.Command {
 				FilterRuleRepo:     dbStore.NewFilterRuleRepository(),
 				NewsRepo:           dbStore.NewNewsRepository(),
 				TimetableEventRepo: dbStore.NewTimetableEventRepository(),
+				Pinger:             dbStore,
 				Cfg:                Cfg,
 			})
 			if err != nil {

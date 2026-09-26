@@ -1,6 +1,8 @@
 package gorm
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"path/filepath"
 
@@ -9,6 +11,9 @@ import (
 
 	"github.com/potibm/billedapparat/internal/app/config"
 )
+
+// maxOpenConns caps the SQLite connection pool, see configureConnectionPool.
+const maxOpenConns = 4
 
 type Store struct {
 	db *gorm.DB
@@ -48,6 +53,21 @@ func (s *Store) Close() error {
 	return sqlDB.Close()
 }
 
+// Ping reports whether the database connection is alive. It is a connection-level
+// check only, on purpose; see doc/architecture/007-health-readiness-endpoints.md.
+func (s *Store) Ping(ctx context.Context) error {
+	sqlDB, err := s.db.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get underlying database connection: %w", err)
+	}
+
+	if err := sqlDB.PingContext(ctx); err != nil {
+		return fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Store) PurgeAll() error {
 	if err := s.db.Migrator().DropTable(allModels...); err != nil {
 		return fmt.Errorf("failed to drop tables: %w", err)
@@ -67,17 +87,19 @@ func newStore(dsn string) (*Store, error) {
 	}
 
 	sqlDB, err := db.DB()
-	if err == nil {
-		_, err = sqlDB.Exec("PRAGMA journal_mode = WAL;")
-		if err != nil {
-			return nil, fmt.Errorf("failed to set journal mode: %w", err)
-		}
-
-		_, err = sqlDB.Exec("PRAGMA foreign_keys = ON;")
-		if err != nil {
-			return nil, fmt.Errorf("failed to set foreign keys: %w", err)
-		}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get underlying database connection: %w", err)
 	}
+
+	if _, err := sqlDB.Exec("PRAGMA journal_mode = WAL;"); err != nil {
+		return nil, fmt.Errorf("failed to set journal mode: %w", err)
+	}
+
+	if _, err := sqlDB.Exec("PRAGMA foreign_keys = ON;"); err != nil {
+		return nil, fmt.Errorf("failed to set foreign keys: %w", err)
+	}
+
+	configureConnectionPool(sqlDB)
 
 	if err := db.AutoMigrate(allModels...); err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
@@ -93,6 +115,13 @@ func newStore(dsn string) (*Store, error) {
 	}
 
 	return &Store{db: db}, nil
+}
+
+// configureConnectionPool bounds the pool, see ADR 007. Kept above one so a slow
+// query cannot occupy the only connection and stall the probe.
+func configureConnectionPool(sqlDB *sql.DB) {
+	sqlDB.SetMaxOpenConns(maxOpenConns)
+	sqlDB.SetMaxIdleConns(maxOpenConns)
 }
 
 func cleanupSoftDeletes(db *gorm.DB) error {
