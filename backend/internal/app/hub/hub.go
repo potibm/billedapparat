@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	sentrygin "github.com/getsentry/sentry-go/gin"
@@ -58,6 +59,7 @@ type Config struct {
 	NewsRepo           repository.NewsRepository
 	TimetableEventRepo repository.TimetableEventRepository
 	FilterRuleRepo     repository.FilterRuleRepository
+	Pinger             repository.Pinger
 	Cfg                config.Config
 }
 
@@ -68,6 +70,7 @@ type Server struct {
 	filterRuleRepo     repository.FilterRuleRepository
 	newsRepo           repository.NewsRepository
 	timetableEventRepo repository.TimetableEventRepository
+	pinger             repository.Pinger
 	cfg                config.Config
 	streamer           *Streamer
 	mediaProcessor     MediaProcessor
@@ -75,6 +78,7 @@ type Server struct {
 	logger             *slog.Logger
 	sanitizer          *bluemonday.Policy
 	generatorEngine    *generator.Engine
+	lastReadinessSent  atomic.Int64
 }
 
 type MediaProcessor interface {
@@ -116,6 +120,7 @@ func NewServer(cfg Config) (*Server, error) {
 		filterRuleRepo:     cfg.FilterRuleRepo,
 		newsRepo:           cfg.NewsRepo,
 		timetableEventRepo: cfg.TimetableEventRepo,
+		pinger:             cfg.Pinger,
 		cfg:                cfg.Cfg,
 		streamer:           streamer,
 		mediaDownloader:    mediaDownloader,
@@ -194,6 +199,10 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 		otelgin.Middleware(config.OtelBackendServiceName),
 	)
 	s.registerCorsMiddleware(r)
+
+	// Registered before the static middleware to skip the asset lookup.
+	r.GET("/health", s.handleGetHealth)
+	r.GET("/ready", s.handleGetReady)
 
 	r.Static("/media", "./data/media")
 	r.Static("/style", "./data/style")
