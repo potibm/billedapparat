@@ -85,6 +85,18 @@ The backend dev server (`air`) runs on **3101**, not 3100.
 
 The `fe:test` task sets `NODE_OPTIONS="--no-webstorage"`. Running `npm run test` directly may behave differently.
 
+### Do not override `decode-uri-component` in `frontend/package.json`
+
+`react-admin@5` → `ra-core` → `query-string@7` (CJS) does `require("decode-uri-component")`.
+Every version `>=0.4` is ESM-only, so the `require()` returns a namespace object instead of a
+function and `query-string`'s `decodeComponent(value)` throws
+`TypeError: decodeComponent is not a function` — which breaks every list URL parameter
+(`page`, `perPage`, `sort`, `filter`, i.e. the admin pagination).
+
+Accept the `moderate` advisory GHSA-vcc3-ghjq-m6fr on the nested 0.2.2 copy. CI does not run
+`npm audit`, so it does not block anything. Only fix this via an `npm audit`-free path (e.g.
+overriding `query-string` to 8/9, which is ESM and imports `decode-uri-component` correctly).
+
 ---
 
 ## Lint / typecheck / test pipeline
