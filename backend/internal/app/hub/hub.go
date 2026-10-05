@@ -2,11 +2,12 @@ package hub
 
 import (
 	"context"
-	"embed"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -54,7 +55,7 @@ var (
 
 type Config struct {
 	Port               int
-	StaticFiles        embed.FS
+	StaticFiles        fs.FS
 	SlideRepo          repository.SlideRepository
 	NewsRepo           repository.NewsRepository
 	TimetableEventRepo repository.TimetableEventRepository
@@ -65,7 +66,7 @@ type Config struct {
 
 type Server struct {
 	port               int
-	staticFiles        embed.FS
+	staticFiles        fs.FS
 	slideRepo          repository.SlideRepository
 	filterRuleRepo     repository.FilterRuleRepository
 	newsRepo           repository.NewsRepository
@@ -207,12 +208,12 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	r.Static("/media", "./data/media")
 	r.Static("/style", "./data/style")
 
-	folder, err := static.EmbedFolder(s.staticFiles, "assets")
+	sub, err := fs.Sub(s.staticFiles, "assets")
 	if err != nil {
 		return nil, fmt.Errorf("create embedded folder: %w", err)
 	}
 
-	r.Use(static.Serve("/", folder))
+	r.Use(static.Serve("/", staticFS{http.FS(sub)}))
 
 	api := r.Group("/api")
 	api.GET("/config", s.handleGetPublicConfig)
@@ -278,18 +279,35 @@ func (s *Server) setupRouter() (*gin.Engine, error) {
 	collectors.PUT(collectorTimeTablePath, s.collectorSyncTimetable)
 	collectors.DELETE(collectorTimeTablePath+collectorPathWithIDSuffix, s.collectorDeleteTimetable)
 
-	r.NoRoute(func(c *gin.Context) {
-		if !strings.HasPrefix(c.Request.RequestURI, "/api") && !strings.Contains(c.Request.RequestURI, ".") {
-			file, _ := s.staticFiles.ReadFile("assets/index.html")
-			c.Data(
-				http.StatusOK,
-				"text/html; charset=utf-8",
-				file,
-			)
-		}
-	})
+	r.NoRoute(s.handleSPAFallback)
 
 	return r, nil
+}
+
+func (s *Server) handleSPAFallback(c *gin.Context) {
+	path := c.Request.URL.Path
+
+	if strings.HasPrefix(path, "/api") {
+		return
+	}
+
+	if filepath.Ext(path) != "" {
+		return
+	}
+
+	file, err := fs.ReadFile(s.staticFiles, "assets/index.html")
+	if err != nil {
+		s.logger.Error("Failed to read index.html", "error", err)
+		c.String(http.StatusInternalServerError, "Frontend not found")
+
+		return
+	}
+
+	c.Data(
+		http.StatusOK,
+		"text/html; charset=utf-8",
+		file,
+	)
 }
 
 func (s *Server) registerCorsMiddleware(r *gin.Engine) {
@@ -310,4 +328,18 @@ func (s *Server) createCorsMiddleware() gin.HandlerFunc {
 	corsConfig.AddExposeHeaders("X-Total-Count", "Content-Disposition")
 
 	return cors.New(corsConfig)
+}
+
+type staticFS struct {
+	http.FileSystem
+}
+
+func (s staticFS) Exists(prefix, path string) bool {
+	if len(prefix) > 1 && strings.HasPrefix(path, prefix) {
+		path = strings.TrimPrefix(path, prefix)
+	}
+
+	_, err := s.Open(path)
+
+	return err == nil
 }
