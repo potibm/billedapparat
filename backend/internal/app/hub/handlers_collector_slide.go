@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/potibm/billedapparat/internal/app/config"
@@ -12,6 +13,19 @@ import (
 	"github.com/potibm/billedapparat/internal/app/domain"
 	"github.com/potibm/billedapparat/internal/app/repository"
 )
+
+// mediaDownloadTimeout begrenzt einen einzelnen Slide-Download inklusive Konvertierung.
+const mediaDownloadTimeout = 60 * time.Second
+
+// mediaContext liefert den Server-Kontext. Er überlebt den HTTP-Request und wird
+// beim Shutdown abgebrochen, damit laufende Downloads sauber enden.
+func (s *Server) mediaContext() context.Context {
+	if s.baseCtx != nil {
+		return s.baseCtx
+	}
+
+	return context.Background()
+}
 
 func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 	var req contracts.IngestSlideRequest
@@ -89,7 +103,13 @@ func (s *Server) collectorIngestSlide(ctx *gin.Context) {
 	}
 
 	for _, id := range createdSlideIDs {
-		go s.mediaDownloader.ProcessSlideMedia(id)
+		downloadCtx, cancel := context.WithTimeout(s.mediaContext(), mediaDownloadTimeout)
+
+		go func(slideID int64) {
+			defer cancel()
+
+			s.mediaDownloader.ProcessSlideMedia(downloadCtx, slideID)
+		}(id)
 	}
 
 	s.incrementReceivedCollectorEventsCounter(ctx, config.CollectorDataTypeSlide, req.Source, ActionUpsert)

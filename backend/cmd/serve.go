@@ -64,6 +64,7 @@ func NewServeCmd() *cobra.Command {
 
 			// 5. Start the server
 			server, err := hub.NewServer(hub.Config{
+				Ctx:                ctx,
 				Port:               Cfg.App.Port,
 				StaticFiles:        staticFiles,
 				SlideRepo:          dbStore.NewSlideRepository(),

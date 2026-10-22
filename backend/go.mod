@@ -43,7 +43,9 @@ require (
 	go.opentelemetry.io/otel/sdk/log v0.22.0
 	go.opentelemetry.io/otel/sdk/metric v1.46.0
 	golang.org/x/image v0.46.0
+	golang.org/x/sync v0.24.0
 	golang.org/x/text v0.42.0
+	golang.org/x/time v0.16.0
 	gorm.io/gorm v1.31.2
 )
 
