@@ -278,92 +278,119 @@ func (m *MediaDownloader) downloadAndConvert(
 	return publicURL, nil
 }
 
+// retryPlan beschreibt einen wiederholbaren Fehlversuch: wie lange gewartet werden
+// soll und welcher Fehler nach dem letzten Versuch gemeldet wird.
+type retryPlan struct {
+	wait time.Duration
+	err  error
+}
+
+// fetchWithRetry lädt die URL und wiederholt ausschließlich 429 und echte 5xx.
 func (m *MediaDownloader) fetchWithRetry(ctx context.Context, originalURL string) (*http.Response, error) {
 	userAgent := m.userAgentForURL(originalURL)
 
 	var lastErr error
 
-attempts:
 	for attempt := 1; attempt <= maxFetchAttempts; attempt++ {
-		lastAttempt := attempt == maxFetchAttempts
-
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, originalURL, http.NoBody)
+		resp, plan, err := m.doRequest(ctx, originalURL, userAgent, attempt)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build request: %w", err)
+			return nil, err
 		}
 
-		req.Header.Set("User-Agent", userAgent)
-		req.Header.Set("Accept", "image/*,*/*;q=0.8")
-
-		resp, err := m.client.Do(req)
-		if err != nil {
-			// Abbruch durch Shutdown/Timeout nicht als transienten Fehler behandeln.
-			if ctxErr := ctx.Err(); ctxErr != nil {
-				return nil, ctxErr
-			}
-
-			lastErr = fmt.Errorf("http get failed: %w", err)
-
-			if lastAttempt {
-				break attempts
-			}
-
-			if err := sleepCtx(ctx, m.retryBackoff(attempt)); err != nil {
-				return nil, err
-			}
-
-			continue
-		}
-
-		switch {
-		case resp.StatusCode == http.StatusOK:
+		if resp != nil {
 			return resp, nil
+		}
 
-		case resp.StatusCode == http.StatusTooManyRequests:
-			wait := retryDelay(resp, m.retryBackoff(attempt))
-			m.logger.Warn("CDN rate limited, backing off",
-				"url", originalURL, "retry_after", wait.String(), "attempt", attempt)
-			resp.Body.Close()
+		lastErr = plan.err
 
-			lastErr = fmt.Errorf("rate limited: %s", resp.Status)
+		if attempt == maxFetchAttempts {
+			break
+		}
 
-			if lastAttempt {
-				break attempts
-			}
-
-			if err := sleepCtx(ctx, wait); err != nil {
-				return nil, err
-			}
-
-			continue
-
-		case isRetryableStatus(resp.StatusCode):
-			resp.Body.Close()
-
-			lastErr = fmt.Errorf("transient server error: %s", resp.Status)
-
-			if lastAttempt {
-				break attempts
-			}
-
-			if err := sleepCtx(ctx, m.retryBackoff(attempt)); err != nil {
-				return nil, err
-			}
-
-			continue
-
-		default:
-			// 401, 403, 404 und alle übrigen: kein Retry.
-			resp.Body.Close()
-
-			m.logger.Error("Non-retryable HTTP error",
-				"url", originalURL, "status", resp.StatusCode, "user_agent", userAgent)
-
-			return nil, fmt.Errorf("bad status: %s", resp.Status)
+		if err := sleepCtx(ctx, plan.wait); err != nil {
+			return nil, err
 		}
 	}
 
 	return nil, fmt.Errorf("giving up after %d attempts: %w", maxFetchAttempts, lastErr)
+}
+
+// doRequest führt einen einzelnen Versuch aus. Bei Erfolg wird die Response
+// zurückgegeben, bei einem wiederholbaren Fehler ein retryPlan. Nicht wiederholbare
+// Fehler und Context-Abbrüche werden direkt als error zurückgegeben.
+func (m *MediaDownloader) doRequest(
+	ctx context.Context,
+	originalURL, userAgent string,
+	attempt int,
+) (*http.Response, retryPlan, error) {
+	resp, err := m.fetchOnce(ctx, originalURL, userAgent)
+	if err != nil {
+		// Abbruch durch Shutdown/Timeout nicht als transienten Fehler behandeln.
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return nil, retryPlan{}, ctxErr
+		}
+
+		return nil, m.retryPlanFor(attempt, err), nil
+	}
+
+	switch {
+	case resp.StatusCode == http.StatusOK:
+		return resp, retryPlan{}, nil
+
+	case resp.StatusCode == http.StatusTooManyRequests:
+		return nil, m.rateLimitPlan(resp, originalURL, attempt), nil
+
+	case isRetryableStatus(resp.StatusCode):
+		resp.Body.Close()
+
+		return nil, m.retryPlanFor(attempt, fmt.Errorf("transient server error: %s", resp.Status)), nil
+
+	default:
+		// 401, 403, 404 und alle übrigen: kein Retry.
+		resp.Body.Close()
+
+		m.logger.Error("Non-retryable HTTP error",
+			"url", originalURL, "status", resp.StatusCode, "user_agent", userAgent)
+
+		return nil, retryPlan{}, fmt.Errorf("bad status: %s", resp.Status)
+	}
+}
+
+func (m *MediaDownloader) retryPlanFor(attempt int, err error) retryPlan {
+	return retryPlan{wait: m.retryBackoff(attempt), err: err}
+}
+
+// rateLimitPlan baut den Retry-Plan für einen 429er inklusive Logging.
+func (m *MediaDownloader) rateLimitPlan(resp *http.Response, originalURL string, attempt int) retryPlan {
+	wait := retryDelay(resp, m.retryBackoff(attempt))
+
+	m.logger.Warn("CDN rate limited, backing off",
+		"url", originalURL, "retry_after", wait.String(), "attempt", attempt)
+
+	resp.Body.Close()
+
+	return retryPlan{wait: wait, err: fmt.Errorf("rate limited: %s", resp.Status)}
+}
+
+// fetchOnce baut den Request mit den Discord-konformen Headern und führt ihn aus.
+func (m *MediaDownloader) fetchOnce(
+	ctx context.Context,
+	originalURL, userAgent string,
+) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, originalURL, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build request: %w", err)
+	}
+
+	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Accept", "image/*,*/*;q=0.8")
+
+	resp, err := m.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http get failed: %w", err)
+	}
+
+	return resp, nil
 }
 
 // userAgentForURL liefert den von Discord vorgeschriebenen User-Agent für

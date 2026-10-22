@@ -103,6 +103,7 @@ func TestFetchWithRetry_SendsDiscordUserAgent(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotUA = r.Header.Get("User-Agent")
+
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
