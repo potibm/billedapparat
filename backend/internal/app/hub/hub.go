@@ -54,6 +54,7 @@ var (
 )
 
 type Config struct {
+	Ctx                context.Context
 	Port               int
 	StaticFiles        fs.FS
 	SlideRepo          repository.SlideRepository
@@ -65,6 +66,7 @@ type Config struct {
 }
 
 type Server struct {
+	baseCtx            context.Context
 	port               int
 	staticFiles        fs.FS
 	slideRepo          repository.SlideRepository
@@ -91,6 +93,11 @@ func NewServer(cfg Config) (*Server, error) {
 	logger := slog.Default()
 	streamer := NewStreamer(logger.With("component", "Streamer"))
 
+	baseCtx := cfg.Ctx
+	if baseCtx == nil {
+		baseCtx = context.Background()
+	}
+
 	timetableGen, err := generator.NewTimetableGenerator(
 		cfg.TimetableEventRepo,
 		logger.With("component", "TimetableGenerator"),
@@ -109,12 +116,18 @@ func NewServer(cfg Config) (*Server, error) {
 		timetableGen,
 	)
 
-	mediaDownloader := NewMediaDownloader(cfg.SlideRepo, streamer, logger.With("component", "MediaDownloader"))
+	mediaDownloader := NewMediaDownloader(
+		cfg.SlideRepo,
+		streamer,
+		logger.With("component", "MediaDownloader"),
+		cfg.Cfg.App.Version,
+	)
 	mediaProcessor := &LocalDiskMediaProcessor{}
 
 	sanitizer := bluemonday.StrictPolicy()
 
 	return &Server{
+		baseCtx:            baseCtx,
 		port:               cfg.Port,
 		staticFiles:        cfg.StaticFiles,
 		slideRepo:          cfg.SlideRepo,
