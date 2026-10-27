@@ -1,7 +1,7 @@
 [tools]
 node = "26"
 go = "1.27"
-golangci-lint = "2.13.2"
+golangci-lint = "2.15.0"
 dotenv-linter = "4.0.0"
 air = "1.67.4"
 overmind = "2.5.1"
