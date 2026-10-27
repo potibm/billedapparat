@@ -8,6 +8,7 @@ import { useAutoplay } from "./features/slides/hooks/useAutoplay";
 import { useKeyboardControls } from "./features/slides/hooks/useKeyboardControls";
 import { useSSELifecycle } from "./features/slides/hooks/useSSEConnection";
 import { getSlideAnimation } from "./features/slides/utils/getSlideAnimation";
+import { useDeferredValue } from "react";
 import { useSlideshowEngine } from "./features/slides/hooks/useSlideshowEngine";
 
 // components
@@ -50,6 +51,10 @@ export const BeamerApp = () => {
     beamer.allowed_animations,
   );
 
+  // Defer non-critical toast rendering so slide transitions stay responsive
+  // when SSE updates arrive.
+  const deferredToastSlides = useDeferredValue(toastSlides);
+
   // 2. render logic
   if (!currentSlide) {
     return (
@@ -83,7 +88,7 @@ export const BeamerApp = () => {
         </motion.div>
       </AnimatePresence>
 
-      <ToastManager toastSlides={toastSlides} allowOverlay={allowOverlay} />
+      <ToastManager toastSlides={deferredToastSlides} allowOverlay={allowOverlay} />
 
       <ConnectionStatusOverlay />
 

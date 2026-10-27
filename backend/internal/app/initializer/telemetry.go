@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/log/global"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -53,7 +52,7 @@ func InitTelemetry(ctx context.Context, endpoint, version string) (func(), error
 		sdklog.WithProcessor(sdklog.NewBatchProcessor(logExporter)),
 		sdklog.WithResource(res),
 	)
-	global.SetLoggerProvider(lp)
+	otel.SetLoggerProvider(lp)
 
 	// metrics
 	metricExporter, err := otlpmetricgrpc.New(ctx, otlpmetricgrpc.WithInsecure(), otlpmetricgrpc.WithEndpoint(endpoint))

@@ -22,8 +22,8 @@ export const MyAppBar = (props: AppBarProps) => (
 
       <Typography
         variant="h6"
-        color="inherit"
         sx={{
+          color: "inherit",
           fontWeight: 100,
           letterSpacing: ".1rem",
           textTransform: "uppercase",
