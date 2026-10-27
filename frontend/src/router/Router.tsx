@@ -7,8 +7,12 @@ import {
   RouteObject,
 } from "react-router-dom"; // react-router-dom is the standard for web projects
 
-const AdminApp = lazy(() => import("../apps/admin/Admin").then((m) => ({ default: m.AdminApp })));
-const BeamerApp = lazy(() => import("../apps/beamer/BeamerApp").then((m) => ({ default: m.BeamerApp })));
+const AdminApp = lazy(() =>
+  import("../apps/admin/Admin").then((m) => ({ default: m.AdminApp })),
+);
+const BeamerApp = lazy(() =>
+  import("../apps/beamer/BeamerApp").then((m) => ({ default: m.BeamerApp })),
+);
 
 const RouteFallback = () => (
   <div style={{ padding: 24, textAlign: "center" }}>Loading…</div>

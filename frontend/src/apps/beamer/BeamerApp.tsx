@@ -88,7 +88,10 @@ export const BeamerApp = () => {
         </motion.div>
       </AnimatePresence>
 
-      <ToastManager toastSlides={deferredToastSlides} allowOverlay={allowOverlay} />
+      <ToastManager
+        toastSlides={deferredToastSlides}
+        allowOverlay={allowOverlay}
+      />
 
       <ConnectionStatusOverlay />
 
