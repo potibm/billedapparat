@@ -12,7 +12,7 @@ import { useAppConfig } from "@core/config/useConfig";
 
 const MenuGroup = ({ title }: { title: string }) => (
   <Box sx={{ mt: 2, mb: 1, pl: 2 }}>
-    <Typography variant="caption" color="textSecondary">
+    <Typography variant="caption" color="text.secondary">
       {title}
     </Typography>
   </Box>
